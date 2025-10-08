@@ -1,0 +1,328 @@
+---
+description: "Swift 6.2 concurrency best practices for iOS development. Use when implementing async/await, actors, Sendable types, structured concurrency, and SwiftUI integration with concurrency patterns."
+---
+
+## Swift 6.2 Concurrency Best Practices
+
+### Overview
+
+This rule establishes comprehensive guidelines for implementing Swift concurrency in iOS applications. It covers data race prevention, structured concurrency patterns, UI boundary management, and performance optimization techniques that ensure safe, maintainable, and efficient concurrent code.
+
+### Core Principles
+
+1. **Opt into Strict Safety**
+   - Build in Swift 6 mode for full error-level checks
+   - Treat Sendable violations as errors, not warnings
+   - Model isolation explicitly rather than papering over issues
+   - Use `@Sendable` closures and fix violations instead of suppressing them
+
+2. **Model Ownership & Isolation Clearly**
+   - Prefer value types (immutable structs) for cross-task data
+   - Conform to `Sendable` where appropriate
+   - Reserve `@unchecked Sendable` for carefully audited edge cases
+   - Use actors to guard shared mutable state
+   - Keep actors lean and focused
+   - Extract pure, read-only helpers as `nonisolated` methods
+
+3. **Make UI Boundary Explicit**
+   - Annotate UI types with `@MainActor` (Views, ViewModels, delegates)
+   - Document intent and prevent accidental background UI calls
+   - Use `MainActor.run { ... }` for SDK gaps with inconsistent annotations
+
+### Implementation Guidelines
+
+#### Structured Concurrency Patterns
+
+1. **Prefer Structured Concurrency**
+   ```swift
+   // ✅ Good: Use async/await and Task groups
+   func downloadAll(_ urls: [URL]) async throws -> [Data] {
+       try await withThrowingTaskGroup(of: (Int, Data).self) { group in
+           for (i, url) in urls.enumerated() {
+               group.addTask { (i, try await http.get(url)) }
+           }
+           var result = Array(repeating: Data(), count: urls.count)
+           for try await (i, data) in group { result[i] = data }
+           return result
+       }
+   }
+   ```
+
+2. **Avoid Unstructured Concurrency**
+   ```swift
+   // ❌ Avoid: Task.detached unless truly independent
+   // ✅ Good: Use Task {} for structured concurrency
+   Task {
+       let result = await performWork()
+       await updateUI(with: result)
+   }
+   ```
+
+#### Actor Design Patterns
+
+1. **Lean Actor Implementation**
+   ```swift
+   actor FeedCache {
+       private var store: [PostID: Post] = [:]
+       
+       func upsert(_ posts: [Post]) { 
+           posts.forEach { store[$0.id] = $0 } 
+       }
+       
+       // ✅ Good: Pure read operations as nonisolated
+       nonisolated func snapshot() -> [Post] {
+           store.values.sorted(by: \.date)
+       }
+   }
+   ```
+
+2. **Avoid Actor Hot-Loops**
+   ```swift
+   // ❌ Avoid: Multiple await calls in loops
+   for item in items {
+       await processItem(item) // Creates many actor hops
+   }
+   
+   // ✅ Good: Batch operations to reduce actor hops
+   await processItems(items)
+   ```
+
+#### UI Integration Patterns
+
+1. **SwiftUI with Concurrency**
+   ```swift
+   @MainActor
+   final class TimelineVM: Observable {
+       var items: [Post] = []
+       private var loadTask: Task<Void, Never>?
+       
+       func load() {
+           loadTask?.cancel()
+           loadTask = Task { [weak self] in
+               do {
+                   let posts = try await timelineService.fetchPage()
+                   try Task.checkCancellation()
+                   self?.items = posts
+               } catch is CancellationError { 
+                   // Handle cancellation gracefully
+               }
+           }
+       }
+       
+       deinit { loadTask?.cancel() }
+   }
+   ```
+
+2. **Use Observation for UI Models**
+   ```swift
+   // ✅ Good: Use @Observable for SwiftUI 6
+   @Observable
+   @MainActor
+   class UserProfileViewModel {
+       var user: User?
+       var isLoading = false
+       
+       func loadUser() async {
+           isLoading = true
+           defer { isLoading = false }
+           user = await userService.fetchCurrentUser()
+       }
+   }
+   ```
+
+#### Error Handling & Cancellation
+
+1. **Implement Cooperative Cancellation**
+   ```swift
+   func longRunningOperation() async throws -> Result {
+       for item in largeDataSet {
+           try Task.checkCancellation() // Check cancellation points
+           await processItem(item)
+       }
+       return result
+   }
+   ```
+
+2. **Use Typed Throws for Domain Errors**
+   ```swift
+   enum NetworkError: Error {
+       case invalidURL
+       case timeout
+       case unauthorized
+   }
+   
+   func fetchData() async throws(NetworkError) -> Data {
+       // Implementation with specific error types
+   }
+   ```
+
+#### Performance Optimization
+
+1. **Bound Concurrency Intentionally**
+   ```swift
+   // ✅ Good: Limit concurrent operations
+   func processLargeDataset(_ items: [Item]) async {
+       let batchSize = 10
+       for batch in items.chunked(into: batchSize) {
+           await withTaskGroup(of: Void.self) { group in
+               for item in batch {
+                   group.addTask { await processItem(item) }
+               }
+           }
+       }
+   }
+   ```
+
+2. **Use AsyncSequence for Streams**
+   ```swift
+   // ✅ Good: Use AsyncSequence instead of delegates
+   func observeUpdates() -> AsyncThrowingStream<Update, Error> {
+       AsyncThrowingStream { continuation in
+           let observer = NotificationCenter.default.addObserver(
+               forName: .dataUpdated,
+               object: nil,
+               queue: .main
+           ) { notification in
+               if let update = notification.object as? Update {
+                   continuation.yield(update)
+               }
+           }
+           
+           continuation.onTermination = { _ in
+               NotificationCenter.default.removeObserver(observer)
+           }
+       }
+   }
+   ```
+
+### Testing Concurrency
+
+1. **Use Async XCTest**
+   ```swift
+   @MainActor
+   func testViewModelLoadsData() async throws {
+       let viewModel = TimelineViewModel()
+       await viewModel.load()
+       XCTAssertFalse(viewModel.items.isEmpty)
+   }
+   ```
+
+2. **Test Cancellation Behavior**
+   ```swift
+   func testCancellation() async {
+       let task = Task {
+           try await longRunningOperation()
+       }
+       
+       task.cancel()
+       
+       do {
+           _ = try await task.value
+           XCTFail("Should have been cancelled")
+       } catch is CancellationError {
+           // Expected behavior
+       }
+   }
+   ```
+
+### Common Anti-Patterns to Avoid
+
+1. **Don't Suppress Sendable Warnings**
+   ```swift
+   // ❌ Avoid: Suppressing warnings
+   class MyClass: @unchecked Sendable { }
+   
+   // ✅ Good: Fix the underlying issue
+   struct MyData: Sendable {
+       let value: String
+   }
+   ```
+
+2. **Don't Over-Actorize**
+   ```swift
+   // ❌ Avoid: Making everything an actor
+   actor StringProcessor {
+       func process(_ string: String) -> String {
+           return string.uppercased()
+       }
+   }
+   
+   // ✅ Good: Use actors only for shared mutable state
+   func processString(_ string: String) -> String {
+       return string.uppercased()
+   }
+   ```
+
+3. **Don't Ignore Cancellation**
+   ```swift
+   // ❌ Avoid: Ignoring cancellation
+   func badAsyncFunction() async {
+       for _ in 0..<1000 {
+           await performWork() // No cancellation check
+       }
+   }
+   ```
+
+### Migration Strategies
+
+1. **Legacy API Integration**
+   ```swift
+   // ✅ Good: Wrap completion handlers with CheckedContinuation
+   func fetchData() async throws -> Data {
+       return try await withCheckedThrowingContinuation { continuation in
+         legacyAPI.fetchData { result in
+             continuation.resume(with: result)
+         }
+       }
+     }
+   ```
+
+2. **Gradual Migration**
+   - Start with new code using strict concurrency
+   - Migrate critical paths first
+   - Use `@preconcurrency import` temporarily for problematic dependencies
+   - Remove legacy completion handler APIs over time
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Sendable Violations**
+   - Ensure all stored properties are Sendable
+   - Use value types where possible
+   - Mark classes as `@unchecked Sendable` only after careful audit
+
+2. **Actor Isolation Errors**
+   - Use `nonisolated` for pure functions
+   - Consider if the method truly needs actor isolation
+   - Extract shared logic to nonisolated methods
+
+3. **MainActor Issues**
+   - Ensure UI updates happen on main actor
+   - Use `@MainActor` annotation consistently
+   - Consider using `MainActor.run` for one-off main thread work
+
+#### Performance Issues
+
+1. **Actor Contention**
+   - Reduce cross-actor communication
+   - Batch operations when possible
+   - Consider if shared state is necessary
+
+2. **Task Overhead**
+   - Avoid creating unnecessary tasks
+   - Use structured concurrency patterns
+   - Profile with Instruments to identify bottlenecks
+
+### Code Review Checklist
+
+- [ ] All async functions properly handle cancellation
+- [ ] UI updates are marked with `@MainActor`
+- [ ] Actors are used only for shared mutable state
+- [ ] Sendable conformance is explicit and correct
+- [ ] Error handling uses typed throws where appropriate
+- [ ] Long-running operations check for cancellation
+- [ ] Task groups are used for fan-out/fan-in patterns
+- [ ] No `Task.detached` without justification
+- [ ] AsyncSequence is used for streams instead of delegates
+- [ ] Tests use async XCTest patterns

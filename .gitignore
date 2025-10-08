@@ -1,0 +1,72 @@
+# Xcode
+.DS_Store
+*/build/*
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+profile
+*.moved-aside
+DerivedData/
+.idea/
+*.hmap
+*.xccheckout
+*.xcworkspace
+!default.xcworkspace
+
+# Swift Package Manager
+.build/
+Packages/*/Package.resolved
+Package.resolved
+
+# Secrets and sensitive files
+Resources/Secrets.plist
+*.env
+*.p8
+*.p12
+*.mobileprovision
+
+# Generated files
+OpenAPI/Generated/
+*.generated.swift
+
+# Dependencies
+Packages/ThirdParty/*/Sources/
+Packages/ThirdParty/*/Tests/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# App Store Connect
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/

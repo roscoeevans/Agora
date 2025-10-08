@@ -1,0 +1,506 @@
+---
+description: When building and testing the Agora iOS app, ensuring compilation success and identifying which modules break when changes are made. This rule provides comprehensive build verification, module-specific testing, and error diagnosis for the Swift Package Manager-based modular architecture.
+alwaysApply: false
+---
+
+## iOS Build and Testing Guidelines
+
+### Overview
+
+This rule provides comprehensive guidance for building and testing the Agora iOS app, ensuring compilation success while enabling granular testing to identify exactly what breaks when changes are made. The app uses a modular Swift Package Manager architecture with Features, Kits, and Shared packages, requiring both individual module testing and integration testing.
+
+### Build Verification Commands
+
+#### 1. **Quick Compilation Check**
+Use these commands to verify the app compiles without running tests:
+
+```bash
+# Build main app target
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -quiet
+
+# Build all packages
+swift build --package-path Packages/Features/Compose
+swift build --package-path Packages/Kits/DesignSystem
+swift build --package-path Packages/Shared/AppFoundation
+```
+
+#### 2. **Full Build Verification**
+For comprehensive build verification:
+
+```bash
+# Clean and build everything
+xcodebuild clean build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -configuration Debug
+
+# Build for release
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -configuration Release
+```
+
+### Module-Specific Testing
+
+#### 1. **Individual Package Testing**
+Test specific modules when changes are made:
+
+```bash
+# Test individual features
+swift test --package-path Packages/Features/Compose
+swift test --package-path Packages/Features/HomeForYou
+swift test --package-path Packages/Features/Profile
+
+# Test individual kits
+swift test --package-path Packages/Kits/DesignSystem
+swift test --package-path Packages/Kits/Networking
+swift test --package-path Packages/Kits/Auth
+
+# Test shared modules
+swift test --package-path Packages/Shared/AppFoundation
+swift test --package-path Packages/Shared/TestSupport
+```
+
+#### 2. **Dependency Chain Testing**
+Test modules in dependency order to identify breaking changes:
+
+```bash
+# Test foundation modules first
+swift test --package-path Packages/Shared/AppFoundation
+swift test --package-path Packages/Shared/TestSupport
+
+# Test core kits
+swift test --package-path Packages/Kits/DesignSystem
+swift test --package-path Packages/Kits/Networking
+swift test --package-path Packages/Kits/Auth
+
+# Test dependent kits
+swift test --package-path Packages/Kits/Analytics
+swift test --package-path Packages/Kits/Media
+
+# Test features last
+swift test --package-path Packages/Features/Compose
+swift test --package-path Packages/Features/HomeForYou
+```
+
+### Test Categories
+
+#### 1. **Unit Tests**
+Test individual components and modules:
+
+```bash
+# Run all unit tests
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -only-testing:AgoraTests
+
+# Test specific package unit tests
+swift test --package-path Packages/Features/Compose --filter ComposeTests
+swift test --package-path Packages/Kits/DesignSystem --filter DesignSystemTests
+```
+
+#### 2. **Integration Tests**
+Test cross-package functionality:
+
+```bash
+# Test main app integration
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -only-testing:AgoraTests
+
+# Test package integration
+swift test --package-path Packages/Features/Compose --filter IntegrationTests
+```
+
+#### 3. **UI Tests**
+Test end-to-end user flows:
+
+```bash
+# Run all UI tests
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -only-testing:AgoraUITests
+
+# Run specific UI test suites
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -only-testing:AgoraUITests/TabNavigationUITests
+```
+
+#### 4. **Snapshot Tests**
+Test visual regression:
+
+```bash
+# Run snapshot tests
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -only-testing:AgoraTests/HomeForYouSnapshots
+```
+
+### Build Targets and Configurations
+
+#### 1. **Main App Target**
+```bash
+# Debug build
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -configuration Debug
+
+# Release build
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -configuration Release
+```
+
+#### 2. **Test Targets**
+```bash
+# Unit tests
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -only-testing:AgoraTests
+
+# UI tests
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -only-testing:AgoraUITests
+```
+
+#### 3. **Package Targets**
+```bash
+# Build specific packages
+swift build --package-path Packages/Features/Compose
+swift build --package-path Packages/Kits/DesignSystem
+
+# Test specific packages
+swift test --package-path Packages/Features/Compose
+swift test --package-path Packages/Kits/DesignSystem
+```
+
+### Error Diagnosis
+
+#### 1. **Build Error Analysis**
+When build fails, check these common issues:
+
+```bash
+# Check for Swift concurrency issues
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -SWIFT_STRICT_CONCURRENCY=complete
+
+# Check for Sendable compliance
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -SWIFT_STRICT_CONCURRENCY=complete \
+    -SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY=YES
+```
+
+#### 2. **Dependency Resolution**
+Resolve package dependencies:
+
+```bash
+# Resolve all dependencies
+swift package resolve
+
+# Update dependencies
+swift package update
+
+# Check for dependency conflicts
+swift package show-dependencies
+```
+
+#### 3. **SwiftLint Integration**
+Check code quality:
+
+```bash
+# Run SwiftLint
+swiftlint lint --config Configs/Lint/swiftlint.yml
+
+# Auto-fix issues
+swiftlint --fix --config Configs/Lint/swiftlint.yml
+```
+
+### Testing Strategies
+
+#### 1. **Incremental Testing**
+Test only changed modules:
+
+```bash
+# Test specific changed package
+swift test --package-path Packages/Features/Compose
+
+# Test dependent packages
+swift test --package-path Packages/Kits/DesignSystem
+swift test --package-path Packages/Shared/AppFoundation
+```
+
+#### 2. **Smoke Testing**
+Quick compilation verification:
+
+```bash
+# Quick build check
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -quiet
+```
+
+#### 3. **Full Testing**
+Complete test suite:
+
+```bash
+# Run all tests
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0'
+```
+
+#### 4. **Regression Testing**
+Before/after comparison:
+
+```bash
+# Run tests before changes
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -resultBundlePath before-results.xcresult
+
+# Make changes, then run tests again
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -resultBundlePath after-results.xcresult
+```
+
+### CI/CD Integration
+
+#### 1. **Pre-build Scripts**
+Use existing automation:
+
+```bash
+# Run pre-build checks
+./Scripts/prebuild.sh
+
+# Generate OpenAPI client
+./Scripts/generate-openapi.sh
+```
+
+#### 2. **Post-build Scripts**
+Use existing CI automation:
+
+```bash
+# Run CI post-build
+./Scripts/ci-postbuild.sh
+
+# Run UI tests
+./Scripts/run-ui-tests.sh
+```
+
+#### 3. **Test Coverage**
+Generate coverage reports:
+
+```bash
+# Generate test coverage
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -enableCodeCoverage YES \
+    -derivedDataPath DerivedData
+```
+
+### Swift Package Manager Integration
+
+#### 1. **Package Management**
+```bash
+# Resolve dependencies
+swift package resolve
+
+# Update packages
+swift package update
+
+# Show package dependencies
+swift package show-dependencies
+```
+
+#### 2. **Package Testing**
+```bash
+# Test all packages
+swift test --package-path Packages/Features/Compose
+swift test --package-path Packages/Kits/DesignSystem
+swift test --package-path Packages/Shared/AppFoundation
+
+# Test with coverage
+swift test --package-path Packages/Features/Compose --enable-code-coverage
+```
+
+#### 3. **Package Validation**
+```bash
+# Validate package manifests
+swift package validate-package-manifest
+
+# Check package structure
+swift package describe --type json
+```
+
+### Troubleshooting
+
+#### 1. **Common Build Errors**
+
+**Swift Concurrency Issues:**
+```bash
+# Fix concurrency warnings
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -SWIFT_STRICT_CONCURRENCY=complete
+```
+
+**Dependency Resolution Issues:**
+```bash
+# Clean and resolve
+swift package clean
+swift package resolve
+swift package update
+```
+
+**Simulator Issues:**
+```bash
+# List available simulators
+xcrun simctl list devices iOS
+
+# Boot iPhone 17 Pro simulator
+xcrun simctl boot "iPhone 17 Pro"
+```
+
+#### 2. **Test Failures**
+
+**Unit Test Failures:**
+```bash
+# Run specific failing test
+swift test --package-path Packages/Features/Compose --filter ComposeTests.testSpecificFunction
+
+# Run with verbose output
+swift test --package-path Packages/Features/Compose --verbose
+```
+
+**UI Test Failures:**
+```bash
+# Run UI tests with detailed output
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -only-testing:AgoraUITests \
+    -testLanguage en \
+    -testRegion US
+```
+
+#### 3. **Performance Issues**
+
+**Build Performance:**
+```bash
+# Build with parallel processing
+xcodebuild build \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -jobs 8
+```
+
+**Test Performance:**
+```bash
+# Run tests in parallel
+xcodebuild test \
+    -project Agora.xcodeproj \
+    -scheme Agora \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+    -parallel-testing-enabled YES
+```
+
+### Best Practices
+
+#### 1. **Build Optimization**
+- Use `-quiet` flag for cleaner output
+- Build specific targets when possible
+- Use derived data for faster builds
+- Clean build folder when encountering issues
+
+#### 2. **Testing Efficiency**
+- Test changed modules first
+- Use incremental testing strategies
+- Run smoke tests before full test suites
+- Use parallel testing when possible
+
+#### 3. **Error Prevention**
+- Run SwiftLint before building
+- Check dependencies regularly
+- Use strict concurrency checking
+- Validate package manifests
+
+#### 4. **CI/CD Integration**
+- Use existing build scripts
+- Generate test coverage reports
+- Archive builds for distribution
+- Run UI tests on appropriate simulators
+
+### Implementation Checklist
+
+#### Before Making Changes
+- [ ] Run smoke test to verify current state
+- [ ] Check for any existing build issues
+- [ ] Ensure simulator is available and booted
+- [ ] Run SwiftLint to check code quality
+
+#### During Development
+- [ ] Test changed modules individually
+- [ ] Run dependent module tests
+- [ ] Check for Swift concurrency issues
+- [ ] Verify UI changes with snapshot tests
+
+#### After Changes
+- [ ] Run full test suite
+- [ ] Check build in both Debug and Release
+- [ ] Verify UI tests pass
+- [ ] Generate test coverage report
+- [ ] Clean up any temporary files
+
+#### When Issues Arise
+- [ ] Check build logs for specific errors
+- [ ] Test modules in dependency order
+- [ ] Verify simulator is properly configured
+- [ ] Check for dependency conflicts
+- [ ] Run SwiftLint for code quality issues

@@ -1,0 +1,27 @@
+// Debug.xcconfig
+// Agora Debug Configuration
+
+// Build Settings
+SWIFT_VERSION = 6.2
+IPHONEOS_DEPLOYMENT_TARGET = 18.0
+TARGETED_DEVICE_FAMILY = 1,2
+
+// Debug specific settings
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+GCC_OPTIMIZATION_LEVEL = 0
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+ENABLE_TESTABILITY = YES
+
+// Bundle settings
+PRODUCT_BUNDLE_IDENTIFIER = com.agora.app
+PRODUCT_NAME = Agora
+
+// Code signing
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = 
+
+// Swift Package Manager
+SWIFT_PACKAGE_MANAGER = YES
+
+// Swift Concurrency
+OTHER_SWIFT_FLAGS = -strict-concurrency=complete

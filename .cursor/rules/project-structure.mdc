@@ -1,0 +1,631 @@
+---
+description: When wanting to know where to put a file after creating one, or when refactoring any given structure within the project.
+alwaysApply: false
+---
+## Agora iOS Project Structure Guidelines
+
+### Overview
+
+This rule defines the standard project structure for the Agora iOS app, following Swift Package Manager (SPM) modular architecture with clear separation of concerns. The structure supports iOS 26, Swift 6.2, and SwiftUI 6 with a focus on maintainability, testability, and Apple design compliance.
+
+### Root Directory Structure
+
+```
+Agora/
+├── Agora.xcodeproj/           # Main Xcode project
+├── AgoraTests/                # Main app unit tests
+├── AgoraUITests/              # Main app UI tests
+├── Configs/                   # Build and configuration files
+├── docs/                      # Project documentation
+├── OpenAPI/                   # API specifications and generated code
+├── Packages/                  # Swift Package modules
+├── Resources/                 # App resources and main app files
+├── Scripts/                   # Build and utility scripts
+├── Tests/                     # Cross-module tests
+└── Package.swift              # Root package manifest
+```
+
+### Packages Directory Structure
+
+The `Packages/` directory contains all Swift Package modules organized into three main categories:
+
+#### Features (`Packages/Features/`)
+User-facing feature modules that represent distinct app functionality:
+
+```
+Features/
+├── Compose/                   # Post composition and media upload
+├── DMs/                       # Direct messaging
+├── HomeFollowing/             # Following feed (chronological)
+├── HomeForYou/                # For You feed (recommendations)
+├── Notifications/             # Push notifications and in-app alerts
+├── PostDetail/                # Individual post viewing
+├── Profile/                   # User profiles and settings
+├── Search/                    # People and content search
+└── Threading/                 # Reply threads and conversations
+```
+
+#### Kits (`Packages/Kits/`)
+Reusable functionality modules that provide specific capabilities:
+
+```
+Kits/
+├── Analytics/                 # PostHog analytics wrapper
+├── Auth/                      # Sign in with Apple + phone verification
+├── DesignSystem/              # UI components, colors, typography
+├── Media/                     # Image/video capture, processing, upload
+├── Moderation/                # Content moderation and reporting
+├── Networking/                # API client and network layer
+├── Persistence/               # SwiftData models and caching
+├── Recommender/               # Recommendation engine client
+└── Verification/              # Device attestation and anti-bot
+```
+
+#### Shared (`Packages/Shared/`)
+Cross-cutting concerns and shared utilities:
+
+```
+Shared/
+├── AppFoundation/             # Core app utilities and extensions
+└── TestSupport/               # Testing utilities and mocks
+```
+
+#### ThirdParty (`Packages/ThirdParty/`)
+Third-party SDK integrations:
+
+```
+ThirdParty/
+├── hCaptcha/                  # hCaptcha challenge SDK
+├── OneSignal/                 # Push notification service
+├── PostHog/                   # Analytics SDK
+└── Sentry/                    # Crash reporting SDK
+```
+
+### Package Structure Standards
+
+Each Swift Package must follow this exact structure:
+
+```
+PackageName/
+├── Package.swift              # Package manifest
+├── README.md                  # Package documentation
+├── Sources/
+│   └── PackageName/           # Source code (matches package name)
+│       ├── PackageName.swift  # Main public interface
+│       └── [other files]      # Implementation files
+└── Tests/
+    └── PackageNameTests/      # Test files
+        └── PackageNameTests.swift
+```
+
+### Package.swift Standards
+
+All packages must follow these conventions:
+
+#### Required Elements
+1. **Swift Tools Version**: Always use `6.2`
+2. **Platform**: Always specify `.iOS(.v18)`
+3. **Product Name**: Must match package directory name
+4. **Target Name**: Must match package directory name
+5. **Test Target**: Must be named `{PackageName}Tests`
+
+#### Dependency Guidelines
+- **Features** can depend on Kits and Shared modules
+- **Kits** can depend on other Kits and Shared modules
+- **Shared** modules should have minimal dependencies
+- **ThirdParty** modules should be self-contained
+- Use relative paths for local dependencies: `../../Kits/DesignSystem`
+
+#### Example Package.swift
+```swift
+// swift-tools-version: 6.2
+import PackageDescription
+
+let package = Package(
+    name: "PackageName",
+    platforms: [.iOS(.v18)],
+    products: [
+        .library(name: "PackageName", targets: ["PackageName"])
+    ],
+    dependencies: [
+        .package(path: "../../Kits/DesignSystem"),
+        .package(path: "../../Shared/AppFoundation")
+    ],
+    targets: [
+        .target(
+            name: "PackageName",
+            dependencies: ["DesignSystem", "AppFoundation"]
+        ),
+        .testTarget(
+            name: "PackageNameTests",
+            dependencies: ["PackageName"]
+        )
+    ]
+)
+```
+
+### File Naming Conventions
+
+#### Swift Files
+- **Views**: `{Feature}View.swift` (e.g., `ComposeView.swift`)
+- **ViewModels**: `{Feature}ViewModel.swift` (e.g., `ComposeViewModel.swift`)
+- **Models**: `{Feature}.swift` (e.g., `Compose.swift`)
+- **Services**: `{Service}Service.swift` (e.g., `AuthService.swift`)
+- **Extensions**: `{Type}+{Purpose}.swift` (e.g., `String+Validation.swift`)
+
+#### Resources
+- **Assets**: Use `.xcassets` bundles within package `Resources/` directory
+- **Localization**: Use `Localizable.strings` files
+- **Configuration**: Use `.plist` files for configuration
+
+### Module Dependencies
+
+#### Dependency Hierarchy
+```
+Features (top level)
+├── Kits (middle level)
+│   ├── DesignSystem (foundation)
+│   ├── Networking (foundation)
+│   ├── Auth (foundation)
+│   └── [other kits]
+└── Shared (foundation level)
+    ├── AppFoundation
+    └── TestSupport
+```
+
+#### Allowed Dependencies
+- **Features** → Kits, Shared
+- **Kits** → Other Kits, Shared
+- **Shared** → Minimal external dependencies only
+- **ThirdParty** → Self-contained, no internal dependencies
+
+### Testing Structure
+
+#### Test Organization
+- Each package has its own test target
+- Test files mirror source structure
+- Use `TestSupport` package for shared test utilities
+- Snapshot tests go in root `Tests/SnapshotTests/`
+- UI tests go in root `Tests/UITests/`
+
+#### Test Naming
+- Test classes: `{Feature}Tests`
+- Test methods: `test{Description}()`
+- Snapshot tests: `{Feature}Snapshots`
+
+### Configuration Files
+
+#### Build Configuration
+- **Debug.xcconfig** and **Release.xcconfig** in `Configs/Xcode/`
+- **swiftlint.yml** in `Configs/Lint/`
+- **Package.resolved** at root and in packages with external dependencies
+
+#### Scripts
+- Build scripts in `Scripts/` directory
+- Use `.sh` extension for shell scripts
+- Include proper error handling and logging
+
+### Resource Management
+
+#### App Resources (`Resources/`)
+- **AgoraApp.swift**: Main app entry point
+- **ContentView.swift**: Root view
+- **Assets.xcassets**: App-level assets
+- **Info.plist**: App configuration
+- **Secrets.plist**: Sensitive configuration (gitignored)
+- **Localizable.strings**: App-level strings
+
+#### Package Resources
+- Place package-specific resources in `Resources/` within each package
+- Use `.xcassets` for image assets
+- Follow Apple's resource naming conventions
+
+### Documentation Standards
+
+#### README Files
+Each package must include a `README.md` with:
+- Package purpose and functionality
+- Usage examples
+- Dependencies
+- Testing instructions
+
+#### Code Documentation
+- Use Swift documentation comments (`///`)
+- Document public APIs thoroughly
+- Include usage examples in complex functions
+- Follow Apple's documentation style
+
+### Best Practices
+
+#### Module Design
+1. **Single Responsibility**: Each module should have one clear purpose
+2. **Loose Coupling**: Minimize dependencies between modules
+3. **High Cohesion**: Related functionality should be grouped together
+4. **Clear Interfaces**: Expose only necessary public APIs
+
+#### Code Organization
+1. **File Size**: Keep files under 300 lines when possible
+2. **Naming**: Use descriptive, self-documenting names
+3. **Structure**: Group related functionality together
+4. **Imports**: Order imports alphabetically
+
+#### Performance Considerations
+1. **Lazy Loading**: Use lazy loading for heavy resources
+2. **Memory Management**: Follow Swift memory management best practices
+3. **Build Time**: Minimize unnecessary dependencies
+4. **Bundle Size**: Keep third-party dependencies minimal
+
+### Common Mistakes to Avoid
+
+#### Structural Issues
+- Don't create circular dependencies between modules
+- Don't put business logic in view files
+- Don't mix UI and data layer concerns
+- Don't create overly large modules
+
+#### Naming Issues
+- Don't use generic names like `Utils` or `Helpers`
+- Don't abbreviate unnecessarily
+- Don't use inconsistent naming patterns
+- Don't mix naming conventions
+
+#### Dependency Issues
+- Don't create unnecessary dependencies
+- Don't depend on implementation details
+- Don't create deep dependency chains
+- Don't ignore dependency direction
+
+### Migration Guidelines
+
+#### When Adding New Features
+1. Create new feature module in `Packages/Features/`
+2. Add necessary Kit dependencies
+3. Update main app to include new feature
+4. Add tests for new functionality
+
+#### When Refactoring
+1. Identify clear boundaries for new modules
+2. Move related functionality together
+3. Update dependencies carefully
+4. Test thoroughly after refactoring
+
+#### When Removing Features
+1. Remove feature module entirely
+2. Clean up any remaining references
+3. Update dependencies
+4. Remove unused Kit modules if appropriate
+
+### Implementation Checklist
+
+#### Before Creating a New Module
+- [ ] Identify clear module boundaries
+- [ ] Determine appropriate category (Feature/Kit/Shared)
+- [ ] Plan dependencies carefully
+- [ ] Design public API interface
+
+#### During Module Creation
+- [ ] Follow standard directory structure
+- [ ] Create proper Package.swift
+- [ ] Add comprehensive tests
+- [ ] Document public APIs
+- [ ] Add README.md
+
+#### After Module Creation
+- [ ] Verify no circular dependencies
+- [ ] Test module in isolation
+- [ ] Integrate with main app
+- [ ] Update documentation
+- [ ] Review with team## Agora iOS Project Structure Guidelines
+
+### Overview
+
+This rule defines the standard project structure for the Agora iOS app, following Swift Package Manager (SPM) modular architecture with clear separation of concerns. The structure supports iOS 26+, Swift 6.2, and SwiftUI 6 with a focus on maintainability, testability, and Apple design compliance.
+
+### Root Directory Structure
+
+```
+Agora/
+├── Agora.xcodeproj/           # Main Xcode project
+├── AgoraTests/                # Main app unit tests
+├── AgoraUITests/              # Main app UI tests
+├── Configs/                   # Build and configuration files
+├── docs/                      # Project documentation
+├── OpenAPI/                   # API specifications and generated code
+├── Packages/                  # Swift Package modules
+├── Resources/                 # App resources and main app files
+├── Scripts/                   # Build and utility scripts
+├── Tests/                     # Cross-module tests
+└── Package.swift              # Root package manifest
+```
+
+### Packages Directory Structure
+
+The `Packages/` directory contains all Swift Package modules organized into three main categories:
+
+#### Features (`Packages/Features/`)
+User-facing feature modules that represent distinct app functionality:
+
+```
+Features/
+├── Compose/                   # Post composition and media upload
+├── DMs/                       # Direct messaging
+├── HomeFollowing/             # Following feed (chronological)
+├── HomeForYou/                # For You feed (recommendations)
+├── Notifications/             # Push notifications and in-app alerts
+├── PostDetail/                # Individual post viewing
+├── Profile/                   # User profiles and settings
+├── Search/                    # People and content search
+└── Threading/                 # Reply threads and conversations
+```
+
+#### Kits (`Packages/Kits/`)
+Reusable functionality modules that provide specific capabilities:
+
+```
+Kits/
+├── Analytics/                 # PostHog analytics wrapper
+├── Auth/                      # Sign in with Apple + phone verification
+├── DesignSystem/              # UI components, colors, typography
+├── Media/                     # Image/video capture, processing, upload
+├── Moderation/                # Content moderation and reporting
+├── Networking/                # API client and network layer
+├── Persistence/               # SwiftData models and caching
+├── Recommender/               # Recommendation engine client
+└── Verification/              # Device attestation and anti-bot
+```
+
+#### Shared (`Packages/Shared/`)
+Cross-cutting concerns and shared utilities:
+
+```
+Shared/
+├── AppFoundation/             # Core app utilities and extensions
+└── TestSupport/               # Testing utilities and mocks
+```
+
+#### ThirdParty (`Packages/ThirdParty/`)
+Third-party SDK integrations:
+
+```
+ThirdParty/
+├── hCaptcha/                  # hCaptcha challenge SDK
+├── OneSignal/                 # Push notification service
+├── PostHog/                   # Analytics SDK
+└── Sentry/                    # Crash reporting SDK
+```
+
+### Package Structure Standards
+
+Each Swift Package must follow this exact structure:
+
+```
+PackageName/
+├── Package.swift              # Package manifest
+├── README.md                  # Package documentation
+├── Sources/
+│   └── PackageName/           # Source code (matches package name)
+│       ├── PackageName.swift  # Main public interface
+│       └── [other files]      # Implementation files
+└── Tests/
+    └── PackageNameTests/      # Test files
+        └── PackageNameTests.swift
+```
+
+### Package.swift Standards
+
+All packages must follow these conventions:
+
+#### Required Elements
+1. **Swift Tools Version**: Always use `6.2`
+2. **Platform**: Always specify `.iOS(.v18)`
+3. **Product Name**: Must match package directory name
+4. **Target Name**: Must match package directory name
+5. **Test Target**: Must be named `{PackageName}Tests`
+
+#### Dependency Guidelines
+- **Features** can depend on Kits and Shared modules
+- **Kits** can depend on other Kits and Shared modules
+- **Shared** modules should have minimal dependencies
+- **ThirdParty** modules should be self-contained
+- Use relative paths for local dependencies: `../../Kits/DesignSystem`
+
+#### Example Package.swift
+```swift
+// swift-tools-version: 6.2
+import PackageDescription
+
+let package = Package(
+    name: "PackageName",
+    platforms: [.iOS(.v18)],
+    products: [
+        .library(name: "PackageName", targets: ["PackageName"])
+    ],
+    dependencies: [
+        .package(path: "../../Kits/DesignSystem"),
+        .package(path: "../../Shared/AppFoundation")
+    ],
+    targets: [
+        .target(
+            name: "PackageName",
+            dependencies: ["DesignSystem", "AppFoundation"]
+        ),
+        .testTarget(
+            name: "PackageNameTests",
+            dependencies: ["PackageName"]
+        )
+    ]
+)
+```
+
+### File Naming Conventions
+
+#### Swift Files
+- **Views**: `{Feature}View.swift` (e.g., `ComposeView.swift`)
+- **ViewModels**: `{Feature}ViewModel.swift` (e.g., `ComposeViewModel.swift`)
+- **Models**: `{Feature}.swift` (e.g., `Compose.swift`)
+- **Services**: `{Service}Service.swift` (e.g., `AuthService.swift`)
+- **Extensions**: `{Type}+{Purpose}.swift` (e.g., `String+Validation.swift`)
+
+#### Resources
+- **Assets**: Use `.xcassets` bundles within package `Resources/` directory
+- **Localization**: Use `Localizable.strings` files
+- **Configuration**: Use `.plist` files for configuration
+
+### Module Dependencies
+
+#### Dependency Hierarchy
+```
+Features (top level)
+├── Kits (middle level)
+│   ├── DesignSystem (foundation)
+│   ├── Networking (foundation)
+│   ├── Auth (foundation)
+│   └── [other kits]
+└── Shared (foundation level)
+    ├── AppFoundation
+    └── TestSupport
+```
+
+#### Allowed Dependencies
+- **Features** → Kits, Shared
+- **Kits** → Other Kits, Shared
+- **Shared** → Minimal external dependencies only
+- **ThirdParty** → Self-contained, no internal dependencies
+
+### Testing Structure
+
+#### Test Organization
+- Each package has its own test target
+- Test files mirror source structure
+- Use `TestSupport` package for shared test utilities
+- Snapshot tests go in root `Tests/SnapshotTests/`
+- UI tests go in root `Tests/UITests/`
+
+#### Test Naming
+- Test classes: `{Feature}Tests`
+- Test methods: `test{Description}()`
+- Snapshot tests: `{Feature}Snapshots`
+
+### Configuration Files
+
+#### Build Configuration
+- **Debug.xcconfig** and **Release.xcconfig** in `Configs/Xcode/`
+- **swiftlint.yml** in `Configs/Lint/`
+- **Package.resolved** at root and in packages with external dependencies
+
+#### Scripts
+- Build scripts in `Scripts/` directory
+- Use `.sh` extension for shell scripts
+- Include proper error handling and logging
+
+### Resource Management
+
+#### App Resources (`Resources/`)
+- **AgoraApp.swift**: Main app entry point
+- **ContentView.swift**: Root view
+- **Assets.xcassets**: App-level assets
+- **Info.plist**: App configuration
+- **Secrets.plist**: Sensitive configuration (gitignored)
+- **Localizable.strings**: App-level strings
+
+#### Package Resources
+- Place package-specific resources in `Resources/` within each package
+- Use `.xcassets` for image assets
+- Follow Apple's resource naming conventions
+
+### Documentation Standards
+
+#### README Files
+Each package must include a `README.md` with:
+- Package purpose and functionality
+- Usage examples
+- Dependencies
+- Testing instructions
+
+#### Code Documentation
+- Use Swift documentation comments (`///`)
+- Document public APIs thoroughly
+- Include usage examples in complex functions
+- Follow Apple's documentation style
+
+### Best Practices
+
+#### Module Design
+1. **Single Responsibility**: Each module should have one clear purpose
+2. **Loose Coupling**: Minimize dependencies between modules
+3. **High Cohesion**: Related functionality should be grouped together
+4. **Clear Interfaces**: Expose only necessary public APIs
+
+#### Code Organization
+1. **File Size**: Keep files under 300 lines when possible
+2. **Naming**: Use descriptive, self-documenting names
+3. **Structure**: Group related functionality together
+4. **Imports**: Order imports alphabetically
+
+#### Performance Considerations
+1. **Lazy Loading**: Use lazy loading for heavy resources
+2. **Memory Management**: Follow Swift memory management best practices
+3. **Build Time**: Minimize unnecessary dependencies
+4. **Bundle Size**: Keep third-party dependencies minimal
+
+### Common Mistakes to Avoid
+
+#### Structural Issues
+- Don't create circular dependencies between modules
+- Don't put business logic in view files
+- Don't mix UI and data layer concerns
+- Don't create overly large modules
+
+#### Naming Issues
+- Don't use generic names like `Utils` or `Helpers`
+- Don't abbreviate unnecessarily
+- Don't use inconsistent naming patterns
+- Don't mix naming conventions
+
+#### Dependency Issues
+- Don't create unnecessary dependencies
+- Don't depend on implementation details
+- Don't create deep dependency chains
+- Don't ignore dependency direction
+
+### Migration Guidelines
+
+#### When Adding New Features
+1. Create new feature module in `Packages/Features/`
+2. Add necessary Kit dependencies
+3. Update main app to include new feature
+4. Add tests for new functionality
+
+#### When Refactoring
+1. Identify clear boundaries for new modules
+2. Move related functionality together
+3. Update dependencies carefully
+4. Test thoroughly after refactoring
+
+#### When Removing Features
+1. Remove feature module entirely
+2. Clean up any remaining references
+3. Update dependencies
+4. Remove unused Kit modules if appropriate
+
+### Implementation Checklist
+
+#### Before Creating a New Module
+- [ ] Identify clear module boundaries
+- [ ] Determine appropriate category (Feature/Kit/Shared)
+- [ ] Plan dependencies carefully
+- [ ] Design public API interface
+
+#### During Module Creation
+- [ ] Follow standard directory structure
+- [ ] Create proper Package.swift
+- [ ] Add comprehensive tests
+- [ ] Document public APIs
+- [ ] Add README.md
+
+#### After Module Creation
+- [ ] Verify no circular dependencies
+- [ ] Test module in isolation
+- [ ] Integrate with main app
+- [ ] Update documentation
+- [ ] Review with team

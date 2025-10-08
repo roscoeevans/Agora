@@ -1,0 +1,721 @@
+---
+description: When creating UI, or designing the user experience.
+alwaysApply: false
+---
+## Apple-Style UI/UX Design for Agora
+
+### Overview
+
+This rule ensures Agora feels like an Apple product by adopting Apple's latest design language, interaction patterns, and tone. It covers visual aesthetics, interactions, motion design, and voice to create an "instantly familiar" experience for iPhone users using iOS 26's Liquid Glass design and SwiftUI 6.2.
+
+### Visual Aesthetics & Layout
+
+#### Clarity & Minimalism
+1. **Keep screens uncluttered and intuitive**
+   - Include only essential elements to avoid overwhelming users
+   - Use clear labels (no cryptic jargon) and familiar symbols
+   - Favor simple backgrounds (solid colors or subtle blurs) that let content pop
+   - When in doubt, simplify
+
+2. **Defer to content**
+   - Let content (posts, images, etc.) take center stage
+   - Use translucency and blurs for overlays to create depth without boxing in content
+   - UI controls should stay out of the way until needed
+   - Auto-hide toolbar buttons on scroll or use subtle indicators
+
+3. **Create depth with subtle layers**
+   - Use overlays, modals, and popovers that visually sit above main content
+   - Apply gentle drop shadows or contrast to show hierarchy
+   - Use system-provided materials (`.ultraThinMaterial` in SwiftUI)
+   - Keep effects subtle and consistent with iOS's light, airy feel
+
+#### Color and SF Symbols
+1. **Use Apple's proven color conventions**
+   - System accent color (default blue) for primary actions
+   - Reserve red for destructive actions or errors
+   - Ensure high contrast between text/icons and backgrounds
+   - Support both light and dark mode
+
+2. **Leverage SF Symbols for icons**
+   - Use Apple's extensive iconography library instead of custom graphics
+   - SF Symbols automatically match Apple visual style and adapt to weight/scale
+   - Use consistent icon weights and sizes
+   - Don't mix wildly different icon styles or off-brand colors
+
+#### Typography & System Fonts
+1. **Use Apple's system font San Francisco**
+   - Take advantage of Dynamic Type for text size adjustments
+   - Titles and headings should be bold or semibold
+   - Body text regular with hierarchy through size and weight
+   - Avoid ultra-thin or light font weights that harm readability
+   - Maintain minimum 11pt font size for body text
+
+2. **Proper text hierarchy**
+   - Use built-in font styles (Title, Headline, Body, Footnote, etc.)
+   - Let text breathe with sufficient line spacing and padding
+   - Use multi-line labels or adaptive layouts instead of truncating
+   - Don't cram text or use decorative fonts
+
+#### Layout & Spacing
+1. **Follow Apple's grid and spacing conventions**
+   - Use 8-point or 4-point grid for spacing increments
+   - Standard margins (e.g. 16pt padding from screen edges)
+   - Ensure all UI elements are neatly aligned
+   - Use SwiftUI's stacks or UIKit Auto Layout guides
+
+2. **Content visibility and safe areas**
+   - Ensure primary content is visible without horizontal scrolling
+   - Keep important actions in safe areas (not hidden under notch)
+   - Group related items together with section headers or separators
+   - Don't place elements arbitrarily or edge-to-edge without padding
+
+#### Liquid Glass (iOS 26 Design)
+1. **Embrace iOS 26's Liquid Glass aesthetic**
+   - Use translucent glass materials for navigation bars, tab bars, toolbars
+   - Apply `.glassEffect()` view modifier to custom views for floating panels
+   - Use glass effects for containers that float above content
+   - Don't overuse on every element - keep to top-level UI elements
+
+2. **Proper glass implementation**
+   - Avoid stacking multiple translucent layers
+   - Ensure clear separation between glass panels and content beneath
+   - Consider dimming background when glass modal is up
+   - Use tint sparingly for emphasis, not every element
+
+### Interaction & Navigation
+
+#### Familiar Navigation Patterns
+1. **Use standard iOS navigation structures**
+   - Tab bar at bottom for primary sections (Home, Search, Notifications, Profile)
+   - Keep tab bar visible for quick switching
+   - Navigation bar at top for titles and contextual actions
+   - Include standard Back button or support edge-swipe gesture
+
+2. **Follow Human Interface Guidelines**
+   - Nav bar titles should be succinct and centered
+   - Use large titles on primary screens for bold look
+   - Don't deviate with unconventional navigation
+   - Any iOS user should know how to navigate without tutorial
+
+#### Native Controls & Gestures
+1. **Use Apple's built-in interaction patterns**
+   - Pull-to-refresh, swipe actions on list items
+   - Share sheets, action menus, context menus
+   - Universal "swipe right to go back" gesture
+   - System Share sheet for sharing content
+
+2. **Leverage UIKit/SwiftUI components**
+   - Use UISearchBar or SwiftUI SearchBar for searching
+   - Use UISwitch or Toggle for on/off settings
+   - Don't override standard gestures in non-standard ways
+   - Preserve global iOS gestures (Control Center, Notification Center)
+
+#### Touch Target Size & Ergonomics
+1. **Ensure comfortable touch targets**
+   - Minimum 44×44 points for all tappable controls
+   - Even small icons should have sufficient tappable padding
+   - Place interactive elements where easy to reach with one hand
+   - Use safe area insets to keep content away from device edges
+
+2. **Test on different iPhone sizes**
+   - Ensure buttons aren't too small or menus too hard to reach
+   - Don't require precision clicking or tiny text links
+   - Present important actions as prominent buttons or obvious icons
+
+#### Responsive Feedback
+1. **Provide immediate and clear feedback**
+   - Buttons should highlight briefly when tapped
+   - Show spinner or progress indicator for time-consuming actions
+   - Use subtle haptic feedback for certain interactions
+   - Use built-in UIFeedbackGenerator for haptics
+
+2. **Visual and auditory feedback**
+   - Cell briefly highlighting on selection
+   - Menu item showing checkmark when activated
+   - Soft "click" sound on camera shutter or send
+   - Keep feedback brief and subtle
+
+#### Error Prevention & Recovery
+1. **Design to prevent errors**
+   - Use confirmations for destructive actions
+   - Implement soft deletes where possible
+   - Use inline validation and hints
+   - Present friendly error messages in plain language
+
+2. **Make recovery easy**
+   - Place error messages near relevant UI area
+   - Use encouraging, solution-oriented tone
+   - Don't blame the user in messaging
+   - Provide clear call-to-action to fix or retry
+
+### Motion & Animation
+
+#### Subtle, Purposeful Animations
+1. **Animate changes to help user understanding**
+   - Fade in or slide new posts gently into place
+   - Animate transitions between screens
+   - Use SwiftUI's animation modifiers (`.animation` with `.easeInOut` or `.spring()`)
+   - Keep animations brief and to the point
+
+2. **Avoid jarring or lengthy animations**
+   - No slow flourishes that frustrate users
+   - Don't sacrifice clarity for animation
+   - Test if animation actually improves understanding
+
+#### Fluid & Contextual Transitions
+1. **Maintain continuity between screens**
+   - Use cohesive transitions that visually tie views together
+   - Stick with Apple's built-in navigation animations
+   - Use coordinated animations for interactive gestures
+   - Don't flash content abruptly or shuffle layout
+
+2. **Contextual animation examples**
+   - Profile picture morphing into profile screen
+   - Image shrinking and fading while following finger swipe
+   - Tiny fade or slide for new comments
+
+#### Micro-Interactions
+1. **Add delightful flourishes tastefully**
+   - Heart icon filling with quick pop on like
+   - Gentle bounce on pull-to-refresh
+   - Shining highlight on new message indicator
+   - Keep micro-animations fast and unobtrusive
+
+2. **Use sparingly and appropriately**
+   - One or two well-placed playful touches
+   - Don't make UI chaotic or noisy
+   - Test if animation improves emotion or understanding
+
+#### Performance & Responsiveness
+1. **Maintain 60 FPS (120 FPS on ProMotion)**
+   - Optimize code for smooth transitions
+   - Use SwiftUI's efficient rendering
+   - Prefer simpler techniques if heavy effects cause dropped frames
+   - Use lazy loading for images
+
+2. **Ensure responsiveness**
+   - Touch input immediately followed by output
+   - Don't block main thread during animations
+   - Let users interrupt or skip animations
+   - Always respond to new touches
+
+#### Haptic & Spatial Feedback
+1. **Use appropriate haptic feedback**
+   - Light tap when view snaps into place
+   - Success haptic for confirmations
+   - Match haptic type to action intensity
+   - Don't use haptics excessively
+
+2. **Consider spatial audio**
+   - Small, gentle sounds on send or receive
+   - Follow system sound style
+   - Keep sounds optional and respect silent mode
+
+#### Respect User Settings
+1. **Adapt to accessibility preferences**
+   - Check for Reduce Motion setting
+   - Use cross-fade transitions instead of big moves
+   - Remove extra flourish when motion is reduced
+   - Test with accessibility settings enabled
+
+2. **Support other accessibility features**
+   - Increase Contrast mode
+   - Reduce Transparency mode
+   - Ensure UI remains pleasant and usable
+
+### Language & Tone (Apple's Voice)
+
+#### Clear and Direct Communication
+1. **Use plain language**
+   - Say "Edit Profile" instead of "Modify user configuration"
+   - Choose common words over jargon
+   - Keep sentences short and focused on single idea
+   - Favor active voice ("Agora saved your post" vs "Your post was saved")
+
+2. **Omit needless words**
+   - Check every word and remove unnecessary ones
+   - If you can say it with fewer words, do so
+   - Read copy aloud - it should sound natural and clear
+
+#### Consistent Voice
+1. **Define and stick to Agora's voice**
+   - Friendly but not goofy
+   - Helpful but not condescending
+   - Confident but not arrogant
+   - Pick one style and enforce it consistently
+
+2. **Make style choices and enforce them**
+   - Decide on "you" vs "my" perspective and stick to it
+   - Choose Title Case or sentence case consistently
+   - Create terminology guide (Posts vs Threads vs Updates)
+   - Use same phrasing for common actions
+
+#### Context-Aware Tone
+1. **Match tone to user's situation**
+   - Neutral for errors: "Couldn't send. Please check your connection."
+   - Congratulatory for achievements: "Congratulations! You reached 1000 followers 🎉"
+   - Cautionary for risky actions: "Are you sure you want to delete your account?"
+   - Warm and encouraging for new users: "Welcome! Let's get started."
+
+2. **Avoid inappropriate tone**
+   - Don't use humor at wrong time (server errors)
+   - Don't make cutesy jokes in serious contexts
+   - Match user's emotional state
+
+#### Action-Oriented Wording
+1. **Use verbs for clear calls to action**
+   - "Edit", "Send", "Delete Post" instead of abstract terms
+   - Use descriptive labels for every interactive element
+   - Guide users with clear next steps
+
+2. **Avoid vague or clever phrases**
+   - No "Click here" or overly clever action labels
+   - Don't sacrifice clarity for cuteness
+   - Keep labels straightforward and helpful
+
+#### Inclusive & Accessible Language
+1. **Write for all users**
+   - Avoid slang, culturally specific jokes, or gendered language
+   - Use non-gendered terms ("they" instead of "he/she")
+   - Use considerate language ("hidden" vs "blacklisted")
+   - Write for localization from the start
+
+2. **Be respectful and professional**
+   - Error messages blame app/situation, not user
+   - Use encouraging, solution-oriented tone
+   - Make users feel welcome and supported
+
+#### Microcopy & Helpfulness
+1. **Guide users with small text**
+   - Empty timeline: "No posts yet – follow someone or create a post to get started."
+   - Use empty states to educate or encourage action
+   - Keep text concise and positive
+   - Offer "Learn more" links for additional info
+
+2. **Avoid placeholder text**
+   - No "lorem ipsum" in live interface
+   - Every string should feel considered
+   - Don't overwhelm with long explanations
+
+### Implementation Checklist
+
+#### Visual Design
+- [ ] Use SF Symbols for all icons
+- [ ] Implement proper color hierarchy (accent, destructive, etc.)
+- [ ] Support both light and dark modes
+- [ ] Use system fonts with proper hierarchy
+- [ ] Follow 8-point grid for spacing
+- [ ] Implement Liquid Glass effects appropriately
+- [ ] Ensure content is visible in safe areas
+
+#### Interactions
+- [ ] Use standard navigation patterns (tab bar, nav bar)
+- [ ] Implement native gestures and controls
+- [ ] Ensure 44×44pt minimum touch targets
+- [ ] Provide immediate feedback for all actions
+- [ ] Use haptic feedback appropriately
+- [ ] Handle errors gracefully with clear messaging
+
+#### Motion Design
+- [ ] Animate state changes and transitions
+- [ ] Maintain 60 FPS performance
+- [ ] Respect Reduce Motion setting
+- [ ] Use micro-interactions tastefully
+- [ ] Test on different device sizes
+
+#### Voice & Tone
+- [ ] Use clear, direct language
+- [ ] Maintain consistent voice throughout app
+- [ ] Match tone to context appropriately
+- [ ] Write action-oriented copy
+- [ ] Use inclusive, accessible language
+- [ ] Provide helpful microcopy and empty states
+
+### Common Mistakes to Avoid
+
+#### Visual Design
+- Don't overuse Liquid Glass effects
+- Don't mix different icon styles
+- Don't use ultra-thin fonts for small text
+- Don't ignore safe area constraints
+- Don't create cluttered interfaces
+
+#### Interactions
+- Don't override standard iOS gestures
+- Don't use tiny touch targets
+- Don't provide delayed or unclear feedback
+- Don't blame users in error messages
+- Don't require complex navigation patterns
+
+#### Motion Design
+- Don't use jarring or lengthy animations
+- Don't sacrifice performance for effects
+- Don't ignore accessibility settings
+- Don't overuse micro-interactions
+- Don't block user input during animations
+
+#### Voice & Tone
+- Don't use jargon or technical terms
+- Don't be inconsistent with terminology
+- Don't use inappropriate tone for context
+- Don't write vague or clever copy
+- Don't use placeholder text in production
+
+## Apple-Style UI/UX Design for Agora
+
+### Overview
+
+This rule ensures Agora feels like an Apple product by adopting Apple's latest design language, interaction patterns, and tone. It covers visual aesthetics, interactions, motion design, and voice to create an "instantly familiar" experience for iPhone users using iOS 26's Liquid Glass design and SwiftUI 6.2.
+
+### Visual Aesthetics & Layout
+
+#### Clarity & Minimalism
+1. **Keep screens uncluttered and intuitive**
+   - Include only essential elements to avoid overwhelming users
+   - Use clear labels (no cryptic jargon) and familiar symbols
+   - Favor simple backgrounds (solid colors or subtle blurs) that let content pop
+   - When in doubt, simplify
+
+2. **Defer to content**
+   - Let content (posts, images, etc.) take center stage
+   - Use translucency and blurs for overlays to create depth without boxing in content
+   - UI controls should stay out of the way until needed
+   - Auto-hide toolbar buttons on scroll or use subtle indicators
+
+3. **Create depth with subtle layers**
+   - Use overlays, modals, and popovers that visually sit above main content
+   - Apply gentle drop shadows or contrast to show hierarchy
+   - Use system-provided materials (`.ultraThinMaterial` in SwiftUI)
+   - Keep effects subtle and consistent with iOS's light, airy feel
+
+#### Color and SF Symbols
+1. **Use Apple's proven color conventions**
+   - System accent color (default blue) for primary actions
+   - Reserve red for destructive actions or errors
+   - Ensure high contrast between text/icons and backgrounds
+   - Support both light and dark mode
+
+2. **Leverage SF Symbols for icons**
+   - Use Apple's extensive iconography library instead of custom graphics
+   - SF Symbols automatically match Apple visual style and adapt to weight/scale
+   - Use consistent icon weights and sizes
+   - Don't mix wildly different icon styles or off-brand colors
+
+#### Typography & System Fonts
+1. **Use Apple's system font San Francisco**
+   - Take advantage of Dynamic Type for text size adjustments
+   - Titles and headings should be bold or semibold
+   - Body text regular with hierarchy through size and weight
+   - Avoid ultra-thin or light font weights that harm readability
+   - Maintain minimum 11pt font size for body text
+
+2. **Proper text hierarchy**
+   - Use built-in font styles (Title, Headline, Body, Footnote, etc.)
+   - Let text breathe with sufficient line spacing and padding
+   - Use multi-line labels or adaptive layouts instead of truncating
+   - Don't cram text or use decorative fonts
+
+#### Layout & Spacing
+1. **Follow Apple's grid and spacing conventions**
+   - Use 8-point or 4-point grid for spacing increments
+   - Standard margins (e.g. 16pt padding from screen edges)
+   - Ensure all UI elements are neatly aligned
+   - Use SwiftUI's stacks or UIKit Auto Layout guides
+
+2. **Content visibility and safe areas**
+   - Ensure primary content is visible without horizontal scrolling
+   - Keep important actions in safe areas (not hidden under notch)
+   - Group related items together with section headers or separators
+   - Don't place elements arbitrarily or edge-to-edge without padding
+
+#### Liquid Glass (iOS 26 Design)
+1. **Embrace iOS 26's Liquid Glass aesthetic**
+   - Use translucent glass materials for navigation bars, tab bars, toolbars
+   - Apply `.glassEffect()` view modifier to custom views for floating panels
+   - Use glass effects for containers that float above content
+   - Don't overuse on every element - keep to top-level UI elements
+
+2. **Proper glass implementation**
+   - Avoid stacking multiple translucent layers
+   - Ensure clear separation between glass panels and content beneath
+   - Consider dimming background when glass modal is up
+   - Use tint sparingly for emphasis, not every element
+
+### Interaction & Navigation
+
+#### Familiar Navigation Patterns
+1. **Use standard iOS navigation structures**
+   - Tab bar at bottom for primary sections (Home, Search, Notifications, Profile)
+   - Keep tab bar visible for quick switching
+   - Navigation bar at top for titles and contextual actions
+   - Include standard Back button or support edge-swipe gesture
+
+2. **Follow Human Interface Guidelines**
+   - Nav bar titles should be succinct and centered
+   - Use large titles on primary screens for bold look
+   - Don't deviate with unconventional navigation
+   - Any iOS user should know how to navigate without tutorial
+
+#### Native Controls & Gestures
+1. **Use Apple's built-in interaction patterns**
+   - Pull-to-refresh, swipe actions on list items
+   - Share sheets, action menus, context menus
+   - Universal "swipe right to go back" gesture
+   - System Share sheet for sharing content
+
+2. **Leverage UIKit/SwiftUI components**
+   - Use UISearchBar or SwiftUI SearchBar for searching
+   - Use UISwitch or Toggle for on/off settings
+   - Don't override standard gestures in non-standard ways
+   - Preserve global iOS gestures (Control Center, Notification Center)
+
+#### Touch Target Size & Ergonomics
+1. **Ensure comfortable touch targets**
+   - Minimum 44×44 points for all tappable controls
+   - Even small icons should have sufficient tappable padding
+   - Place interactive elements where easy to reach with one hand
+   - Use safe area insets to keep content away from device edges
+
+2. **Test on different iPhone sizes**
+   - Ensure buttons aren't too small or menus too hard to reach
+   - Don't require precision clicking or tiny text links
+   - Present important actions as prominent buttons or obvious icons
+
+#### Responsive Feedback
+1. **Provide immediate and clear feedback**
+   - Buttons should highlight briefly when tapped
+   - Show spinner or progress indicator for time-consuming actions
+   - Use subtle haptic feedback for certain interactions
+   - Use built-in UIFeedbackGenerator for haptics
+
+2. **Visual and auditory feedback**
+   - Cell briefly highlighting on selection
+   - Menu item showing checkmark when activated
+   - Soft "click" sound on camera shutter or send
+   - Keep feedback brief and subtle
+
+#### Error Prevention & Recovery
+1. **Design to prevent errors**
+   - Use confirmations for destructive actions
+   - Implement soft deletes where possible
+   - Use inline validation and hints
+   - Present friendly error messages in plain language
+
+2. **Make recovery easy**
+   - Place error messages near relevant UI area
+   - Use encouraging, solution-oriented tone
+   - Don't blame the user in messaging
+   - Provide clear call-to-action to fix or retry
+
+### Motion & Animation
+
+#### Subtle, Purposeful Animations
+1. **Animate changes to help user understanding**
+   - Fade in or slide new posts gently into place
+   - Animate transitions between screens
+   - Use SwiftUI's animation modifiers (`.animation` with `.easeInOut` or `.spring()`)
+   - Keep animations brief and to the point
+
+2. **Avoid jarring or lengthy animations**
+   - No slow flourishes that frustrate users
+   - Don't sacrifice clarity for animation
+   - Test if animation actually improves understanding
+
+#### Fluid & Contextual Transitions
+1. **Maintain continuity between screens**
+   - Use cohesive transitions that visually tie views together
+   - Stick with Apple's built-in navigation animations
+   - Use coordinated animations for interactive gestures
+   - Don't flash content abruptly or shuffle layout
+
+2. **Contextual animation examples**
+   - Profile picture morphing into profile screen
+   - Image shrinking and fading while following finger swipe
+   - Tiny fade or slide for new comments
+
+#### Micro-Interactions
+1. **Add delightful flourishes tastefully**
+   - Heart icon filling with quick pop on like
+   - Gentle bounce on pull-to-refresh
+   - Shining highlight on new message indicator
+   - Keep micro-animations fast and unobtrusive
+
+2. **Use sparingly and appropriately**
+   - One or two well-placed playful touches
+   - Don't make UI chaotic or noisy
+   - Test if animation improves emotion or understanding
+
+#### Performance & Responsiveness
+1. **Maintain 60 FPS (120 FPS on ProMotion)**
+   - Optimize code for smooth transitions
+   - Use SwiftUI's efficient rendering
+   - Prefer simpler techniques if heavy effects cause dropped frames
+   - Use lazy loading for images
+
+2. **Ensure responsiveness**
+   - Touch input immediately followed by output
+   - Don't block main thread during animations
+   - Let users interrupt or skip animations
+   - Always respond to new touches
+
+#### Haptic & Spatial Feedback
+1. **Use appropriate haptic feedback**
+   - Light tap when view snaps into place
+   - Success haptic for confirmations
+   - Match haptic type to action intensity
+   - Don't use haptics excessively
+
+2. **Consider spatial audio**
+   - Small, gentle sounds on send or receive
+   - Follow system sound style
+   - Keep sounds optional and respect silent mode
+
+#### Respect User Settings
+1. **Adapt to accessibility preferences**
+   - Check for Reduce Motion setting
+   - Use cross-fade transitions instead of big moves
+   - Remove extra flourish when motion is reduced
+   - Test with accessibility settings enabled
+
+2. **Support other accessibility features**
+   - Increase Contrast mode
+   - Reduce Transparency mode
+   - Ensure UI remains pleasant and usable
+
+### Language & Tone (Apple's Voice)
+
+#### Clear and Direct Communication
+1. **Use plain language**
+   - Say "Edit Profile" instead of "Modify user configuration"
+   - Choose common words over jargon
+   - Keep sentences short and focused on single idea
+   - Favor active voice ("Agora saved your post" vs "Your post was saved")
+
+2. **Omit needless words**
+   - Check every word and remove unnecessary ones
+   - If you can say it with fewer words, do so
+   - Read copy aloud - it should sound natural and clear
+
+#### Consistent Voice
+1. **Define and stick to Agora's voice**
+   - Friendly but not goofy
+   - Helpful but not condescending
+   - Confident but not arrogant
+   - Pick one style and enforce it consistently
+
+2. **Make style choices and enforce them**
+   - Decide on "you" vs "my" perspective and stick to it
+   - Choose Title Case or sentence case consistently
+   - Create terminology guide (Posts vs Threads vs Updates)
+   - Use same phrasing for common actions
+
+#### Context-Aware Tone
+1. **Match tone to user's situation**
+   - Neutral for errors: "Couldn't send. Please check your connection."
+   - Congratulatory for achievements: "Congratulations! You reached 1000 followers 🎉"
+   - Cautionary for risky actions: "Are you sure you want to delete your account?"
+   - Warm and encouraging for new users: "Welcome! Let's get started."
+
+2. **Avoid inappropriate tone**
+   - Don't use humor at wrong time (server errors)
+   - Don't make cutesy jokes in serious contexts
+   - Match user's emotional state
+
+#### Action-Oriented Wording
+1. **Use verbs for clear calls to action**
+   - "Edit", "Send", "Delete Post" instead of abstract terms
+   - Use descriptive labels for every interactive element
+   - Guide users with clear next steps
+
+2. **Avoid vague or clever phrases**
+   - No "Click here" or overly clever action labels
+   - Don't sacrifice clarity for cuteness
+   - Keep labels straightforward and helpful
+
+#### Inclusive & Accessible Language
+1. **Write for all users**
+   - Avoid slang, culturally specific jokes, or gendered language
+   - Use non-gendered terms ("they" instead of "he/she")
+   - Use considerate language ("hidden" vs "blacklisted")
+   - Write for localization from the start
+
+2. **Be respectful and professional**
+   - Error messages blame app/situation, not user
+   - Use encouraging, solution-oriented tone
+   - Make users feel welcome and supported
+
+#### Microcopy & Helpfulness
+1. **Guide users with small text**
+   - Empty timeline: "No posts yet – follow someone or create a post to get started."
+   - Use empty states to educate or encourage action
+   - Keep text concise and positive
+   - Offer "Learn more" links for additional info
+
+2. **Avoid placeholder text**
+   - No "lorem ipsum" in live interface
+   - Every string should feel considered
+   - Don't overwhelm with long explanations
+
+### Implementation Checklist
+
+#### Visual Design
+- [ ] Use SF Symbols for all icons
+- [ ] Implement proper color hierarchy (accent, destructive, etc.)
+- [ ] Support both light and dark modes
+- [ ] Use system fonts with proper hierarchy
+- [ ] Follow 8-point grid for spacing
+- [ ] Implement Liquid Glass effects appropriately
+- [ ] Ensure content is visible in safe areas
+
+#### Interactions
+- [ ] Use standard navigation patterns (tab bar, nav bar)
+- [ ] Implement native gestures and controls
+- [ ] Ensure 44×44pt minimum touch targets
+- [ ] Provide immediate feedback for all actions
+- [ ] Use haptic feedback appropriately
+- [ ] Handle errors gracefully with clear messaging
+
+#### Motion Design
+- [ ] Animate state changes and transitions
+- [ ] Maintain 60 FPS performance
+- [ ] Respect Reduce Motion setting
+- [ ] Use micro-interactions tastefully
+- [ ] Test on different device sizes
+
+#### Voice & Tone
+- [ ] Use clear, direct language
+- [ ] Maintain consistent voice throughout app
+- [ ] Match tone to context appropriately
+- [ ] Write action-oriented copy
+- [ ] Use inclusive, accessible language
+- [ ] Provide helpful microcopy and empty states
+
+### Common Mistakes to Avoid
+
+#### Visual Design
+- Don't overuse Liquid Glass effects
+- Don't mix different icon styles
+- Don't use ultra-thin fonts for small text
+- Don't ignore safe area constraints
+- Don't create cluttered interfaces
+
+#### Interactions
+- Don't override standard iOS gestures
+- Don't use tiny touch targets
+- Don't provide delayed or unclear feedback
+- Don't blame users in error messages
+- Don't require complex navigation patterns
+
+#### Motion Design
+- Don't use jarring or lengthy animations
+- Don't sacrifice performance for effects
+- Don't ignore accessibility settings
+- Don't overuse micro-interactions
+- Don't block user input during animations
+
+#### Voice & Tone
+- Don't use jargon or technical terms
+- Don't be inconsistent with terminology
+- Don't use inappropriate tone for context
+- Don't write vague or clever copy
+- Don't use placeholder text in production

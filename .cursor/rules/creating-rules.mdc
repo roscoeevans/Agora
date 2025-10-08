@@ -1,0 +1,127 @@
+---
+description: Use this rule when creating new rules, or updating existing rules. This ensures all .mdc files follow the same structure and formatting conventions. The rule is valuable for onboarding new developers who need to understand how to write effective Cursor rules, as it provides clear templates and examples for different types of rules (process, structure, style, testing, and documentation). It's also helpful for maintaining code quality standards by establishing best practices for rule creation, including proper frontmatter, markdown formatting, and content organization.
+alwaysApply: false
+---
+
+## Cursor .mdc Rule File Guidelines
+
+### Overview
+
+This rule defines the standard format and best practices for creating `.mdc` rule files in Cursor IDE. These rules help maintain consistency, improve code quality, and provide clear guidance for development tasks.
+
+### Content Structure
+
+#### Header Requirements
+- Start with a level-2 header (`##`) for the main title
+- Use level-3 headers (`###`) for major sections
+- Include a brief overview paragraph explaining the rule's purpose
+- Break down instructions into clear, numbered steps
+
+#### Markdown Formatting
+```markdown
+## Main Title
+
+### Section
+
+Brief overview paragraph
+
+1. **Step Title**
+   - Detail point
+   - Detail point
+```
+
+### Code Examples
+
+#### Syntax Requirements
+- Use proper code block syntax with language specification
+- Include real examples when possible
+- Comment code blocks when needed
+
+```markdown
+```bash
+your-command-here
+```
+```
+
+### Best Practices
+
+#### Rule Creation
+1. **Description Field (CRITICAL)**
+   - **This is the most important field** - it determines when the AI agent will reference the rule
+   - Describe specific tasks, scenarios, or contexts where the rule should be applied
+   - Use clear, actionable language that helps the AI understand when to use the rule
+   - Focus on specific use cases rather than broad, vague descriptions
+   - Examples: "When building iOS apps" vs "When implementing SwiftUI views, handling user interactions, or debugging layout issues"
+
+#### Writing Effective Descriptions
+- **Be specific about triggers**: What exact tasks, file types, or scenarios should activate this rule?
+- **Use action words**: "When creating", "When debugging", "When refactoring", "When testing"
+- **Include context**: Mention relevant technologies, file types, or project areas
+- **Avoid vague terms**: Don't use "general development" or "various tasks"
+- **Test your description**: Ask yourself "Would an AI agent know exactly when to use this rule?"
+
+2. **Content Organization**
+   - Include troubleshooting sections when relevant
+   - Keep rules focused and atomic
+   - Update rules when processes change
+
+3. **Rule Types**
+   - **Process Rules**: How to perform specific tasks
+   - **Structure Rules**: How to organize code/files
+   - **Style Rules**: How to format code
+   - **Testing Rules**: How to write/run tests
+   - **Documentation Rules**: How to document code
+
+### Maintenance Guidelines
+
+#### Regular Updates
+1. **Review Process**
+   - Review rules periodically for accuracy
+   - Remove outdated rules
+   - Update rules when tools or processes change
+   - Ensure rules remain consistent with project standards
+
+2. **Version Control**
+   - Track changes to rule files
+   - Document significant updates
+   - Maintain rule file history
+
+### Common Mistakes to Avoid
+
+#### Critical Errors
+1. **File Format Issues**
+   - **Not including a description (renders rule completely useless by Cursor)**
+   - **Writing vague descriptions that don't help the AI agent know when to use the rule**
+   - Using `.md` instead of `.mdc` extension
+   - Omitting frontmatter
+
+2. **Content Problems**
+   - Including unnecessary build artifacts or temp files
+   - Making rules too broad or vague
+   - Duplicating rules across multiple files
+
+3. **Structure Issues**
+   - Poor organization of content
+   - Missing code examples
+   - Unclear instructions
+
+### Implementation Checklist
+
+#### Before Creating a Rule
+- [ ] Identify specific use case or scenario
+- [ ] Determine rule type (process, structure, style, testing, documentation)
+- [ ] Gather relevant examples and code snippets
+- [ ] Plan clear, actionable steps
+
+#### During Rule Creation
+- [ ] Include proper frontmatter with description
+- [ ] Use correct `.mdc` extension
+- [ ] Structure content with appropriate headers
+- [ ] Include code examples with proper syntax highlighting
+- [ ] Add troubleshooting section if relevant
+
+#### After Rule Creation
+- [ ] Test rule effectiveness
+- [ ] Review for clarity and completeness
+- [ ] Update project documentation if needed
+- [ ] Share with team for feedback

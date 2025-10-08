@@ -1,0 +1,265 @@
+openapi: 3.0.3
+info:
+  title: Agora API
+  description: Human-only social platform API
+  version: 1.0.0
+  contact:
+    name: Agora Team
+    email: api@agora.app
+
+servers:
+  - url: https://api.agora.app/v1
+    description: Production server
+  - url: https://staging-api.agora.app/v1
+    description: Staging server
+
+paths:
+  /auth/swa/begin:
+    post:
+      summary: Begin Sign in with Apple flow
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SWABeginRequest'
+      responses:
+        '200':
+          description: Apple authentication URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SWABeginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/swa/finish:
+    post:
+      summary: Complete Sign in with Apple flow
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SWAFinishRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /feed/for-you:
+    get:
+      summary: Get For You feed
+      tags: [Feed]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          description: Pagination cursor
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of posts to return
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        '200':
+          description: Feed posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SWABeginRequest:
+      type: object
+      required:
+        - nonce
+      properties:
+        nonce:
+          type: string
+          description: Random nonce for security
+
+    SWABeginResponse:
+      type: object
+      required:
+        - authUrl
+      properties:
+        authUrl:
+          type: string
+          format: uri
+          description: Apple authentication URL
+
+    SWAFinishRequest:
+      type: object
+      required:
+        - identityToken
+        - authorizationCode
+      properties:
+        identityToken:
+          type: string
+          description: Apple identity token
+        authorizationCode:
+          type: string
+          description: Apple authorization code
+
+    AuthResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - user
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token
+        refreshToken:
+          type: string
+          description: JWT refresh token
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      required:
+        - id
+        - handle
+        - displayName
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        handle:
+          type: string
+          pattern: '^[a-z0-9_]{3,15}$'
+        displayName:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+
+    Post:
+      type: object
+      required:
+        - id
+        - authorId
+        - text
+        - createdAt
+      properties:
+        id:
+          type: string
+        authorId:
+          type: string
+          format: uuid
+        text:
+          type: string
+          maxLength: 70
+        linkUrl:
+          type: string
+          format: uri
+        mediaBundleId:
+          type: string
+        replyToPostId:
+          type: string
+        quotePostId:
+          type: string
+        likeCount:
+          type: integer
+          minimum: 0
+        repostCount:
+          type: integer
+          minimum: 0
+        replyCount:
+          type: integer
+          minimum: 0
+        visibility:
+          type: string
+          enum: [public, followers, private]
+        createdAt:
+          type: string
+          format: date-time
+
+    FeedResponse:
+      type: object
+      required:
+        - posts
+        - nextCursor
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        nextCursor:
+          type: string
+          nullable: true
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
