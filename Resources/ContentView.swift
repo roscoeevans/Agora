@@ -12,6 +12,7 @@ import Notifications
 import Profile
 import DMs
 import DesignSystem
+import AppFoundation
 
 struct ContentView: View {
     @State private var selectedTab = 0
@@ -61,6 +62,11 @@ struct ContentView: View {
         .onAppear {
             // Configure dark mode as default using design system
             DesignSystem.configureDarkModeAsDefault()
+            
+            // Quick test - verify environment configuration
+            print("🌍 Environment: \(EnvironmentConfig.environmentName)")
+            print("🔗 API URL: \(EnvironmentConfig.apiBaseURL)")
+            print("📝 Logging: \(EnvironmentConfig.isLoggingEnabled)")
         }
     }
 }

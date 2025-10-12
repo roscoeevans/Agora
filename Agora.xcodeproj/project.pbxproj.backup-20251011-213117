@@ -1,0 +1,1414 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		310C73B62E962CCF00AA5C35 /* Home in Frameworks */ = {isa = PBXBuildFile; productRef = Home /* Home */; };
+		310C73B72E962CCF00AA5C35 /* HomeForYou in Frameworks */ = {isa = PBXBuildFile; productRef = HomeForYou /* HomeForYou */; };
+		310C73B82E962CCF00AA5C35 /* HomeFollowing in Frameworks */ = {isa = PBXBuildFile; productRef = HomeFollowing /* HomeFollowing */; };
+		310C73B92E962CCF00AA5C35 /* Compose in Frameworks */ = {isa = PBXBuildFile; productRef = Compose /* Compose */; };
+		310C73BA2E962CCF00AA5C35 /* PostDetail in Frameworks */ = {isa = PBXBuildFile; productRef = PostDetail /* PostDetail */; };
+		310C73BB2E962CCF00AA5C35 /* Threading in Frameworks */ = {isa = PBXBuildFile; productRef = Threading /* Threading */; };
+		310C73BC2E962CCF00AA5C35 /* Profile in Frameworks */ = {isa = PBXBuildFile; productRef = Profile /* Profile */; };
+		310C73BD2E962CCF00AA5C35 /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = Search /* Search */; };
+		310C73BE2E962CCF00AA5C35 /* Notifications in Frameworks */ = {isa = PBXBuildFile; productRef = Notifications /* Notifications */; };
+		310C73BF2E962CCF00AA5C35 /* DMs in Frameworks */ = {isa = PBXBuildFile; productRef = DMs /* DMs */; };
+		3122BDC52E95FC4700E495EE /* Resources/AgoraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3122BDC32E95FC4700E495EE /* Resources/AgoraApp.swift */; };
+		3122BDC62E95FC4700E495EE /* Resources/ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3122BDC42E95FC4700E495EE /* Resources/ContentView.swift */; };
+		3122BDCA2E95FC4700E495EE /* Resources/LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3122BDCB2E95FC4700E495EE /* Resources/LoadingView.swift */; };
+		3122BDC72E95FC4700E495EE /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC02E95FC4700E495EE /* Resources/Assets.xcassets */; };
+		3122BDC82E95FC4700E495EE /* Resources/Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC12E95FC4700E495EE /* Resources/Localizable.strings */; };
+		3122BDC92E95FC4700E495EE /* Resources/Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC22E95FC4700E495EE /* Resources/Secrets.plist */; };
+		314D876B2E96FFE00081C646 /* AppFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = AppFoundation /* AppFoundation */; };
+		314D876C2E96FFE00081C646 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = DesignSystem /* DesignSystem */; };
+		314D87962E9725A00081C646 /* Configs/Xcode/Debug-Development.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 314D87952E9725A00081C646 /* Configs/Xcode/Debug-Development.xcconfig */; };
+		314D87982E9725AF0081C646 /* Configs/Xcode/Debug-Staging.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 314D87972E9725AF0081C646 /* Configs/Xcode/Debug-Staging.xcconfig */; };
+		314D879A2E9725C60081C646 /* Configs/Xcode/Release-Staging.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 314D87992E9725C60081C646 /* Configs/Xcode/Release-Staging.xcconfig */; };
+		314D879C2E9725D30081C646 /* Configs/Xcode/Release-Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 314D879B2E9725D30081C646 /* Configs/Xcode/Release-Production.xcconfig */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3122BDA22E95FC4600E495EE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3122BD882E95FC4500E495EE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3122BD8F2E95FC4500E495EE;
+			remoteInfo = Agora;
+		};
+		3122BDAC2E95FC4700E495EE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3122BD882E95FC4500E495EE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3122BD8F2E95FC4500E495EE;
+			remoteInfo = Agora;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		3122BD902E95FC4500E495EE /* Agora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Agora.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3122BDA12E95FC4600E495EE /* AgoraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AgoraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3122BDAB2E95FC4700E495EE /* AgoraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AgoraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3122BDC02E95FC4700E495EE /* Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
+		3122BDC12E95FC4700E495EE /* Resources/Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Resources/Localizable.strings; sourceTree = "<group>"; };
+		3122BDC22E95FC4700E495EE /* Resources/Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Secrets.plist; sourceTree = "<group>"; };
+		3122BDC32E95FC4700E495EE /* Resources/AgoraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Resources/AgoraApp.swift; sourceTree = "<group>"; };
+		3122BDC42E95FC4700E495EE /* Resources/ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Resources/ContentView.swift; sourceTree = "<group>"; };
+		3122BDCB2E95FC4700E495EE /* Resources/LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Resources/LoadingView.swift; sourceTree = "<group>"; };
+		314D87952E9725A00081C646 /* Configs/Xcode/Debug-Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Configs/Xcode/Debug-Development.xcconfig"; sourceTree = "<group>"; };
+		314D87972E9725AF0081C646 /* Configs/Xcode/Debug-Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Configs/Xcode/Debug-Staging.xcconfig"; sourceTree = "<group>"; };
+		314D87992E9725C60081C646 /* Configs/Xcode/Release-Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Configs/Xcode/Release-Staging.xcconfig"; sourceTree = "<group>"; };
+		314D879B2E9725D30081C646 /* Configs/Xcode/Release-Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Configs/Xcode/Release-Production.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		317A8F662E972F6B00858CC4 /* Exceptions for "Resources" folder in "Agora" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Configs/Development.plist,
+				Configs/Production.plist,
+				Configs/Staging.plist,
+			);
+			target = 3122BD8F2E95FC4500E495EE /* Agora */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		3122BD922E95FC4500E495EE /* Resources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				317A8F662E972F6B00858CC4 /* Exceptions for "Resources" folder in "Agora" target */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		3122BDA42E95FC4600E495EE /* AgoraTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AgoraTests;
+			sourceTree = "<group>";
+		};
+		3122BDAE2E95FC4700E495EE /* AgoraUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AgoraUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3122BD8D2E95FC4500E495EE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				314D876C2E96FFE00081C646 /* DesignSystem in Frameworks */,
+				314D876B2E96FFE00081C646 /* AppFoundation in Frameworks */,
+				310C73BF2E962CCF00AA5C35 /* DMs in Frameworks */,
+				310C73BE2E962CCF00AA5C35 /* Notifications in Frameworks */,
+				310C73BD2E962CCF00AA5C35 /* Search in Frameworks */,
+				310C73BC2E962CCF00AA5C35 /* Profile in Frameworks */,
+				310C73BB2E962CCF00AA5C35 /* Threading in Frameworks */,
+				310C73BA2E962CCF00AA5C35 /* PostDetail in Frameworks */,
+				310C73B92E962CCF00AA5C35 /* Compose in Frameworks */,
+				310C73B82E962CCF00AA5C35 /* HomeFollowing in Frameworks */,
+				310C73B72E962CCF00AA5C35 /* HomeForYou in Frameworks */,
+				310C73B62E962CCF00AA5C35 /* Home in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3122BD9E2E95FC4600E495EE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3122BDA82E95FC4700E495EE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		310C73C02E962CCF00AA5C35 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				3122BDC32E95FC4700E495EE /* Resources/AgoraApp.swift */,
+				3122BDC42E95FC4700E495EE /* Resources/ContentView.swift */,
+				3122BDCB2E95FC4700E495EE /* Resources/LoadingView.swift */,
+				3122BDC02E95FC4700E495EE /* Resources/Assets.xcassets */,
+				3122BDC12E95FC4700E495EE /* Resources/Localizable.strings */,
+				3122BDC22E95FC4700E495EE /* Resources/Secrets.plist */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
+		3122BD872E95FC4500E495EE = {
+			isa = PBXGroup;
+			children = (
+				3122BD922E95FC4500E495EE /* Resources */,
+				3122BDA42E95FC4600E495EE /* AgoraTests */,
+				3122BDAE2E95FC4700E495EE /* AgoraUITests */,
+				3122BD912E95FC4500E495EE /* Products */,
+				310C73C02E962CCF00AA5C35 /* Recovered References */,
+				314D87952E9725A00081C646 /* Configs/Xcode/Debug-Development.xcconfig */,
+				314D87972E9725AF0081C646 /* Configs/Xcode/Debug-Staging.xcconfig */,
+				314D87992E9725C60081C646 /* Configs/Xcode/Release-Staging.xcconfig */,
+				314D879B2E9725D30081C646 /* Configs/Xcode/Release-Production.xcconfig */,
+			);
+			sourceTree = "<group>";
+		};
+		3122BD912E95FC4500E495EE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3122BD902E95FC4500E495EE /* Agora.app */,
+				3122BDA12E95FC4600E495EE /* AgoraTests.xctest */,
+				3122BDAB2E95FC4700E495EE /* AgoraUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3122BD8F2E95FC4500E495EE /* Agora */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3122BDB42E95FC4700E495EE /* Build configuration list for PBXNativeTarget "Agora" */;
+			buildPhases = (
+				3122BD8C2E95FC4500E495EE /* Sources */,
+				3122BD8D2E95FC4500E495EE /* Frameworks */,
+				3122BD8E2E95FC4500E495EE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Agora;
+			packageProductDependencies = (
+				AppFoundation /* AppFoundation */,
+				DesignSystem /* DesignSystem */,
+				AuthFeature /* AuthFeature */,
+				Home /* Home */,
+				HomeForYou /* HomeForYou */,
+				HomeFollowing /* HomeFollowing */,
+				Compose /* Compose */,
+				PostDetail /* PostDetail */,
+				Threading /* Threading */,
+				Profile /* Profile */,
+				Search /* Search */,
+				Notifications /* Notifications */,
+				DMs /* DMs */,
+			);
+			productName = Agora;
+			productReference = 3122BD902E95FC4500E495EE /* Agora.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3122BDA02E95FC4600E495EE /* AgoraTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3122BDB92E95FC4700E495EE /* Build configuration list for PBXNativeTarget "AgoraTests" */;
+			buildPhases = (
+				3122BD9D2E95FC4600E495EE /* Sources */,
+				3122BD9E2E95FC4600E495EE /* Frameworks */,
+				3122BD9F2E95FC4600E495EE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3122BDA32E95FC4600E495EE /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3122BDA42E95FC4600E495EE /* AgoraTests */,
+			);
+			name = AgoraTests;
+			packageProductDependencies = (
+			);
+			productName = AgoraTests;
+			productReference = 3122BDA12E95FC4600E495EE /* AgoraTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		3122BDAA2E95FC4700E495EE /* AgoraUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3122BDBC2E95FC4700E495EE /* Build configuration list for PBXNativeTarget "AgoraUITests" */;
+			buildPhases = (
+				3122BDA72E95FC4700E495EE /* Sources */,
+				3122BDA82E95FC4700E495EE /* Frameworks */,
+				3122BDA92E95FC4700E495EE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3122BDAD2E95FC4700E495EE /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3122BDAE2E95FC4700E495EE /* AgoraUITests */,
+			);
+			name = AgoraUITests;
+			packageProductDependencies = (
+			);
+			productName = AgoraUITests;
+			productReference = 3122BDAB2E95FC4700E495EE /* AgoraUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3122BD882E95FC4500E495EE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					3122BD8F2E95FC4500E495EE = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+					3122BDA02E95FC4600E495EE = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 3122BD8F2E95FC4500E495EE;
+					};
+					3122BDAA2E95FC4700E495EE = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 3122BD8F2E95FC4500E495EE;
+					};
+				};
+			};
+			buildConfigurationList = 3122BD8B2E95FC4500E495EE /* Build configuration list for PBXProject "Agora" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3122BD872E95FC4500E495EE;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AppFoundationPackage /* XCLocalSwiftPackageReference "Packages/Shared/AppFoundation" */,
+				DesignSystemPackage /* XCLocalSwiftPackageReference "Packages/Kits/DesignSystem" */,
+				AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */,
+				HomePackage /* XCLocalSwiftPackageReference "Packages/Features/Home" */,
+				HomeForYouPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeForYou" */,
+				HomeFollowingPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeFollowing" */,
+				ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */,
+				PostDetailPackage /* XCLocalSwiftPackageReference "Packages/Features/PostDetail" */,
+				ThreadingPackage /* XCLocalSwiftPackageReference "Packages/Features/Threading" */,
+				ProfilePackage /* XCLocalSwiftPackageReference "Packages/Features/Profile" */,
+				SearchPackage /* XCLocalSwiftPackageReference "Packages/Features/Search" */,
+				NotificationsPackage /* XCLocalSwiftPackageReference "Packages/Features/Notifications" */,
+				DMsPackage /* XCLocalSwiftPackageReference "Packages/Features/DMs" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3122BD912E95FC4500E495EE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3122BD8F2E95FC4500E495EE /* Agora */,
+				3122BDA02E95FC4600E495EE /* AgoraTests */,
+				3122BDAA2E95FC4700E495EE /* AgoraUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3122BD8E2E95FC4500E495EE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3122BDC72E95FC4700E495EE /* Resources/Assets.xcassets in Resources */,
+				3122BDC82E95FC4700E495EE /* Resources/Localizable.strings in Resources */,
+				3122BDC92E95FC4700E495EE /* Resources/Secrets.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3122BD9F2E95FC4600E495EE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				314D87982E9725AF0081C646 /* Configs/Xcode/Debug-Staging.xcconfig in Resources */,
+				314D87962E9725A00081C646 /* Configs/Xcode/Debug-Development.xcconfig in Resources */,
+				314D879A2E9725C60081C646 /* Configs/Xcode/Release-Staging.xcconfig in Resources */,
+				314D879C2E9725D30081C646 /* Configs/Xcode/Release-Production.xcconfig in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3122BDA92E95FC4700E495EE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3122BD8C2E95FC4500E495EE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3122BDC52E95FC4700E495EE /* Resources/AgoraApp.swift in Sources */,
+				3122BDC62E95FC4700E495EE /* Resources/ContentView.swift in Sources */,
+				3122BDCA2E95FC4700E495EE /* Resources/LoadingView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3122BD9D2E95FC4600E495EE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3122BDA72E95FC4700E495EE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3122BDA32E95FC4600E495EE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3122BD8F2E95FC4500E495EE /* Agora */;
+			targetProxy = 3122BDA22E95FC4600E495EE /* PBXContainerItemProxy */;
+		};
+		3122BDAD2E95FC4700E495EE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3122BD8F2E95FC4500E495EE /* Agora */;
+			targetProxy = 3122BDAC2E95FC4700E495EE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3122BDB52E95FC4700E495EE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/Agora.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Agora;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.Agora";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3122BDB62E95FC4700E495EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/Agora.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Agora;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.Agora";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		3122BDB72E95FC4700E495EE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		3122BDB82E95FC4700E495EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3122BDBA2E95FC4700E495EE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Agora.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Agora";
+			};
+			name = Debug;
+		};
+		3122BDBB2E95FC4700E495EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Agora.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Agora";
+			};
+			name = Release;
+		};
+		3122BDBD2E95FC4700E495EE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Agora;
+			};
+			name = Debug;
+		};
+		3122BDBE2E95FC4700E495EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Agora;
+			};
+			name = Release;
+		};
+		314D87852E9725290081C646 /* Debug-Development */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 314D87952E9725A00081C646 /* Configs/Xcode/Debug-Development.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG DEVELOPMENT $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = "Debug-Development";
+		};
+		314D87862E9725290081C646 /* Debug-Development */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 314D87952E9725A00081C646 /* Configs/Xcode/Debug-Development.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/Agora.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(inherited)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -DDEVELOPMENT";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited)";
+				PRODUCT_NAME = "$(inherited)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEVELOPMENT";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "Debug-Development";
+		};
+		314D87872E9725290081C646 /* Debug-Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Agora.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Agora";
+			};
+			name = "Debug-Development";
+		};
+		314D87882E9725290081C646 /* Debug-Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Agora;
+			};
+			name = "Debug-Development";
+		};
+		314D87892E97253D0081C646 /* Debug-Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 314D87972E9725AF0081C646 /* Configs/Xcode/Debug-Staging.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG STAGING $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = "Debug-Staging";
+		};
+		314D878A2E97253D0081C646 /* Debug-Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 314D87972E9725AF0081C646 /* Configs/Xcode/Debug-Staging.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/Agora.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(inherited)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -DSTAGING";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited)";
+				PRODUCT_NAME = "$(inherited)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) STAGING";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "Debug-Staging";
+		};
+		314D878B2E97253D0081C646 /* Debug-Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Agora.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Agora";
+			};
+			name = "Debug-Staging";
+		};
+		314D878C2E97253D0081C646 /* Debug-Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Agora;
+			};
+			name = "Debug-Staging";
+		};
+		314D878D2E9725510081C646 /* Release-Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 314D87992E9725C60081C646 /* Configs/Xcode/Release-Staging.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "STAGING $(inherited)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = "Release-Staging";
+		};
+		314D878E2E9725510081C646 /* Release-Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 314D87992E9725C60081C646 /* Configs/Xcode/Release-Staging.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/Agora.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(inherited)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -DSTAGING";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited)";
+				PRODUCT_NAME = "$(inherited)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) STAGING";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "Release-Staging";
+		};
+		314D878F2E9725510081C646 /* Release-Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Agora.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Agora";
+			};
+			name = "Release-Staging";
+		};
+		314D87902E9725510081C646 /* Release-Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Agora;
+			};
+			name = "Release-Staging";
+		};
+		314D87912E9725580081C646 /* Release-Production */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 314D879B2E9725D30081C646 /* Configs/Xcode/Release-Production.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = "Release-Production";
+		};
+		314D87922E9725580081C646 /* Release-Production */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 314D879B2E9725D30081C646 /* Configs/Xcode/Release-Production.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/Agora.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Agora;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.Agora";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "Release-Production";
+		};
+		314D87932E9725580081C646 /* Release-Production */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Agora.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Agora";
+			};
+			name = "Release-Production";
+		};
+		314D87942E9725580081C646 /* Release-Production */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = R86N73ZKCW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Ergo-Sum.AgoraUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Agora;
+			};
+			name = "Release-Production";
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3122BD8B2E95FC4500E495EE /* Build configuration list for PBXProject "Agora" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3122BDB72E95FC4700E495EE /* Debug */,
+				314D87892E97253D0081C646 /* Debug-Staging */,
+				314D87852E9725290081C646 /* Debug-Development */,
+				3122BDB82E95FC4700E495EE /* Release */,
+				314D87912E9725580081C646 /* Release-Production */,
+				314D878D2E9725510081C646 /* Release-Staging */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3122BDB42E95FC4700E495EE /* Build configuration list for PBXNativeTarget "Agora" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3122BDB52E95FC4700E495EE /* Debug */,
+				314D878A2E97253D0081C646 /* Debug-Staging */,
+				314D87862E9725290081C646 /* Debug-Development */,
+				3122BDB62E95FC4700E495EE /* Release */,
+				314D87922E9725580081C646 /* Release-Production */,
+				314D878E2E9725510081C646 /* Release-Staging */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3122BDB92E95FC4700E495EE /* Build configuration list for PBXNativeTarget "AgoraTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3122BDBA2E95FC4700E495EE /* Debug */,
+				314D878B2E97253D0081C646 /* Debug-Staging */,
+				314D87872E9725290081C646 /* Debug-Development */,
+				3122BDBB2E95FC4700E495EE /* Release */,
+				314D87932E9725580081C646 /* Release-Production */,
+				314D878F2E9725510081C646 /* Release-Staging */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3122BDBC2E95FC4700E495EE /* Build configuration list for PBXNativeTarget "AgoraUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3122BDBD2E95FC4700E495EE /* Debug */,
+				314D878C2E97253D0081C646 /* Debug-Staging */,
+				314D87882E9725290081C646 /* Debug-Development */,
+				3122BDBE2E95FC4700E495EE /* Release */,
+				314D87942E9725580081C646 /* Release-Production */,
+				314D87902E9725510081C646 /* Release-Staging */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		AppFoundationPackage /* XCLocalSwiftPackageReference "Packages/Shared/AppFoundation" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Shared/AppFoundation;
+		};
+		AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Auth;
+		};
+		ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Compose;
+		};
+		DMsPackage /* XCLocalSwiftPackageReference "Packages/Features/DMs" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/DMs;
+		};
+		DesignSystemPackage /* XCLocalSwiftPackageReference "Packages/Kits/DesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Kits/DesignSystem;
+		};
+		HomeFollowingPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeFollowing" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/HomeFollowing;
+		};
+		HomeForYouPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeForYou" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/HomeForYou;
+		};
+		HomePackage /* XCLocalSwiftPackageReference "Packages/Features/Home" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Home;
+		};
+		NotificationsPackage /* XCLocalSwiftPackageReference "Packages/Features/Notifications" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Notifications;
+		};
+		PostDetailPackage /* XCLocalSwiftPackageReference "Packages/Features/PostDetail" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/PostDetail;
+		};
+		ProfilePackage /* XCLocalSwiftPackageReference "Packages/Features/Profile" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Profile;
+		};
+		SearchPackage /* XCLocalSwiftPackageReference "Packages/Features/Search" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Search;
+		};
+		ThreadingPackage /* XCLocalSwiftPackageReference "Packages/Features/Threading" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Threading;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AppFoundation /* AppFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AppFoundationPackage /* XCLocalSwiftPackageReference "Packages/Shared/AppFoundation" */;
+			productName = AppFoundation;
+		};
+		AuthFeature /* AuthFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */;
+			productName = AuthFeature;
+		};
+		Compose /* Compose */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */;
+			productName = Compose;
+		};
+		DMs /* DMs */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DMsPackage /* XCLocalSwiftPackageReference "Packages/Features/DMs" */;
+			productName = DMs;
+		};
+		DesignSystem /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DesignSystemPackage /* XCLocalSwiftPackageReference "Packages/Kits/DesignSystem" */;
+			productName = DesignSystem;
+		};
+		Home /* Home */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = HomePackage /* XCLocalSwiftPackageReference "Packages/Features/Home" */;
+			productName = Home;
+		};
+		HomeFollowing /* HomeFollowing */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = HomeFollowingPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeFollowing" */;
+			productName = HomeFollowing;
+		};
+		HomeForYou /* HomeForYou */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = HomeForYouPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeForYou" */;
+			productName = HomeForYou;
+		};
+		Notifications /* Notifications */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = NotificationsPackage /* XCLocalSwiftPackageReference "Packages/Features/Notifications" */;
+			productName = Notifications;
+		};
+		PostDetail /* PostDetail */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PostDetailPackage /* XCLocalSwiftPackageReference "Packages/Features/PostDetail" */;
+			productName = PostDetail;
+		};
+		Profile /* Profile */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ProfilePackage /* XCLocalSwiftPackageReference "Packages/Features/Profile" */;
+			productName = Profile;
+		};
+		Search /* Search */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = SearchPackage /* XCLocalSwiftPackageReference "Packages/Features/Search" */;
+			productName = Search;
+		};
+		Threading /* Threading */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ThreadingPackage /* XCLocalSwiftPackageReference "Packages/Features/Threading" */;
+			productName = Threading;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 3122BD882E95FC4500E495EE /* Project object */;
+}

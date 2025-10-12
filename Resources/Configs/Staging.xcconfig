@@ -1,0 +1,35 @@
+//
+//  Config.xcconfig
+//  Agora
+//
+//  Created by Rocky Evans on 10/11/25.
+//
+
+// App Configuration
+APP_DISPLAY_NAME = Agora (Staging)
+BUNDLE_ID_SUFFIX = .staging
+
+// URLs
+API_BASE_URL = https://api-staging.myapp.com
+WEBSOCKET_URL = wss://ws-staging.myapp.com
+UNIVERSAL_LINKS_HOST = staging.agora.social
+
+// App Groups & Keychain
+APP_GROUP = group.com.agoraapp.ios.staging
+KEYCHAIN_GROUP = com.agoraapp.ios.staging
+
+// Analytics
+ANALYTICS_WRITE_KEY = staging-analytics-key-placeholder
+
+// App Icon
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon-Staging
+
+// Supabase Configuration
+SUPABASE_URL = https://iqebtllzptardlgpdnge.supabase.co
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxZWJ0bGx6cHRhcmRsZ3BkbmdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4OTk2MjIsImV4cCI6MjA3NTQ3NTYyMn0.0_AviqFR5SeQI8tkSm9oM0PB4gKWJHGWhcbzTTRLoC4
+
+// Swift Compilation Conditions
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = STAGING_ENVIRONMENT
+
+// Preprocessor Definitions
+GCC_PREPROCESSOR_DEFINITIONS = STAGING_ENVIRONMENT=1

@@ -1,0 +1,35 @@
+//
+//  Config.xcconfig
+//  Agora
+//
+//  Created by Rocky Evans on 10/11/25.
+//
+
+// App Configuration
+APP_DISPLAY_NAME = Agora (Dev)
+BUNDLE_ID_SUFFIX = .dev
+
+// URLs
+API_BASE_URL = https://api-dev.myapp.com
+WEBSOCKET_URL = wss://ws-dev.myapp.com
+UNIVERSAL_LINKS_HOST = dev.agora.social
+
+// App Groups & Keychain
+APP_GROUP = group.com.agoraapp.ios.dev
+KEYCHAIN_GROUP = com.agoraapp.ios.dev
+
+// Analytics
+ANALYTICS_WRITE_KEY = dev-analytics-key-placeholder
+
+// App Icon
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon-Dev
+
+// Supabase Configuration
+SUPABASE_URL = https://your-dev-project.supabase.co
+SUPABASE_ANON_KEY = your-dev-anon-key-here
+
+// Other Settings
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG DEV_ENVIRONMENT
+GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1 DEV_ENVIRONMENT=1
+
+

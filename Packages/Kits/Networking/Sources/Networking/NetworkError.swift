@@ -3,6 +3,7 @@ import Foundation
 /// Errors that can occur during network operations
 public enum NetworkError: LocalizedError, Sendable {
     case invalidURL
+    case invalidResponse
     case noData
     case decodingError(Error)
     case encodingError(Error)
@@ -18,6 +19,8 @@ public enum NetworkError: LocalizedError, Sendable {
         switch self {
         case .invalidURL:
             return "Invalid URL"
+        case .invalidResponse:
+            return "Invalid response from server"
         case .noData:
             return "No data received"
         case .decodingError(let error):

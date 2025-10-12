@@ -40,3 +40,5 @@ final class HomeTests: XCTestCase {
         XCTAssertEqual(FeedType.following.rawValue, "following")
     }
 }
+
+

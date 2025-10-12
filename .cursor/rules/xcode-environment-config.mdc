@@ -1,0 +1,241 @@
+---
+description: When working with environment-specific configurations in Xcode, managing build configurations (Debug, Staging, Production), or accessing environment variables in Swift code. Use this rule when adding new API endpoints, feature flags, configuration values, or when setting up compilation conditions for different environments.
+---
+
+## Xcode Environment Configuration
+
+### Overview
+
+Agora uses three distinct environments (Development, Staging, Production) managed through Xcode build configurations and `.xcconfig` files. This rule defines how to work with these environments, access configuration values in code, and maintain consistency across the project.
+
+### Environment Configuration Files
+
+Our three environments are configured in:
+- `Resources/Configs/Debug.xcconfig` - Development environment
+- `Resources/Configs/Staging.xcconfig` - Staging environment  
+- `Resources/Configs/Production.xcconfig` - Production environment
+
+### Accessing Environment Variables in Swift
+
+#### Using Compilation Conditions
+
+Use Swift's `#if` directives with the compilation conditions defined in our `.xcconfig` files:
+
+```swift
+// Example: Environment-specific API base URL
+static var apiBaseURL: String {
+    #if DEV_ENVIRONMENT
+    return "https://api-dev.agora.com"
+    #elseif STAGING_ENVIRONMENT
+    return "https://api-staging.agora.com"
+    #else // PROD_ENVIRONMENT
+    return "https://api.agora.com"
+    #endif
+}
+```
+
+#### Available Compilation Conditions
+
+- `DEV_ENVIRONMENT` - Development builds (Debug configuration)
+- `STAGING_ENVIRONMENT` - Staging builds
+- `PROD_ENVIRONMENT` - Production builds (Release configuration)
+- `DEBUG` - Also available in development builds
+
+### When to Add New Configuration Values
+
+#### Add Configuration Values When You Need:
+
+1. **API Endpoints & Keys**
+   - Different API URLs per environment
+   - Environment-specific API keys or tokens
+   - Third-party service credentials (analytics, push notifications, etc.)
+
+2. **Feature Flags**
+   - Debug menus or developer tools (dev only)
+   - Beta features (dev and staging only)
+   - Environment-specific feature toggles
+
+3. **Logging & Analytics**
+   - Verbose logging levels for development
+   - Analytics tracking IDs per environment
+   - Crash reporting configuration
+
+4. **App Behavior**
+   - Timeout values
+   - Rate limiting thresholds
+   - Cache durations
+
+#### How to Add New Configuration Values
+
+**Step 1:** Determine if the value should be in `.xcconfig` or Swift code
+
+- **.xcconfig files**: Use for build-time settings (bundle IDs, app icons, display names)
+- **Swift code with `#if`**: Use for runtime configuration (API URLs, feature flags, keys)
+
+**Step 2:** Add the value consistently across all three environments
+
+```swift
+// Add to your EnvironmentConfig or similar configuration file
+static var newFeatureEnabled: Bool {
+    #if DEV_ENVIRONMENT
+    return true  // Always enabled in dev
+    #elseif STAGING_ENVIRONMENT
+    return true  // Test in staging
+    #else
+    return false // Disabled in production (for now)
+    #endif
+}
+```
+
+### Naming Conventions
+
+#### .xcconfig Variable Names
+
+Use `SCREAMING_SNAKE_CASE` for all `.xcconfig` variables:
+
+```
+// Good
+APP_DISPLAY_NAME = Agora (Dev)
+BUNDLE_ID_SUFFIX = .dev
+LOGGING_ENABLED = YES
+API_BASE_URL = https://api-dev.agora.com
+
+// Avoid
+appDisplayName = Agora (Dev)
+bundle-id-suffix = .dev
+```
+
+#### Swift Configuration Property Names
+
+Use `camelCase` for Swift configuration properties:
+
+```swift
+// Good
+static var apiBaseURL: String
+static var isLoggingEnabled: Bool
+static var analyticsKey: String
+static var isDebugMenuEnabled: Bool
+
+// Avoid
+static var APIBaseURL: String
+static var LoggingEnabled: Bool
+```
+
+#### Compilation Condition Names
+
+Use `SCREAMING_SNAKE_CASE` with `_ENVIRONMENT` suffix:
+
+```
+// Good
+DEV_ENVIRONMENT
+STAGING_ENVIRONMENT
+PROD_ENVIRONMENT
+
+// Avoid
+dev
+DevEnvironment
+development
+```
+
+### Best Practices for Keeping Configs in Sync
+
+#### 1. Always Define Values for All Three Environments
+
+When adding a new configuration value, ensure it's defined in all three places:
+
+```swift
+// ❌ Bad - Missing staging case
+static var newSetting: String {
+    #if DEV_ENVIRONMENT
+    return "dev-value"
+    #else
+    return "prod-value"
+    #endif
+}
+
+// ✅ Good - All environments covered
+static var newSetting: String {
+    #if DEV_ENVIRONMENT
+    return "dev-value"
+    #elseif STAGING_ENVIRONMENT
+    return "staging-value"
+    #else
+    return "prod-value"
+    #endif
+}
+```
+
+#### 2. Use Grouped Environment Checks for Shared Behavior
+
+When dev and staging share the same configuration:
+
+```swift
+static var isVerboseLoggingEnabled: Bool {
+    #if DEV_ENVIRONMENT || STAGING_ENVIRONMENT
+    return true
+    #else
+    return false
+    #endif
+}
+```
+
+#### 3. Keep .xcconfig Files Organized
+
+Group related settings with comments:
+
+```
+// App Configuration
+APP_DISPLAY_NAME = Agora (Dev)
+BUNDLE_ID_SUFFIX = .dev
+
+// App Icon
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon-Dev
+
+// Compilation Conditions
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG DEV_ENVIRONMENT
+```
+
+#### 4. Document Non-Obvious Configuration Choices
+
+Add comments when configuration values require explanation:
+
+```swift
+// Analytics disabled in dev to avoid polluting metrics
+static var isAnalyticsEnabled: Bool {
+    #if DEV_ENVIRONMENT
+    return false
+    #elseif STAGING_ENVIRONMENT
+    return true // QA needs to verify tracking
+    #else
+    return true
+    #endif
+}
+```
+
+#### 5. Review Configurations During Code Review
+
+When reviewing PRs that add configuration values, verify:
+- [ ] All three environments are configured
+- [ ] Naming conventions are followed
+- [ ] Values make sense for each environment
+- [ ] No production secrets in dev/staging configs
+
+### Current Environment Configuration
+
+#### Debug.xcconfig (Development)
+- Display Name: `Agora (Dev)`
+- Bundle ID Suffix: `.dev`
+- App Icon: `AppIcon-Dev`
+- Compilation Conditions: `DEBUG DEV_ENVIRONMENT`
+
+#### Staging.xcconfig (Staging)
+- Display Name: `Agora (Staging)`
+- Bundle ID Suffix: `.staging`
+- App Icon: `AppIcon-Staging`
+- Compilation Conditions: `STAGING_ENVIRONMENT`
+
+#### Production.xcconfig (Production)
+- Display Name: `Agora`
+- Bundle ID Suffix: (none)
+- App Icon: `AppIcon`
+- Compilation Conditions: `PROD_ENVIRONMENT`

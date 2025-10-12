@@ -30,14 +30,11 @@ public final class APIClient: Sendable {
         let urlSession = URLSession(configuration: configuration)
         let transport = URLSessionTransport(configuration: .init(session: urlSession))
         
-        // Create OpenAPI client with auth and retry interceptors
+        // Create OpenAPI client
+        // TODO: Add auth and retry interceptors when implemented
         self.client = Client(
             serverURL: baseURL,
-            transport: transport,
-            middlewares: [
-                AuthInterceptor(authTokenProvider: authTokenProvider),
-                RetryInterceptor(logger: Logger.networking)
-            ]
+            transport: transport
         )
     }
     

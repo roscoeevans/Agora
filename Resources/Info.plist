@@ -45,5 +45,21 @@
 		<key>UIColorName</key>
 		<string>AccentColor</string>
 	</dict>
+	<key>API_BASE_URL</key>
+	<string>$(API_BASE_URL)</string>
+	<key>WEBSOCKET_URL</key>
+	<string>$(WEBSOCKET_URL)</string>
+	<key>UNIVERSAL_LINKS_HOST</key>
+	<string>$(UNIVERSAL_LINKS_HOST)</string>
+	<key>APP_GROUP</key>
+	<string>$(APP_GROUP)</string>
+	<key>KEYCHAIN_GROUP</key>
+	<string>$(KEYCHAIN_GROUP)</string>
+	<key>ANALYTICS_WRITE_KEY</key>
+	<string>$(ANALYTICS_WRITE_KEY)</string>
+	<key>SUPABASE_URL</key>
+	<string>$(SUPABASE_URL)</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>$(SUPABASE_ANON_KEY)</string>
 </dict>
 </plist>

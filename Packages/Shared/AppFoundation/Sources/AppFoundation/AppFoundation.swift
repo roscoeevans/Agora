@@ -1,5 +1,9 @@
 import Foundation
 
+// MARK: - Public Exports
+
+// Service protocols are automatically available when importing AppFoundation
+
 /// AppFoundation module provides core utilities and protocols for the Agora app.
 /// This module contains shared functionality that doesn't depend on other modules,
 /// preventing circular dependencies in the modular architecture.

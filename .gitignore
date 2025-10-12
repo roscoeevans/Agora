@@ -31,9 +31,12 @@ Resources/Secrets.plist
 *.p12
 *.mobileprovision
 
-# Generated files
+# Generated files (but commit Networking/Generated/)
 OpenAPI/Generated/
 *.generated.swift
+
+# OpenAPI generator tools (local SPM cache)
+.tools/
 
 # Dependencies
 Packages/ThirdParty/*/Sources/
@@ -70,3 +73,12 @@ fastlane/test_output
 
 # Code Injection
 iOSInjectionProject/
+# Environment-specific configuration files (actual secrets)
+Resources/Configs/Development.plist
+Resources/Configs/Staging.plist
+Resources/Configs/Production.plist
+Resources/Configs/.secrets
+
+# But allow example files (these have placeholder values)
+!Resources/Configs/*.example
+!Resources/Configs/README.md

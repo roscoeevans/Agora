@@ -3,41 +3,48 @@ import PackageDescription
 
 let package = Package(
     name: "Networking",
+    defaultLocalization: "en",
     platforms: [
-        .iOS(.v26),
-        .macOS(.v10_15)
+        .iOS(.v26)
     ],
     products: [
         .library(
             name: "Networking",
             targets: ["Networking"]
-        ),
+        )
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.0.0"),
+        // Apple OpenAPI runtime + URLSession transport + HTTP types
         .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
-        .package(path: "../../Shared/AppFoundation"),
-        .package(path: "../../Shared/TestSupport")
+        .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
+
+        // Your internal modules
+        .package(path: "../../Shared/AppFoundation")
     ],
     targets: [
         .target(
             name: "Networking",
             dependencies: [
+                // OpenAPI runtime + transport + http header types
                 .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
                 .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+
+                // Internal dependencies
                 "AppFoundation"
             ],
-            plugins: [
-                .plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")
+            path: "Sources/Networking",
+            swiftSettings: [
+                // Define STAGING for debug builds (staging and development environments)
+                .define("STAGING", .when(configuration: .debug)),
+                .define("DEVELOPMENT", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "NetworkingTests",
-            dependencies: [
-                "Networking",
-                "TestSupport"
-            ]
-        ),
+            dependencies: ["Networking"],
+            path: "Tests/NetworkingTests"
+        )
     ]
 )

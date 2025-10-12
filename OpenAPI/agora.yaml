@@ -60,6 +60,111 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /users/profile:
+    post:
+      summary: Create user profile after authentication
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProfileRequest'
+      responses:
+        '201':
+          description: Profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Handle already taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/check-handle:
+    get:
+      summary: Check if handle is available
+      tags: [Users]
+      parameters:
+        - name: handle
+          in: query
+          description: Handle to check (lowercase)
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9_]{3,15}$'
+      responses:
+        '200':
+          description: Handle availability status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckHandleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/me:
+    get:
+      summary: Get current user profile
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      summary: Update current user profile
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /feed/for-you:
     get:
       summary: Get For You feed
@@ -154,6 +259,7 @@ components:
       required:
         - id
         - handle
+        - displayHandle
         - displayName
         - createdAt
       properties:
@@ -163,6 +269,10 @@ components:
         handle:
           type: string
           pattern: '^[a-z0-9_]{3,15}$'
+          description: Canonical lowercase handle for uniqueness
+        displayHandle:
+          type: string
+          description: User's preferred capitalization of handle
         displayName:
           type: string
         bio:
@@ -173,6 +283,61 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    CreateProfileRequest:
+      type: object
+      required:
+        - handle
+        - displayHandle
+        - displayName
+      properties:
+        handle:
+          type: string
+          pattern: '^[a-z0-9_]{3,15}$'
+          description: Canonical lowercase handle (3-15 chars, alphanumeric + underscore)
+        displayHandle:
+          type: string
+          minLength: 3
+          maxLength: 15
+          description: User's preferred capitalization (e.g., "RockyEvans")
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Display name shown in profile
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        displayHandle:
+          type: string
+          minLength: 3
+          maxLength: 15
+          description: User's preferred capitalization of handle
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 50
+        bio:
+          type: string
+          maxLength: 160
+        avatarUrl:
+          type: string
+          format: uri
+
+    CheckHandleResponse:
+      type: object
+      required:
+        - available
+      properties:
+        available:
+          type: boolean
+          description: Whether the handle is available
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: Suggested alternative handles if unavailable
 
     Post:
       type: object
@@ -229,6 +394,22 @@ components:
           type: string
           nullable: true
 
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+        details:
+          type: object
+          description: Additional error details
+
   responses:
     BadRequest:
       description: Bad request
@@ -250,16 +431,3 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-
-    Error:
-      type: object
-      required:
-        - code
-        - message
-      properties:
-        code:
-          type: string
-        message:
-          type: string
-        details:
-          type: object

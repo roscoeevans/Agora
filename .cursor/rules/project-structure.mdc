@@ -6,7 +6,7 @@ alwaysApply: false
 
 ### Overview
 
-This rule defines the standard project structure for the Agora iOS app, following Swift Package Manager (SPM) modular architecture with clear separation of concerns. The structure supports iOS 26, Swift 6.2, and SwiftUI 6 with a focus on maintainability, testability, and Apple design compliance.
+This rule defines the standard project structure for the Agora iOS app, following Swift Package Manager (SPM) modular architecture with clear separation of concerns. The structure supports iOS 18+, Swift 6.2, and SwiftUI 6 with a focus on maintainability, testability, and Apple design compliance.
 
 ### Root Directory Structure
 
@@ -17,17 +17,18 @@ Agora/
 ├── AgoraUITests/              # Main app UI tests
 ├── Configs/                   # Build and configuration files
 ├── docs/                      # Project documentation
-├── OpenAPI/                   # API specifications and generated code
+├── OpenAPI/                   # API specifications and generator config
 ├── Packages/                  # Swift Package modules
 ├── Resources/                 # App resources and main app files
 ├── Scripts/                   # Build and utility scripts
 ├── Tests/                     # Cross-module tests
+├── Makefile                   # Build commands (api-gen, api-clean, etc.)
 └── Package.swift              # Root package manifest
 ```
 
 ### Packages Directory Structure
 
-The `Packages/` directory contains all Swift Package modules organized into three main categories:
+The `Packages/` directory contains all Swift Package modules organized into four main categories:
 
 #### Features (`Packages/Features/`)
 User-facing feature modules that represent distinct app functionality:
@@ -36,6 +37,7 @@ User-facing feature modules that represent distinct app functionality:
 Features/
 ├── Compose/                   # Post composition and media upload
 ├── DMs/                       # Direct messaging
+├── Home/                      # Home feature coordinator
 ├── HomeFollowing/             # Following feed (chronological)
 ├── HomeForYou/                # For You feed (recommendations)
 ├── Notifications/             # Push notifications and in-app alerts
@@ -66,9 +68,16 @@ Cross-cutting concerns and shared utilities:
 
 ```
 Shared/
-├── AppFoundation/             # Core app utilities and extensions
+├── AppFoundation/             # Core app utilities, extensions, and configuration
 └── TestSupport/               # Testing utilities and mocks
 ```
+
+**AppFoundation Contents:**
+- `Environment.swift`: Environment detection (staging/production)
+- `AppConfig.swift`: Central configuration management
+- `ServiceFactory.swift`: Factory for environment-appropriate services
+- `ServiceProtocols.swift`: Protocol definitions for all services
+- `MockServices.swift`: Mock implementations for testing/staging
 
 #### ThirdParty (`Packages/ThirdParty/`)
 Third-party SDK integrations:
@@ -195,25 +204,233 @@ Features (top level)
 
 ### Configuration Files
 
-#### Build Configuration
-- **Debug.xcconfig** and **Release.xcconfig** in `Configs/Xcode/`
+#### Build Configuration (`Configs/Xcode/`)
+
+The project uses a hierarchical xcconfig system for environment-specific builds:
+
+```
+Configs/Xcode/
+├── Base.xcconfig                 # Shared settings across all environments
+├── Debug.xcconfig                # Base debug settings (extends Base)
+├── Release.xcconfig              # Base release settings (extends Base)
+├── Debug-Staging.xcconfig        # Staging environment debug builds
+├── Release-Staging.xcconfig      # Staging environment release builds
+└── Release-Production.xcconfig   # Production release builds
+```
+
+**Configuration Hierarchy:**
+- `Base.xcconfig` contains shared settings (Swift version, deployment target, etc.)
+- `Debug.xcconfig` and `Release.xcconfig` extend Base with build-type settings
+- Environment-specific configs extend Debug/Release and add compilation conditions
+
+**Key Settings in Environment Configs:**
+- `PRODUCT_BUNDLE_IDENTIFIER`: Environment-specific bundle IDs
+- `INFOPLIST_KEY_CFBundleDisplayName`: App display name per environment
+- `SWIFT_ACTIVE_COMPILATION_CONDITIONS`: Compilation flags (STAGING for staging, none for production)
+- `AGORA_ENV`: Environment identifier string
+
+#### Lint Configuration
 - **swiftlint.yml** in `Configs/Lint/`
+- Defines code style and quality rules
+- Applied across all packages and main app
+
+#### Package Dependencies
 - **Package.resolved** at root and in packages with external dependencies
+- Locks dependency versions for reproducible builds
 
 #### Scripts
 - Build scripts in `Scripts/` directory
 - Use `.sh` extension for shell scripts
 - Include proper error handling and logging
+- Make scripts executable with `chmod +x`
+- Examples: `prebuild.sh`, `generate-openapi.sh`, `run-ui-tests.sh`
+
+#### OpenAPI Integration
+
+**Purpose:** Type-safe API client generation from OpenAPI specifications
+
+**Directory Structure:**
+```
+OpenAPI/
+├── agora.yaml              # OpenAPI 3.0 spec (source of truth for API)
+├── openapi-config.yaml     # Generator configuration
+├── VERSION.lock            # Generator version (auto-created, committed)
+└── README.md               # OpenAPI documentation and workflow
+```
+
+**Generated Code Location:**
+```
+Packages/Kits/Networking/Sources/Networking/Generated/
+└── *.swift                 # Generated types, client, and operations (committed)
+```
+
+**Key Concepts:**
+
+1. **Pre-Generation Approach**:
+   - Code is generated **before** compilation (not during build)
+   - Generated Swift files are **committed** to version control
+   - Ensures fast builds, predictable code, and version control visibility
+
+2. **Generation Workflow**:
+   ```bash
+   # Edit OpenAPI spec
+   vim OpenAPI/agora.yaml
+   
+   # Generate Swift client code
+   make api-gen
+   
+   # Review and commit changes
+   git diff Packages/Kits/Networking/Sources/Networking/Generated/
+   git add OpenAPI/ Packages/Kits/Networking/Sources/Networking/Generated/
+   git commit -m "Update API endpoints"
+   ```
+
+3. **Generator Installation**:
+   - Install via Mint (recommended): `mint install apple/swift-openapi-generator`
+   - Or via Homebrew: `brew install swift-openapi-generator`
+   - See `Scripts/generate-openapi.sh` for multiple installation methods
+
+4. **Configuration** (`openapi-config.yaml`):
+   ```yaml
+   generation:
+     accessModifier: public              # Public for use in features
+     addSendableConformance: true        # Swift 6.2 concurrency
+     asyncClient: true                   # Async/await support
+     concurrency:
+       useActors: true                   # Actor-based thread safety
+   output:
+     paths:
+       sources: "../Packages/Kits/Networking/Sources/Networking/Generated"
+   options:
+     stableFileNames: true               # Consistent naming for git
+     datesAsISO8601: true                # ISO 8601 date format
+   ```
+
+5. **Networking Kit Integration**:
+   - `AgoraAPIClient` protocol defines high-level API operations
+   - `OpenAPIAgoraClient` implements protocol using generated code
+   - `StubAgoraClient` provides mock implementation for staging
+   - `NetworkingServiceFactory` selects appropriate client based on environment
+
+6. **Version Control**:
+   - **Commit**: `Generated/*.swift`, `VERSION.lock`, `agora.yaml`, `openapi-config.yaml`
+   - **Ignore**: `.tools/` (local generator builds)
+
+7. **CI Integration**:
+   ```bash
+   # Ensure generated code stays in sync with spec
+   make api-gen
+   git diff --exit-code Packages/Kits/Networking/Sources/Networking/Generated
+   ```
+
+**Dependencies** (in Networking Package.swift):
+- `swift-openapi-runtime` - OpenAPI client runtime
+- `swift-openapi-urlsession` - URLSession transport
+- `swift-http-types` - HTTP header types
+
+**Documentation**:
+- `OPENAPI_INTEGRATION.md` - Complete implementation guide
+- `IMPLEMENTATION_COMPLETE.md` - Getting started guide
+- `OpenAPI/README.md` - Spec editing and generation workflow
+- `Packages/Kits/Networking/README.md` - API client usage
+
+**Best Practices**:
+- Edit OpenAPI spec first, generate code second
+- Always commit spec changes and generated code together
+- Use descriptive endpoint names and comprehensive documentation
+- Test generated code with both stub and production clients
+- Run `make api-gen` before committing API changes
+
+### Xcode Schemes
+
+The project includes two environment-specific schemes for building and running:
+
+#### Agora Staging
+- **Purpose**: Pre-production testing with real or mock services
+- **Bundle ID**: `Ergo-Sum.Agora.stg`
+- **Display Name**: "Agora Staging"
+- **Build Configuration**: Debug-Staging (debug) or Release-Staging (TestFlight)
+- **Compilation Conditions**: `DEBUG`, `STAGING` (debug) or `STAGING` (release)
+- **Use Case**: Development, QA testing, beta testing, integration testing
+
+#### Agora Production
+- **Purpose**: App Store releases
+- **Bundle ID**: `Ergo-Sum.Agora`
+- **Display Name**: "Agora"
+- **Build Configuration**: Release-Production
+- **Compilation Conditions**: None (production is default)
+- **Use Case**: App Store distribution, production builds
+
+**Scheme Selection**: Choose the appropriate scheme in Xcode before building/running to ensure correct environment configuration.
 
 ### Resource Management
 
 #### App Resources (`Resources/`)
-- **AgoraApp.swift**: Main app entry point
-- **ContentView.swift**: Root view
-- **Assets.xcassets**: App-level assets
-- **Info.plist**: App configuration
-- **Secrets.plist**: Sensitive configuration (gitignored)
-- **Localizable.strings**: App-level strings
+
+Main app resources and configuration:
+
+```
+Resources/
+├── AgoraApp.swift              # Main app entry point (@main)
+├── ContentView.swift           # Root SwiftUI view
+├── Assets.xcassets/            # App-level assets (icons, colors)
+├── Info.plist                  # App configuration and capabilities
+├── Agora.entitlements          # App entitlements (Sign in with Apple, etc.)
+├── Localizable.strings         # App-level localized strings
+└── Configs/                    # Environment-specific configuration (see below)
+```
+
+#### Environment Configuration (`Resources/Configs/`)
+
+Environment-specific secrets and configuration stored in separate files:
+
+```
+Resources/Configs/
+├── Staging.plist              # Staging client secrets (gitignored)
+├── Production.plist           # Production client secrets (gitignored)
+├── Staging.plist.example      # Staging template with fake values
+├── Production.plist.example   # Production template with fake values
+├── .secrets                   # Operational secrets (service role keys, DB passwords) (gitignored)
+└── README.md                  # Setup instructions for new developers
+```
+
+**Important Notes:**
+- Actual `.plist` files are gitignored and never committed
+- `.plist.example` files contain fake values for onboarding
+- Both environments use the same plist schema
+- See `environment-strategy.mdc` for detailed configuration structure
+
+**Client Secrets vs Operational Secrets:**
+
+**Client Secrets** (in `.plist` files):
+- Used by the iOS app at runtime
+- Loaded via `AppConfig.swift`
+- Safe to include in client applications (protected by service-level security)
+- Examples: anon keys, public API endpoints, SDK keys
+
+**Operational Secrets** (in `.secrets` file):
+- Used by developers for server-side operations only
+- **NEVER** included in the iOS app
+- For database administration, migrations, CI/CD pipelines
+- Examples: service role keys, database passwords, admin tokens
+- Format: Plain text documentation file for developer reference
+
+**Required Keys in Environment Plists:**
+- `apiBaseURL`: Backend API endpoint
+- `webShareBaseURL`: Web sharing URL prefix
+- `supabaseURL`: Supabase project URL
+- `supabaseAnonKey`: Supabase anonymous key (safe for client)
+- `posthogKey`: PostHog analytics key
+- `sentryDSN`: Sentry error tracking DSN
+- `twilioVerifyServiceSid`: Twilio Verify service SID
+- `oneSignalAppId`: OneSignal push notification app ID
+- `mockExternalServices`: Boolean flag for using mock services
+
+**Operational Secrets in .secrets File:**
+- Supabase service role keys (per environment)
+- Database passwords (per environment)
+- CI/CD tokens and credentials
+- Any other secrets that should never be in the client app
 
 #### Package Resources
 - Place package-specific resources in `Resources/` within each package
@@ -275,318 +492,11 @@ Each package must include a `README.md` with:
 - Don't create deep dependency chains
 - Don't ignore dependency direction
 
-### Migration Guidelines
-
-#### When Adding New Features
-1. Create new feature module in `Packages/Features/`
-2. Add necessary Kit dependencies
-3. Update main app to include new feature
-4. Add tests for new functionality
-
-#### When Refactoring
-1. Identify clear boundaries for new modules
-2. Move related functionality together
-3. Update dependencies carefully
-4. Test thoroughly after refactoring
-
-#### When Removing Features
-1. Remove feature module entirely
-2. Clean up any remaining references
-3. Update dependencies
-4. Remove unused Kit modules if appropriate
-
-### Implementation Checklist
-
-#### Before Creating a New Module
-- [ ] Identify clear module boundaries
-- [ ] Determine appropriate category (Feature/Kit/Shared)
-- [ ] Plan dependencies carefully
-- [ ] Design public API interface
-
-#### During Module Creation
-- [ ] Follow standard directory structure
-- [ ] Create proper Package.swift
-- [ ] Add comprehensive tests
-- [ ] Document public APIs
-- [ ] Add README.md
-
-#### After Module Creation
-- [ ] Verify no circular dependencies
-- [ ] Test module in isolation
-- [ ] Integrate with main app
-- [ ] Update documentation
-- [ ] Review with team## Agora iOS Project Structure Guidelines
-
-### Overview
-
-This rule defines the standard project structure for the Agora iOS app, following Swift Package Manager (SPM) modular architecture with clear separation of concerns. The structure supports iOS 26+, Swift 6.2, and SwiftUI 6 with a focus on maintainability, testability, and Apple design compliance.
-
-### Root Directory Structure
-
-```
-Agora/
-├── Agora.xcodeproj/           # Main Xcode project
-├── AgoraTests/                # Main app unit tests
-├── AgoraUITests/              # Main app UI tests
-├── Configs/                   # Build and configuration files
-├── docs/                      # Project documentation
-├── OpenAPI/                   # API specifications and generated code
-├── Packages/                  # Swift Package modules
-├── Resources/                 # App resources and main app files
-├── Scripts/                   # Build and utility scripts
-├── Tests/                     # Cross-module tests
-└── Package.swift              # Root package manifest
-```
-
-### Packages Directory Structure
-
-The `Packages/` directory contains all Swift Package modules organized into three main categories:
-
-#### Features (`Packages/Features/`)
-User-facing feature modules that represent distinct app functionality:
-
-```
-Features/
-├── Compose/                   # Post composition and media upload
-├── DMs/                       # Direct messaging
-├── HomeFollowing/             # Following feed (chronological)
-├── HomeForYou/                # For You feed (recommendations)
-├── Notifications/             # Push notifications and in-app alerts
-├── PostDetail/                # Individual post viewing
-├── Profile/                   # User profiles and settings
-├── Search/                    # People and content search
-└── Threading/                 # Reply threads and conversations
-```
-
-#### Kits (`Packages/Kits/`)
-Reusable functionality modules that provide specific capabilities:
-
-```
-Kits/
-├── Analytics/                 # PostHog analytics wrapper
-├── Auth/                      # Sign in with Apple + phone verification
-├── DesignSystem/              # UI components, colors, typography
-├── Media/                     # Image/video capture, processing, upload
-├── Moderation/                # Content moderation and reporting
-├── Networking/                # API client and network layer
-├── Persistence/               # SwiftData models and caching
-├── Recommender/               # Recommendation engine client
-└── Verification/              # Device attestation and anti-bot
-```
-
-#### Shared (`Packages/Shared/`)
-Cross-cutting concerns and shared utilities:
-
-```
-Shared/
-├── AppFoundation/             # Core app utilities and extensions
-└── TestSupport/               # Testing utilities and mocks
-```
-
-#### ThirdParty (`Packages/ThirdParty/`)
-Third-party SDK integrations:
-
-```
-ThirdParty/
-├── hCaptcha/                  # hCaptcha challenge SDK
-├── OneSignal/                 # Push notification service
-├── PostHog/                   # Analytics SDK
-└── Sentry/                    # Crash reporting SDK
-```
-
-### Package Structure Standards
-
-Each Swift Package must follow this exact structure:
-
-```
-PackageName/
-├── Package.swift              # Package manifest
-├── README.md                  # Package documentation
-├── Sources/
-│   └── PackageName/           # Source code (matches package name)
-│       ├── PackageName.swift  # Main public interface
-│       └── [other files]      # Implementation files
-└── Tests/
-    └── PackageNameTests/      # Test files
-        └── PackageNameTests.swift
-```
-
-### Package.swift Standards
-
-All packages must follow these conventions:
-
-#### Required Elements
-1. **Swift Tools Version**: Always use `6.2`
-2. **Platform**: Always specify `.iOS(.v18)`
-3. **Product Name**: Must match package directory name
-4. **Target Name**: Must match package directory name
-5. **Test Target**: Must be named `{PackageName}Tests`
-
-#### Dependency Guidelines
-- **Features** can depend on Kits and Shared modules
-- **Kits** can depend on other Kits and Shared modules
-- **Shared** modules should have minimal dependencies
-- **ThirdParty** modules should be self-contained
-- Use relative paths for local dependencies: `../../Kits/DesignSystem`
-
-#### Example Package.swift
-```swift
-// swift-tools-version: 6.2
-import PackageDescription
-
-let package = Package(
-    name: "PackageName",
-    platforms: [.iOS(.v18)],
-    products: [
-        .library(name: "PackageName", targets: ["PackageName"])
-    ],
-    dependencies: [
-        .package(path: "../../Kits/DesignSystem"),
-        .package(path: "../../Shared/AppFoundation")
-    ],
-    targets: [
-        .target(
-            name: "PackageName",
-            dependencies: ["DesignSystem", "AppFoundation"]
-        ),
-        .testTarget(
-            name: "PackageNameTests",
-            dependencies: ["PackageName"]
-        )
-    ]
-)
-```
-
-### File Naming Conventions
-
-#### Swift Files
-- **Views**: `{Feature}View.swift` (e.g., `ComposeView.swift`)
-- **ViewModels**: `{Feature}ViewModel.swift` (e.g., `ComposeViewModel.swift`)
-- **Models**: `{Feature}.swift` (e.g., `Compose.swift`)
-- **Services**: `{Service}Service.swift` (e.g., `AuthService.swift`)
-- **Extensions**: `{Type}+{Purpose}.swift` (e.g., `String+Validation.swift`)
-
-#### Resources
-- **Assets**: Use `.xcassets` bundles within package `Resources/` directory
-- **Localization**: Use `Localizable.strings` files
-- **Configuration**: Use `.plist` files for configuration
-
-### Module Dependencies
-
-#### Dependency Hierarchy
-```
-Features (top level)
-├── Kits (middle level)
-│   ├── DesignSystem (foundation)
-│   ├── Networking (foundation)
-│   ├── Auth (foundation)
-│   └── [other kits]
-└── Shared (foundation level)
-    ├── AppFoundation
-    └── TestSupport
-```
-
-#### Allowed Dependencies
-- **Features** → Kits, Shared
-- **Kits** → Other Kits, Shared
-- **Shared** → Minimal external dependencies only
-- **ThirdParty** → Self-contained, no internal dependencies
-
-### Testing Structure
-
-#### Test Organization
-- Each package has its own test target
-- Test files mirror source structure
-- Use `TestSupport` package for shared test utilities
-- Snapshot tests go in root `Tests/SnapshotTests/`
-- UI tests go in root `Tests/UITests/`
-
-#### Test Naming
-- Test classes: `{Feature}Tests`
-- Test methods: `test{Description}()`
-- Snapshot tests: `{Feature}Snapshots`
-
-### Configuration Files
-
-#### Build Configuration
-- **Debug.xcconfig** and **Release.xcconfig** in `Configs/Xcode/`
-- **swiftlint.yml** in `Configs/Lint/`
-- **Package.resolved** at root and in packages with external dependencies
-
-#### Scripts
-- Build scripts in `Scripts/` directory
-- Use `.sh` extension for shell scripts
-- Include proper error handling and logging
-
-### Resource Management
-
-#### App Resources (`Resources/`)
-- **AgoraApp.swift**: Main app entry point
-- **ContentView.swift**: Root view
-- **Assets.xcassets**: App-level assets
-- **Info.plist**: App configuration
-- **Secrets.plist**: Sensitive configuration (gitignored)
-- **Localizable.strings**: App-level strings
-
-#### Package Resources
-- Place package-specific resources in `Resources/` within each package
-- Use `.xcassets` for image assets
-- Follow Apple's resource naming conventions
-
-### Documentation Standards
-
-#### README Files
-Each package must include a `README.md` with:
-- Package purpose and functionality
-- Usage examples
-- Dependencies
-- Testing instructions
-
-#### Code Documentation
-- Use Swift documentation comments (`///`)
-- Document public APIs thoroughly
-- Include usage examples in complex functions
-- Follow Apple's documentation style
-
-### Best Practices
-
-#### Module Design
-1. **Single Responsibility**: Each module should have one clear purpose
-2. **Loose Coupling**: Minimize dependencies between modules
-3. **High Cohesion**: Related functionality should be grouped together
-4. **Clear Interfaces**: Expose only necessary public APIs
-
-#### Code Organization
-1. **File Size**: Keep files under 300 lines when possible
-2. **Naming**: Use descriptive, self-documenting names
-3. **Structure**: Group related functionality together
-4. **Imports**: Order imports alphabetically
-
-#### Performance Considerations
-1. **Lazy Loading**: Use lazy loading for heavy resources
-2. **Memory Management**: Follow Swift memory management best practices
-3. **Build Time**: Minimize unnecessary dependencies
-4. **Bundle Size**: Keep third-party dependencies minimal
-
-### Common Mistakes to Avoid
-
-#### Structural Issues
-- Don't create circular dependencies between modules
-- Don't put business logic in view files
-- Don't mix UI and data layer concerns
-- Don't create overly large modules
-
-#### Naming Issues
-- Don't use generic names like `Utils` or `Helpers`
-- Don't abbreviate unnecessarily
-- Don't use inconsistent naming patterns
-- Don't mix naming conventions
-
-#### Dependency Issues
-- Don't create unnecessary dependencies
-- Don't depend on implementation details
-- Don't create deep dependency chains
-- Don't ignore dependency direction
+#### Configuration Issues
+- Don't commit actual secret values (use .plist.example files)
+- Don't hardcode environment-specific values in code
+- Don't skip the appropriate scheme when building
+- Don't mix environments in the same build
 
 ### Migration Guidelines
 
@@ -607,6 +517,13 @@ Each package must include a `README.md` with:
 2. Clean up any remaining references
 3. Update dependencies
 4. Remove unused Kit modules if appropriate
+
+#### When Adding Environment-Specific Configuration
+1. Add new keys to both environment plists (Staging, Production)
+2. Add new keys to both .plist.example files with fake values
+3. Update `AppConfig.swift` struct with new properties
+4. Update `AppConfig.load()` method to read new keys
+5. Document the new configuration in relevant README files
 
 ### Implementation Checklist
 
@@ -629,3 +546,10 @@ Each package must include a `README.md` with:
 - [ ] Integrate with main app
 - [ ] Update documentation
 - [ ] Review with team
+
+### Related Documentation
+
+For more information on specific aspects of the project structure:
+- **Environment Strategy**: See `environment-strategy.mdc` for detailed environment configuration
+- **Project Blueprint**: See `docs/agora-mvp-blueprint.md` for overall architecture
+- **Creating Rules**: See `creating-rules.mdc` for documentation standards
