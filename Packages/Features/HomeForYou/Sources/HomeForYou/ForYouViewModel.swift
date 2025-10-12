@@ -19,13 +19,16 @@ public class ForYouViewModel {
     
     private let networking: APIClient
     private let analytics: AnalyticsManager
+    private var nextCursor: String?
     
     public init(networking: APIClient = APIClient.shared, analytics: AnalyticsManager = AnalyticsManager.shared) {
         self.networking = networking
         self.analytics = analytics
         
-        // Load placeholder data
-        loadPlaceholderData()
+        // Load initial data on init
+        Task {
+            await refresh()
+        }
     }
     
     public func refresh() async {
@@ -35,29 +38,62 @@ public class ForYouViewModel {
         do {
             analytics.track(event: "feed_refresh_started", properties: ["feed_type": "for_you"])
             
-            // TODO: Implement actual API call
-            // For now, simulate network delay and reload placeholder data
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            loadPlaceholderData()
+            // Call the real API
+            let response = try await networking.getForYouFeed(limit: 20)
+            
+            // Map API posts to view model posts
+            self.posts = response.posts.map { apiPost in
+                Post(
+                    id: apiPost.id,
+                    text: apiPost.text,
+                    author: apiPost.authorId, // TODO: Load author display name
+                    timestamp: apiPost.createdAt,
+                    likeCount: apiPost.likeCount ?? 0,
+                    repostCount: apiPost.repostCount ?? 0,
+                    replyCount: apiPost.replyCount ?? 0
+                )
+            }
+            self.nextCursor = response.nextCursor
             
             analytics.track(event: "feed_refresh_completed", properties: ["feed_type": "for_you", "post_count": posts.count])
         } catch {
             self.error = error
             analytics.track(event: "feed_refresh_failed", properties: ["feed_type": "for_you", "error": error.localizedDescription])
+            print("[ForYouViewModel] ❌ Failed to load feed: \(error)")
         }
     }
     
     public func loadMore() async {
-        // TODO: Implement pagination
-        analytics.track(event: "feed_load_more", properties: ["feed_type": "for_you"])
-    }
-    
-    private func loadPlaceholderData() {
-        posts = [
-            Post(text: "Welcome to Agora! This is your personalized For You feed.", author: "Agora Team", timestamp: Date().addingTimeInterval(-3600)),
-            Post(text: "Discover amazing content from people you might want to follow.", author: "Discovery Bot", timestamp: Date().addingTimeInterval(-7200)),
-            Post(text: "Your feed will be populated with posts based on your interests and interactions.", author: "Feed Algorithm", timestamp: Date().addingTimeInterval(-10800))
-        ]
+        guard let cursor = nextCursor, !isLoading else { return }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            analytics.track(event: "feed_load_more", properties: ["feed_type": "for_you"])
+            
+            let response = try await networking.getForYouFeed(cursor: cursor, limit: 20)
+            
+            // Append new posts
+            let newPosts = response.posts.map { apiPost in
+                Post(
+                    id: apiPost.id,
+                    text: apiPost.text,
+                    author: apiPost.authorId,
+                    timestamp: apiPost.createdAt,
+                    likeCount: apiPost.likeCount ?? 0,
+                    repostCount: apiPost.repostCount ?? 0,
+                    replyCount: apiPost.replyCount ?? 0
+                )
+            }
+            self.posts.append(contentsOf: newPosts)
+            self.nextCursor = response.nextCursor
+            
+            analytics.track(event: "feed_load_more_completed", properties: ["new_posts_count": newPosts.count])
+        } catch {
+            self.error = error
+            analytics.track(event: "feed_load_more_failed", properties: ["error": error.localizedDescription])
+        }
     }
 }
 
@@ -70,8 +106,8 @@ public struct Post: Identifiable, Codable {
     public let repostCount: Int
     public let replyCount: Int
     
-    public init(text: String, author: String, timestamp: Date = Date(), likeCount: Int = 0, repostCount: Int = 0, replyCount: Int = 0) {
-        self.id = UUID().uuidString
+    public init(id: String, text: String, author: String, timestamp: Date = Date(), likeCount: Int = 0, repostCount: Int = 0, replyCount: Int = 0) {
+        self.id = id
         self.text = text
         self.author = author
         self.timestamp = timestamp

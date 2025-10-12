@@ -13,10 +13,10 @@ public final class APIClient: Sendable {
     
     /// Initialize API client with optional authentication
     /// - Parameters:
-    ///   - baseURL: Base URL for the API (defaults to production)
+    ///   - baseURL: Base URL for the API (defaults to environment-specific URL from AppConfig)
     ///   - authTokenProvider: Provider for authentication tokens
     public init(
-        baseURL: URL = URL(string: "https://api.agora.app/v1")!,
+        baseURL: URL = AppConfig.apiBaseURL,
         authTokenProvider: AuthTokenProvider? = nil
     ) {
         self.baseURL = baseURL
