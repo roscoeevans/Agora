@@ -1,5 +1,4 @@
 import Foundation
-import AppFoundation
 
 /// Manages authentication sessions and token storage
 public actor SessionStore {
@@ -7,7 +6,7 @@ public actor SessionStore {
     // MARK: - Private Properties
     
     private let keychainHelper: KeychainHelperProtocol
-    private var currentSession: Session?
+    private var currentSession: CachedSession?
     
     // MARK: - Initialization
     
@@ -34,7 +33,7 @@ public actor SessionStore {
         // In a real implementation, you would exchange the identity token
         // with your backend for access/refresh tokens
         // For now, we'll create a mock session
-        let session = Session(
+        let session = CachedSession(
             user: user,
             accessToken: "mock_access_token_\(UUID().uuidString)",
             refreshToken: "mock_refresh_token_\(UUID().uuidString)",
@@ -48,7 +47,7 @@ public actor SessionStore {
     }
     
     /// Loads existing session from keychain
-    public func loadSession() async throws -> Session? {
+    public func loadSession() async throws -> CachedSession? {
         if let session = currentSession {
             return session
         }
@@ -100,7 +99,7 @@ public actor SessionStore {
         
         // In a real implementation, you would call your backend to refresh the token
         // For now, we'll create a new mock session
-        let newSession = Session(
+        let newSession = CachedSession(
             user: session.user,
             accessToken: "refreshed_access_token_\(UUID().uuidString)",
             refreshToken: refreshToken,
@@ -125,7 +124,7 @@ public actor SessionStore {
             throw AuthTokenError.tokenNotFound
         }
         
-        let updatedSession = Session(
+        let updatedSession = CachedSession(
             user: session.user,
             accessToken: session.accessToken,
             refreshToken: session.refreshToken,
@@ -146,9 +145,10 @@ public actor SessionStore {
     }
 }
 
-// MARK: - Session Model
+// MARK: - Cached Session Model
 
-public struct Session: Codable, Sendable {
+/// Cached authentication session containing user info and tokens
+public struct CachedSession: Codable, Sendable {
     public let user: AuthenticatedUser
     public let accessToken: String
     public let refreshToken: String?
@@ -159,7 +159,13 @@ public struct Session: Codable, Sendable {
         Date() < expiresAt
     }
     
-    public init(user: AuthenticatedUser, accessToken: String, refreshToken: String?, expiresAt: Date, isPhoneVerified: Bool = false) {
+    public init(
+        user: AuthenticatedUser,
+        accessToken: String,
+        refreshToken: String?,
+        expiresAt: Date,
+        isPhoneVerified: Bool = false
+    ) {
         self.user = user
         self.accessToken = accessToken
         self.refreshToken = refreshToken
@@ -167,3 +173,4 @@ public struct Session: Codable, Sendable {
         self.isPhoneVerified = isPhoneVerified
     }
 }
+

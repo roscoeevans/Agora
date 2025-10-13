@@ -55,6 +55,12 @@ The schema includes all tables from the MVP blueprint:
 
 ### Recommendation System
 - `feed_scores` - Personalized content scoring for For You feed
+- `post_impressions` - User impression tracking for 7-day suppression
+- `post_events` - Event log for user interactions (likes, views, etc.)
+- `post_aggregates` - Materialized view of engagement rollups
+- `graph_proximity` - Cached social graph proximity weights
+- `bandit_stats` - Multi-armed bandit statistics for exploration
+- `reco_config` - Centralized algorithm configuration (JSONB)
 
 ### Notifications
 - `notifications` - Push notification tracking
@@ -81,11 +87,46 @@ After running the initial schema:
 
 ## Migration Management
 
+### Deployed Migrations (Staging)
+
+1. **001_initial_schema.sql** - Base tables (users, posts, follows, likes, etc.)
+2. **002_add_display_handle.sql** - Display handle support
+3. **003_feed_foundation.sql** - Feed infrastructure (impressions, events, aggregates, proximity)
+4. **004_count_triggers.sql** - Auto-maintain engagement counts
+5. **005_feed_helpers.sql** - Feed candidate generation functions
+6. **006_bandit_system.sql** - Multi-armed bandit for exploration
+7. **007_reco_config.sql** - Centralized algorithm configuration
+8. **008_cron_jobs.sql** - Automated maintenance (refresh aggregates, prune old data)
+9. **009_auth_integration.sql** - Supabase Auth integration, RLS policies for user creation
+
+### Authentication Flow
+
+Agora uses hybrid authentication with Supabase Auth + custom user creation:
+
+1. **Sign in with Apple** → Supabase Auth mints JWT (user session)
+2. **Client checks** `/users/me` (Edge Function) for existing profile
+3. **If no profile** → Show onboarding to collect handle/display name
+4. **Client calls** `/create-profile` (Edge Function) with onboarding data
+5. **Edge Function validates** and creates user record atomically
+6. **Client proceeds** to main app with authenticated profile
+
+**Why Edge Functions for User Creation?**
+
+We use Supabase Edge Functions rather than direct database inserts to:
+- Enforce verification gates (device attestation, phone verify, rate limits)
+- Atomically reserve handles and create user records
+- Centralize business logic server-side for auditability
+- Maintain flexibility to add checks without client updates
+
+See `../supabase/functions/README.md` for Edge Function details.
+
+### Applying New Migrations
+
 For future schema changes:
 
-1. Create new migration files: `migrations/002_*.sql`
+1. Create new migration files: `migrations/00X_*.sql`
 2. Test migrations in development first
-3. Apply to staging for validation
+3. Apply to staging for validation using Supabase MCP or Dashboard
 4. Deploy to production
 
 ## Environment Configuration

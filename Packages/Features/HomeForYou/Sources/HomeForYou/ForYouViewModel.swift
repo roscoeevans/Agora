@@ -43,19 +43,31 @@ public class ForYouViewModel {
             
             // Map API posts to view model posts
             self.posts = response.posts.map { apiPost in
-                Post(
-                    id: apiPost.id,
-                    text: apiPost.text,
-                    author: apiPost.authorId, // TODO: Load author display name
-                    timestamp: apiPost.createdAt,
-                    likeCount: apiPost.likeCount ?? 0,
-                    repostCount: apiPost.repostCount ?? 0,
-                    replyCount: apiPost.replyCount ?? 0
+                let basePost = apiPost.value1
+                let enhancedData = apiPost.value2
+                return Post(
+                    id: basePost.id,
+                    text: basePost.text,
+                    author: basePost.authorId,
+                    authorDisplayHandle: basePost.authorDisplayHandle,
+                    timestamp: basePost.createdAt,
+                    likeCount: basePost.likeCount ?? 0,
+                    repostCount: basePost.repostCount ?? 0,
+                    replyCount: basePost.replyCount ?? 0,
+                    score: enhancedData.score.map(Double.init),
+                    reasons: enhancedData.reasons?.map { RecommendationReason(signal: $0.signal, weight: Double($0.weight)) },
+                    explore: enhancedData.explore
                 )
             }
             self.nextCursor = response.nextCursor
             
-            analytics.track(event: "feed_refresh_completed", properties: ["feed_type": "for_you", "post_count": posts.count])
+            // Track explore impressions
+            let exploreCount = posts.filter { $0.explore == true }.count
+            analytics.track(event: "feed_refresh_completed", properties: [
+                "feed_type": "for_you",
+                "post_count": posts.count,
+                "explore_count": exploreCount
+            ])
         } catch {
             self.error = error
             analytics.track(event: "feed_refresh_failed", properties: ["feed_type": "for_you", "error": error.localizedDescription])
@@ -76,20 +88,30 @@ public class ForYouViewModel {
             
             // Append new posts
             let newPosts = response.posts.map { apiPost in
-                Post(
-                    id: apiPost.id,
-                    text: apiPost.text,
-                    author: apiPost.authorId,
-                    timestamp: apiPost.createdAt,
-                    likeCount: apiPost.likeCount ?? 0,
-                    repostCount: apiPost.repostCount ?? 0,
-                    replyCount: apiPost.replyCount ?? 0
+                let basePost = apiPost.value1
+                let enhancedData = apiPost.value2
+                return Post(
+                    id: basePost.id,
+                    text: basePost.text,
+                    author: basePost.authorId,
+                    authorDisplayHandle: basePost.authorDisplayHandle,
+                    timestamp: basePost.createdAt,
+                    likeCount: basePost.likeCount ?? 0,
+                    repostCount: basePost.repostCount ?? 0,
+                    replyCount: basePost.replyCount ?? 0,
+                    score: enhancedData.score.map(Double.init),
+                    reasons: enhancedData.reasons?.map { RecommendationReason(signal: $0.signal, weight: Double($0.weight)) },
+                    explore: enhancedData.explore
                 )
             }
             self.posts.append(contentsOf: newPosts)
             self.nextCursor = response.nextCursor
             
-            analytics.track(event: "feed_load_more_completed", properties: ["new_posts_count": newPosts.count])
+            let exploreCount = newPosts.filter { $0.explore == true }.count
+            analytics.track(event: "feed_load_more_completed", properties: [
+                "new_posts_count": newPosts.count,
+                "explore_count": exploreCount
+            ])
         } catch {
             self.error = error
             analytics.track(event: "feed_load_more_failed", properties: ["error": error.localizedDescription])
@@ -101,18 +123,50 @@ public struct Post: Identifiable, Codable {
     public let id: String
     public let text: String
     public let author: String
+    public let authorDisplayHandle: String
     public let timestamp: Date
     public let likeCount: Int
     public let repostCount: Int
     public let replyCount: Int
     
-    public init(id: String, text: String, author: String, timestamp: Date = Date(), likeCount: Int = 0, repostCount: Int = 0, replyCount: Int = 0) {
+    // Enhanced feed fields
+    public let score: Double?
+    public let reasons: [RecommendationReason]?
+    public let explore: Bool?
+    
+    public init(
+        id: String, 
+        text: String, 
+        author: String, 
+        authorDisplayHandle: String? = nil, 
+        timestamp: Date = Date(), 
+        likeCount: Int = 0, 
+        repostCount: Int = 0, 
+        replyCount: Int = 0,
+        score: Double? = nil,
+        reasons: [RecommendationReason]? = nil,
+        explore: Bool? = nil
+    ) {
         self.id = id
         self.text = text
         self.author = author
+        self.authorDisplayHandle = authorDisplayHandle ?? author
         self.timestamp = timestamp
         self.likeCount = likeCount
         self.repostCount = repostCount
         self.replyCount = replyCount
+        self.score = score
+        self.reasons = reasons
+        self.explore = explore
+    }
+}
+
+public struct RecommendationReason: Codable {
+    public let signal: String
+    public let weight: Double
+    
+    public init(signal: String, weight: Double) {
+        self.signal = signal
+        self.weight = weight
     }
 }

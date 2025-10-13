@@ -24,24 +24,24 @@ public protocol APIProtocol: Sendable {
     func post_sol_auth_sol_swa_sol_finish(_ input: Operations.post_sol_auth_sol_swa_sol_finish.Input) async throws -> Operations.post_sol_auth_sol_swa_sol_finish.Output
     /// Create user profile after authentication
     ///
-    /// - Remark: HTTP `POST /users/profile`.
-    /// - Remark: Generated from `#/paths//users/profile/post`.
-    func post_sol_users_sol_profile(_ input: Operations.post_sol_users_sol_profile.Input) async throws -> Operations.post_sol_users_sol_profile.Output
+    /// - Remark: HTTP `POST /create-profile`.
+    /// - Remark: Generated from `#/paths//create-profile/post`.
+    func post_sol_create_hyphen_profile(_ input: Operations.post_sol_create_hyphen_profile.Input) async throws -> Operations.post_sol_create_hyphen_profile.Output
     /// Check if handle is available
     ///
-    /// - Remark: HTTP `GET /users/check-handle`.
-    /// - Remark: Generated from `#/paths//users/check-handle/get`.
-    func get_sol_users_sol_check_hyphen_handle(_ input: Operations.get_sol_users_sol_check_hyphen_handle.Input) async throws -> Operations.get_sol_users_sol_check_hyphen_handle.Output
+    /// - Remark: HTTP `GET /check-handle`.
+    /// - Remark: Generated from `#/paths//check-handle/get`.
+    func get_sol_check_hyphen_handle(_ input: Operations.get_sol_check_hyphen_handle.Input) async throws -> Operations.get_sol_check_hyphen_handle.Output
     /// Get current user profile
     ///
-    /// - Remark: HTTP `GET /users/me`.
-    /// - Remark: Generated from `#/paths//users/me/get`.
-    func get_sol_users_sol_me(_ input: Operations.get_sol_users_sol_me.Input) async throws -> Operations.get_sol_users_sol_me.Output
+    /// - Remark: HTTP `GET /get-current-profile`.
+    /// - Remark: Generated from `#/paths//get-current-profile/get`.
+    func get_sol_get_hyphen_current_hyphen_profile(_ input: Operations.get_sol_get_hyphen_current_hyphen_profile.Input) async throws -> Operations.get_sol_get_hyphen_current_hyphen_profile.Output
     /// Update current user profile
     ///
-    /// - Remark: HTTP `PATCH /users/me`.
-    /// - Remark: Generated from `#/paths//users/me/patch`.
-    func patch_sol_users_sol_me(_ input: Operations.patch_sol_users_sol_me.Input) async throws -> Operations.patch_sol_users_sol_me.Output
+    /// - Remark: HTTP `PATCH /update-profile`.
+    /// - Remark: Generated from `#/paths//update-profile/patch`.
+    func patch_sol_update_hyphen_profile(_ input: Operations.patch_sol_update_hyphen_profile.Input) async throws -> Operations.patch_sol_update_hyphen_profile.Output
     /// Get For You feed
     ///
     /// - Remark: HTTP `GET /feed/for-you`.
@@ -79,46 +79,46 @@ extension APIProtocol {
     }
     /// Create user profile after authentication
     ///
-    /// - Remark: HTTP `POST /users/profile`.
-    /// - Remark: Generated from `#/paths//users/profile/post`.
-    public func post_sol_users_sol_profile(
-        headers: Operations.post_sol_users_sol_profile.Input.Headers = .init(),
-        body: Operations.post_sol_users_sol_profile.Input.Body
-    ) async throws -> Operations.post_sol_users_sol_profile.Output {
-        try await post_sol_users_sol_profile(Operations.post_sol_users_sol_profile.Input(
+    /// - Remark: HTTP `POST /create-profile`.
+    /// - Remark: Generated from `#/paths//create-profile/post`.
+    public func post_sol_create_hyphen_profile(
+        headers: Operations.post_sol_create_hyphen_profile.Input.Headers = .init(),
+        body: Operations.post_sol_create_hyphen_profile.Input.Body
+    ) async throws -> Operations.post_sol_create_hyphen_profile.Output {
+        try await post_sol_create_hyphen_profile(Operations.post_sol_create_hyphen_profile.Input(
             headers: headers,
             body: body
         ))
     }
     /// Check if handle is available
     ///
-    /// - Remark: HTTP `GET /users/check-handle`.
-    /// - Remark: Generated from `#/paths//users/check-handle/get`.
-    public func get_sol_users_sol_check_hyphen_handle(
-        query: Operations.get_sol_users_sol_check_hyphen_handle.Input.Query,
-        headers: Operations.get_sol_users_sol_check_hyphen_handle.Input.Headers = .init()
-    ) async throws -> Operations.get_sol_users_sol_check_hyphen_handle.Output {
-        try await get_sol_users_sol_check_hyphen_handle(Operations.get_sol_users_sol_check_hyphen_handle.Input(
+    /// - Remark: HTTP `GET /check-handle`.
+    /// - Remark: Generated from `#/paths//check-handle/get`.
+    public func get_sol_check_hyphen_handle(
+        query: Operations.get_sol_check_hyphen_handle.Input.Query,
+        headers: Operations.get_sol_check_hyphen_handle.Input.Headers = .init()
+    ) async throws -> Operations.get_sol_check_hyphen_handle.Output {
+        try await get_sol_check_hyphen_handle(Operations.get_sol_check_hyphen_handle.Input(
             query: query,
             headers: headers
         ))
     }
     /// Get current user profile
     ///
-    /// - Remark: HTTP `GET /users/me`.
-    /// - Remark: Generated from `#/paths//users/me/get`.
-    public func get_sol_users_sol_me(headers: Operations.get_sol_users_sol_me.Input.Headers = .init()) async throws -> Operations.get_sol_users_sol_me.Output {
-        try await get_sol_users_sol_me(Operations.get_sol_users_sol_me.Input(headers: headers))
+    /// - Remark: HTTP `GET /get-current-profile`.
+    /// - Remark: Generated from `#/paths//get-current-profile/get`.
+    public func get_sol_get_hyphen_current_hyphen_profile(headers: Operations.get_sol_get_hyphen_current_hyphen_profile.Input.Headers = .init()) async throws -> Operations.get_sol_get_hyphen_current_hyphen_profile.Output {
+        try await get_sol_get_hyphen_current_hyphen_profile(Operations.get_sol_get_hyphen_current_hyphen_profile.Input(headers: headers))
     }
     /// Update current user profile
     ///
-    /// - Remark: HTTP `PATCH /users/me`.
-    /// - Remark: Generated from `#/paths//users/me/patch`.
-    public func patch_sol_users_sol_me(
-        headers: Operations.patch_sol_users_sol_me.Input.Headers = .init(),
-        body: Operations.patch_sol_users_sol_me.Input.Body
-    ) async throws -> Operations.patch_sol_users_sol_me.Output {
-        try await patch_sol_users_sol_me(Operations.patch_sol_users_sol_me.Input(
+    /// - Remark: HTTP `PATCH /update-profile`.
+    /// - Remark: Generated from `#/paths//update-profile/patch`.
+    public func patch_sol_update_hyphen_profile(
+        headers: Operations.patch_sol_update_hyphen_profile.Input.Headers = .init(),
+        body: Operations.patch_sol_update_hyphen_profile.Input.Body
+    ) async throws -> Operations.patch_sol_update_hyphen_profile.Output {
+        try await patch_sol_update_hyphen_profile(Operations.patch_sol_update_hyphen_profile.Input(
             headers: headers,
             body: body
         ))
@@ -335,11 +335,11 @@ public enum Components {
         }
         /// - Remark: Generated from `#/components/schemas/CreateProfileRequest`.
         public struct CreateProfileRequest: Codable, Hashable, Sendable {
-            /// Canonical lowercase handle (3-15 chars, alphanumeric + underscore)
+            /// Canonical lowercase handle (3-30 chars, letters, numbers, periods, underscores). Instagram/Threads-style rules.
             ///
             /// - Remark: Generated from `#/components/schemas/CreateProfileRequest/handle`.
             public var handle: Swift.String
-            /// User's preferred capitalization (e.g., "RockyEvans")
+            /// User's preferred capitalization (e.g., "Rocky.Evans")
             ///
             /// - Remark: Generated from `#/components/schemas/CreateProfileRequest/displayHandle`.
             public var displayHandle: Swift.String
@@ -347,25 +347,33 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/CreateProfileRequest/displayName`.
             public var displayName: Swift.String
+            /// Optional URL to user's avatar image in Supabase Storage
+            ///
+            /// - Remark: Generated from `#/components/schemas/CreateProfileRequest/avatarUrl`.
+            public var avatarUrl: Swift.String?
             /// Creates a new `CreateProfileRequest`.
             ///
             /// - Parameters:
-            ///   - handle: Canonical lowercase handle (3-15 chars, alphanumeric + underscore)
-            ///   - displayHandle: User's preferred capitalization (e.g., "RockyEvans")
+            ///   - handle: Canonical lowercase handle (3-30 chars, letters, numbers, periods, underscores). Instagram/Threads-style rules.
+            ///   - displayHandle: User's preferred capitalization (e.g., "Rocky.Evans")
             ///   - displayName: Display name shown in profile
+            ///   - avatarUrl: Optional URL to user's avatar image in Supabase Storage
             public init(
                 handle: Swift.String,
                 displayHandle: Swift.String,
-                displayName: Swift.String
+                displayName: Swift.String,
+                avatarUrl: Swift.String? = nil
             ) {
                 self.handle = handle
                 self.displayHandle = displayHandle
                 self.displayName = displayName
+                self.avatarUrl = avatarUrl
             }
             public enum CodingKeys: String, CodingKey {
                 case handle
                 case displayHandle
                 case displayName
+                case avatarUrl
             }
         }
         /// - Remark: Generated from `#/components/schemas/UpdateProfileRequest`.
@@ -438,6 +446,10 @@ public enum Components {
             public var id: Swift.String
             /// - Remark: Generated from `#/components/schemas/Post/authorId`.
             public var authorId: Swift.String
+            /// Author's unique handle with their preferred capitalization
+            ///
+            /// - Remark: Generated from `#/components/schemas/Post/authorDisplayHandle`.
+            public var authorDisplayHandle: Swift.String
             /// - Remark: Generated from `#/components/schemas/Post/text`.
             public var text: Swift.String
             /// - Remark: Generated from `#/components/schemas/Post/linkUrl`.
@@ -469,6 +481,7 @@ public enum Components {
             /// - Parameters:
             ///   - id:
             ///   - authorId:
+            ///   - authorDisplayHandle: Author's unique handle with their preferred capitalization
             ///   - text:
             ///   - linkUrl:
             ///   - mediaBundleId:
@@ -482,6 +495,7 @@ public enum Components {
             public init(
                 id: Swift.String,
                 authorId: Swift.String,
+                authorDisplayHandle: Swift.String,
                 text: Swift.String,
                 linkUrl: Swift.String? = nil,
                 mediaBundleId: Swift.String? = nil,
@@ -495,6 +509,7 @@ public enum Components {
             ) {
                 self.id = id
                 self.authorId = authorId
+                self.authorDisplayHandle = authorDisplayHandle
                 self.text = text
                 self.linkUrl = linkUrl
                 self.mediaBundleId = mediaBundleId
@@ -509,6 +524,7 @@ public enum Components {
             public enum CodingKeys: String, CodingKey {
                 case id
                 case authorId
+                case authorDisplayHandle
                 case text
                 case linkUrl
                 case mediaBundleId
@@ -521,53 +537,191 @@ public enum Components {
                 case createdAt
             }
         }
+        /// - Remark: Generated from `#/components/schemas/EnhancedPost`.
+        public struct EnhancedPost: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/EnhancedPost/value1`.
+            public var value1: Components.Schemas.Post
+            /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// Recommendation score for this post
+                ///
+                /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2/score`.
+                public var score: Swift.Float?
+                /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2/reasonsPayload`.
+                public struct reasonsPayloadPayload: Codable, Hashable, Sendable {
+                    /// Signal name (e.g., 'fresh', 'quality', 'relation')
+                    ///
+                    /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2/reasonsPayload/signal`.
+                    public var signal: Swift.String
+                    /// Weight contribution of this signal
+                    ///
+                    /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2/reasonsPayload/weight`.
+                    public var weight: Swift.Float
+                    /// Creates a new `reasonsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - signal: Signal name (e.g., 'fresh', 'quality', 'relation')
+                    ///   - weight: Weight contribution of this signal
+                    public init(
+                        signal: Swift.String,
+                        weight: Swift.Float
+                    ) {
+                        self.signal = signal
+                        self.weight = weight
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case signal
+                        case weight
+                    }
+                }
+                /// Transparent reasoning for why this post appears
+                ///
+                /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2/reasons`.
+                public typealias reasonsPayload = [Components.Schemas.EnhancedPost.Value2Payload.reasonsPayloadPayload]
+                /// Transparent reasoning for why this post appears
+                ///
+                /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2/reasons`.
+                public var reasons: Components.Schemas.EnhancedPost.Value2Payload.reasonsPayload?
+                /// Whether this post is from the exploration pool
+                ///
+                /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2/explore`.
+                public var explore: Swift.Bool?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - score: Recommendation score for this post
+                ///   - reasons: Transparent reasoning for why this post appears
+                ///   - explore: Whether this post is from the exploration pool
+                public init(
+                    score: Swift.Float? = nil,
+                    reasons: Components.Schemas.EnhancedPost.Value2Payload.reasonsPayload? = nil,
+                    explore: Swift.Bool? = nil
+                ) {
+                    self.score = score
+                    self.reasons = reasons
+                    self.explore = explore
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case score
+                    case reasons
+                    case explore
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/EnhancedPost/value2`.
+            public var value2: Components.Schemas.EnhancedPost.Value2Payload
+            /// Creates a new `EnhancedPost`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.Post,
+                value2: Components.Schemas.EnhancedPost.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/FeedResponse`.
         public struct FeedResponse: Codable, Hashable, Sendable {
+            /// Unique identifier for this page of results
+            ///
+            /// - Remark: Generated from `#/components/schemas/FeedResponse/pageId`.
+            public var pageId: Swift.String?
             /// - Remark: Generated from `#/components/schemas/FeedResponse/posts`.
-            public var posts: [Components.Schemas.Post]
+            public var posts: [Components.Schemas.EnhancedPost]
             /// - Remark: Generated from `#/components/schemas/FeedResponse/nextCursor`.
             public var nextCursor: Swift.String?
             /// Creates a new `FeedResponse`.
             ///
             /// - Parameters:
+            ///   - pageId: Unique identifier for this page of results
             ///   - posts:
             ///   - nextCursor:
             public init(
-                posts: [Components.Schemas.Post],
+                pageId: Swift.String? = nil,
+                posts: [Components.Schemas.EnhancedPost],
                 nextCursor: Swift.String? = nil
             ) {
+                self.pageId = pageId
                 self.posts = posts
                 self.nextCursor = nextCursor
             }
             public enum CodingKeys: String, CodingKey {
+                case pageId
                 case posts
                 case nextCursor
             }
         }
         /// - Remark: Generated from `#/components/schemas/Error`.
         public struct _Error: Codable, Hashable, Sendable {
-            /// Error code
+            /// HTTP status code
             ///
             /// - Remark: Generated from `#/components/schemas/Error/code`.
-            public var code: Swift.String
+            public var code: Swift.Int
             /// Error message
             ///
             /// - Remark: Generated from `#/components/schemas/Error/message`.
             public var message: Swift.String
-            /// Additional error details
+            /// Additional error details (string or object)
             ///
             /// - Remark: Generated from `#/components/schemas/Error/details`.
-            public var details: OpenAPIRuntime.OpenAPIObjectContainer?
+            @frozen public enum detailsPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/Error/details/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/Error/details/case2`.
+                case case2(OpenAPIRuntime.OpenAPIObjectContainer)
+                public init(from decoder: any Decoder) throws {
+                    var errors: [any Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// Additional error details (string or object)
+            ///
+            /// - Remark: Generated from `#/components/schemas/Error/details`.
+            public var details: Components.Schemas._Error.detailsPayload?
             /// Creates a new `_Error`.
             ///
             /// - Parameters:
-            ///   - code: Error code
+            ///   - code: HTTP status code
             ///   - message: Error message
-            ///   - details: Additional error details
+            ///   - details: Additional error details (string or object)
             public init(
-                code: Swift.String,
+                code: Swift.Int,
                 message: Swift.String,
-                details: OpenAPIRuntime.OpenAPIObjectContainer? = nil
+                details: Components.Schemas._Error.detailsPayload? = nil
             ) {
                 self.code = code
                 self.message = message
@@ -1036,37 +1190,37 @@ public enum Operations {
     }
     /// Create user profile after authentication
     ///
-    /// - Remark: HTTP `POST /users/profile`.
-    /// - Remark: Generated from `#/paths//users/profile/post`.
-    public enum post_sol_users_sol_profile {
-        public static let id: Swift.String = "post/users/profile"
+    /// - Remark: HTTP `POST /create-profile`.
+    /// - Remark: Generated from `#/paths//create-profile/post`.
+    public enum post_sol_create_hyphen_profile {
+        public static let id: Swift.String = "post/create-profile"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/users/profile/POST/header`.
+            /// - Remark: Generated from `#/paths/create-profile/POST/header`.
             public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_users_sol_profile.AcceptableContentType>]
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_create_hyphen_profile.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_users_sol_profile.AcceptableContentType>] = .defaultValues()) {
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_create_hyphen_profile.AcceptableContentType>] = .defaultValues()) {
                     self.accept = accept
                 }
             }
-            public var headers: Operations.post_sol_users_sol_profile.Input.Headers
-            /// - Remark: Generated from `#/paths/users/profile/POST/requestBody`.
+            public var headers: Operations.post_sol_create_hyphen_profile.Input.Headers
+            /// - Remark: Generated from `#/paths/create-profile/POST/requestBody`.
             @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/users/profile/POST/requestBody/content/application\/json`.
+                /// - Remark: Generated from `#/paths/create-profile/POST/requestBody/content/application\/json`.
                 case json(Components.Schemas.CreateProfileRequest)
             }
-            public var body: Operations.post_sol_users_sol_profile.Input.Body
+            public var body: Operations.post_sol_create_hyphen_profile.Input.Body
             /// Creates a new `Input`.
             ///
             /// - Parameters:
             ///   - headers:
             ///   - body:
             public init(
-                headers: Operations.post_sol_users_sol_profile.Input.Headers = .init(),
-                body: Operations.post_sol_users_sol_profile.Input.Body
+                headers: Operations.post_sol_create_hyphen_profile.Input.Headers = .init(),
+                body: Operations.post_sol_create_hyphen_profile.Input.Body
             ) {
                 self.headers = headers
                 self.body = body
@@ -1074,9 +1228,9 @@ public enum Operations {
         }
         @frozen public enum Output: Sendable, Hashable {
             public struct Created: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/users/profile/POST/responses/201/content`.
+                /// - Remark: Generated from `#/paths/create-profile/POST/responses/201/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/users/profile/POST/responses/201/content/application\/json`.
+                    /// - Remark: Generated from `#/paths/create-profile/POST/responses/201/content/application\/json`.
                     case json(Components.Schemas.User)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
@@ -1092,26 +1246,26 @@ public enum Operations {
                     }
                 }
                 /// Received HTTP response body
-                public var body: Operations.post_sol_users_sol_profile.Output.Created.Body
+                public var body: Operations.post_sol_create_hyphen_profile.Output.Created.Body
                 /// Creates a new `Created`.
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.post_sol_users_sol_profile.Output.Created.Body) {
+                public init(body: Operations.post_sol_create_hyphen_profile.Output.Created.Body) {
                     self.body = body
                 }
             }
             /// Profile created successfully
             ///
-            /// - Remark: Generated from `#/paths//users/profile/post/responses/201`.
+            /// - Remark: Generated from `#/paths//create-profile/post/responses/201`.
             ///
             /// HTTP response code: `201 created`.
-            case created(Operations.post_sol_users_sol_profile.Output.Created)
+            case created(Operations.post_sol_create_hyphen_profile.Output.Created)
             /// The associated value of the enum case if `self` is `.created`.
             ///
             /// - Throws: An error if `self` is not `.created`.
             /// - SeeAlso: `.created`.
-            public var created: Operations.post_sol_users_sol_profile.Output.Created {
+            public var created: Operations.post_sol_create_hyphen_profile.Output.Created {
                 get throws {
                     switch self {
                     case let .created(response):
@@ -1126,7 +1280,7 @@ public enum Operations {
             }
             /// Bad request
             ///
-            /// - Remark: Generated from `#/paths//users/profile/post/responses/400`.
+            /// - Remark: Generated from `#/paths//create-profile/post/responses/400`.
             ///
             /// HTTP response code: `400 badRequest`.
             case badRequest(Components.Responses.BadRequest)
@@ -1149,7 +1303,7 @@ public enum Operations {
             }
             /// Unauthorized
             ///
-            /// - Remark: Generated from `#/paths//users/profile/post/responses/401`.
+            /// - Remark: Generated from `#/paths//create-profile/post/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Components.Responses.Unauthorized)
@@ -1171,9 +1325,9 @@ public enum Operations {
                 }
             }
             public struct Conflict: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/users/profile/POST/responses/409/content`.
+                /// - Remark: Generated from `#/paths/create-profile/POST/responses/409/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/users/profile/POST/responses/409/content/application\/json`.
+                    /// - Remark: Generated from `#/paths/create-profile/POST/responses/409/content/application\/json`.
                     case json(Components.Schemas._Error)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
@@ -1189,26 +1343,26 @@ public enum Operations {
                     }
                 }
                 /// Received HTTP response body
-                public var body: Operations.post_sol_users_sol_profile.Output.Conflict.Body
+                public var body: Operations.post_sol_create_hyphen_profile.Output.Conflict.Body
                 /// Creates a new `Conflict`.
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.post_sol_users_sol_profile.Output.Conflict.Body) {
+                public init(body: Operations.post_sol_create_hyphen_profile.Output.Conflict.Body) {
                     self.body = body
                 }
             }
             /// Handle already taken
             ///
-            /// - Remark: Generated from `#/paths//users/profile/post/responses/409`.
+            /// - Remark: Generated from `#/paths//create-profile/post/responses/409`.
             ///
             /// HTTP response code: `409 conflict`.
-            case conflict(Operations.post_sol_users_sol_profile.Output.Conflict)
+            case conflict(Operations.post_sol_create_hyphen_profile.Output.Conflict)
             /// The associated value of the enum case if `self` is `.conflict`.
             ///
             /// - Throws: An error if `self` is not `.conflict`.
             /// - SeeAlso: `.conflict`.
-            public var conflict: Operations.post_sol_users_sol_profile.Output.Conflict {
+            public var conflict: Operations.post_sol_create_hyphen_profile.Output.Conflict {
                 get throws {
                     switch self {
                     case let .conflict(response):
@@ -1223,7 +1377,7 @@ public enum Operations {
             }
             /// Internal server error
             ///
-            /// - Remark: Generated from `#/paths//users/profile/post/responses/500`.
+            /// - Remark: Generated from `#/paths//create-profile/post/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalServerError)
@@ -1277,46 +1431,46 @@ public enum Operations {
     }
     /// Check if handle is available
     ///
-    /// - Remark: HTTP `GET /users/check-handle`.
-    /// - Remark: Generated from `#/paths//users/check-handle/get`.
-    public enum get_sol_users_sol_check_hyphen_handle {
-        public static let id: Swift.String = "get/users/check-handle"
+    /// - Remark: HTTP `GET /check-handle`.
+    /// - Remark: Generated from `#/paths//check-handle/get`.
+    public enum get_sol_check_hyphen_handle {
+        public static let id: Swift.String = "get/check-handle"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/users/check-handle/GET/query`.
+            /// - Remark: Generated from `#/paths/check-handle/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// Handle to check (lowercase)
+                /// Handle to check (case-insensitive, stored as lowercase)
                 ///
-                /// - Remark: Generated from `#/paths/users/check-handle/GET/query/handle`.
+                /// - Remark: Generated from `#/paths/check-handle/GET/query/handle`.
                 public var handle: Swift.String
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - handle: Handle to check (lowercase)
+                ///   - handle: Handle to check (case-insensitive, stored as lowercase)
                 public init(handle: Swift.String) {
                     self.handle = handle
                 }
             }
-            public var query: Operations.get_sol_users_sol_check_hyphen_handle.Input.Query
-            /// - Remark: Generated from `#/paths/users/check-handle/GET/header`.
+            public var query: Operations.get_sol_check_hyphen_handle.Input.Query
+            /// - Remark: Generated from `#/paths/check-handle/GET/header`.
             public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_users_sol_check_hyphen_handle.AcceptableContentType>]
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_check_hyphen_handle.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_users_sol_check_hyphen_handle.AcceptableContentType>] = .defaultValues()) {
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_check_hyphen_handle.AcceptableContentType>] = .defaultValues()) {
                     self.accept = accept
                 }
             }
-            public var headers: Operations.get_sol_users_sol_check_hyphen_handle.Input.Headers
+            public var headers: Operations.get_sol_check_hyphen_handle.Input.Headers
             /// Creates a new `Input`.
             ///
             /// - Parameters:
             ///   - query:
             ///   - headers:
             public init(
-                query: Operations.get_sol_users_sol_check_hyphen_handle.Input.Query,
-                headers: Operations.get_sol_users_sol_check_hyphen_handle.Input.Headers = .init()
+                query: Operations.get_sol_check_hyphen_handle.Input.Query,
+                headers: Operations.get_sol_check_hyphen_handle.Input.Headers = .init()
             ) {
                 self.query = query
                 self.headers = headers
@@ -1324,9 +1478,9 @@ public enum Operations {
         }
         @frozen public enum Output: Sendable, Hashable {
             public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/users/check-handle/GET/responses/200/content`.
+                /// - Remark: Generated from `#/paths/check-handle/GET/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/users/check-handle/GET/responses/200/content/application\/json`.
+                    /// - Remark: Generated from `#/paths/check-handle/GET/responses/200/content/application\/json`.
                     case json(Components.Schemas.CheckHandleResponse)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
@@ -1342,26 +1496,26 @@ public enum Operations {
                     }
                 }
                 /// Received HTTP response body
-                public var body: Operations.get_sol_users_sol_check_hyphen_handle.Output.Ok.Body
+                public var body: Operations.get_sol_check_hyphen_handle.Output.Ok.Body
                 /// Creates a new `Ok`.
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.get_sol_users_sol_check_hyphen_handle.Output.Ok.Body) {
+                public init(body: Operations.get_sol_check_hyphen_handle.Output.Ok.Body) {
                     self.body = body
                 }
             }
             /// Handle availability status
             ///
-            /// - Remark: Generated from `#/paths//users/check-handle/get/responses/200`.
+            /// - Remark: Generated from `#/paths//check-handle/get/responses/200`.
             ///
             /// HTTP response code: `200 ok`.
-            case ok(Operations.get_sol_users_sol_check_hyphen_handle.Output.Ok)
+            case ok(Operations.get_sol_check_hyphen_handle.Output.Ok)
             /// The associated value of the enum case if `self` is `.ok`.
             ///
             /// - Throws: An error if `self` is not `.ok`.
             /// - SeeAlso: `.ok`.
-            public var ok: Operations.get_sol_users_sol_check_hyphen_handle.Output.Ok {
+            public var ok: Operations.get_sol_check_hyphen_handle.Output.Ok {
                 get throws {
                     switch self {
                     case let .ok(response):
@@ -1376,7 +1530,7 @@ public enum Operations {
             }
             /// Bad request
             ///
-            /// - Remark: Generated from `#/paths//users/check-handle/get/responses/400`.
+            /// - Remark: Generated from `#/paths//check-handle/get/responses/400`.
             ///
             /// HTTP response code: `400 badRequest`.
             case badRequest(Components.Responses.BadRequest)
@@ -1399,7 +1553,7 @@ public enum Operations {
             }
             /// Internal server error
             ///
-            /// - Remark: Generated from `#/paths//users/check-handle/get/responses/500`.
+            /// - Remark: Generated from `#/paths//check-handle/get/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalServerError)
@@ -1453,36 +1607,36 @@ public enum Operations {
     }
     /// Get current user profile
     ///
-    /// - Remark: HTTP `GET /users/me`.
-    /// - Remark: Generated from `#/paths//users/me/get`.
-    public enum get_sol_users_sol_me {
-        public static let id: Swift.String = "get/users/me"
+    /// - Remark: HTTP `GET /get-current-profile`.
+    /// - Remark: Generated from `#/paths//get-current-profile/get`.
+    public enum get_sol_get_hyphen_current_hyphen_profile {
+        public static let id: Swift.String = "get/get-current-profile"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/users/me/GET/header`.
+            /// - Remark: Generated from `#/paths/get-current-profile/GET/header`.
             public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_users_sol_me.AcceptableContentType>]
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_get_hyphen_current_hyphen_profile.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_users_sol_me.AcceptableContentType>] = .defaultValues()) {
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_get_hyphen_current_hyphen_profile.AcceptableContentType>] = .defaultValues()) {
                     self.accept = accept
                 }
             }
-            public var headers: Operations.get_sol_users_sol_me.Input.Headers
+            public var headers: Operations.get_sol_get_hyphen_current_hyphen_profile.Input.Headers
             /// Creates a new `Input`.
             ///
             /// - Parameters:
             ///   - headers:
-            public init(headers: Operations.get_sol_users_sol_me.Input.Headers = .init()) {
+            public init(headers: Operations.get_sol_get_hyphen_current_hyphen_profile.Input.Headers = .init()) {
                 self.headers = headers
             }
         }
         @frozen public enum Output: Sendable, Hashable {
             public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/users/me/GET/responses/200/content`.
+                /// - Remark: Generated from `#/paths/get-current-profile/GET/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/users/me/GET/responses/200/content/application\/json`.
+                    /// - Remark: Generated from `#/paths/get-current-profile/GET/responses/200/content/application\/json`.
                     case json(Components.Schemas.User)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
@@ -1498,26 +1652,26 @@ public enum Operations {
                     }
                 }
                 /// Received HTTP response body
-                public var body: Operations.get_sol_users_sol_me.Output.Ok.Body
+                public var body: Operations.get_sol_get_hyphen_current_hyphen_profile.Output.Ok.Body
                 /// Creates a new `Ok`.
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.get_sol_users_sol_me.Output.Ok.Body) {
+                public init(body: Operations.get_sol_get_hyphen_current_hyphen_profile.Output.Ok.Body) {
                     self.body = body
                 }
             }
             /// Current user profile
             ///
-            /// - Remark: Generated from `#/paths//users/me/get/responses/200`.
+            /// - Remark: Generated from `#/paths//get-current-profile/get/responses/200`.
             ///
             /// HTTP response code: `200 ok`.
-            case ok(Operations.get_sol_users_sol_me.Output.Ok)
+            case ok(Operations.get_sol_get_hyphen_current_hyphen_profile.Output.Ok)
             /// The associated value of the enum case if `self` is `.ok`.
             ///
             /// - Throws: An error if `self` is not `.ok`.
             /// - SeeAlso: `.ok`.
-            public var ok: Operations.get_sol_users_sol_me.Output.Ok {
+            public var ok: Operations.get_sol_get_hyphen_current_hyphen_profile.Output.Ok {
                 get throws {
                     switch self {
                     case let .ok(response):
@@ -1532,7 +1686,7 @@ public enum Operations {
             }
             /// Unauthorized
             ///
-            /// - Remark: Generated from `#/paths//users/me/get/responses/401`.
+            /// - Remark: Generated from `#/paths//get-current-profile/get/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Components.Responses.Unauthorized)
@@ -1554,9 +1708,9 @@ public enum Operations {
                 }
             }
             public struct NotFound: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/users/me/GET/responses/404/content`.
+                /// - Remark: Generated from `#/paths/get-current-profile/GET/responses/404/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/users/me/GET/responses/404/content/application\/json`.
+                    /// - Remark: Generated from `#/paths/get-current-profile/GET/responses/404/content/application\/json`.
                     case json(Components.Schemas._Error)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
@@ -1572,26 +1726,26 @@ public enum Operations {
                     }
                 }
                 /// Received HTTP response body
-                public var body: Operations.get_sol_users_sol_me.Output.NotFound.Body
+                public var body: Operations.get_sol_get_hyphen_current_hyphen_profile.Output.NotFound.Body
                 /// Creates a new `NotFound`.
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.get_sol_users_sol_me.Output.NotFound.Body) {
+                public init(body: Operations.get_sol_get_hyphen_current_hyphen_profile.Output.NotFound.Body) {
                     self.body = body
                 }
             }
             /// Profile not found
             ///
-            /// - Remark: Generated from `#/paths//users/me/get/responses/404`.
+            /// - Remark: Generated from `#/paths//get-current-profile/get/responses/404`.
             ///
             /// HTTP response code: `404 notFound`.
-            case notFound(Operations.get_sol_users_sol_me.Output.NotFound)
+            case notFound(Operations.get_sol_get_hyphen_current_hyphen_profile.Output.NotFound)
             /// The associated value of the enum case if `self` is `.notFound`.
             ///
             /// - Throws: An error if `self` is not `.notFound`.
             /// - SeeAlso: `.notFound`.
-            public var notFound: Operations.get_sol_users_sol_me.Output.NotFound {
+            public var notFound: Operations.get_sol_get_hyphen_current_hyphen_profile.Output.NotFound {
                 get throws {
                     switch self {
                     case let .notFound(response):
@@ -1606,7 +1760,7 @@ public enum Operations {
             }
             /// Internal server error
             ///
-            /// - Remark: Generated from `#/paths//users/me/get/responses/500`.
+            /// - Remark: Generated from `#/paths//get-current-profile/get/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalServerError)
@@ -1660,37 +1814,37 @@ public enum Operations {
     }
     /// Update current user profile
     ///
-    /// - Remark: HTTP `PATCH /users/me`.
-    /// - Remark: Generated from `#/paths//users/me/patch`.
-    public enum patch_sol_users_sol_me {
-        public static let id: Swift.String = "patch/users/me"
+    /// - Remark: HTTP `PATCH /update-profile`.
+    /// - Remark: Generated from `#/paths//update-profile/patch`.
+    public enum patch_sol_update_hyphen_profile {
+        public static let id: Swift.String = "patch/update-profile"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/users/me/PATCH/header`.
+            /// - Remark: Generated from `#/paths/update-profile/PATCH/header`.
             public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.patch_sol_users_sol_me.AcceptableContentType>]
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.patch_sol_update_hyphen_profile.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.patch_sol_users_sol_me.AcceptableContentType>] = .defaultValues()) {
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.patch_sol_update_hyphen_profile.AcceptableContentType>] = .defaultValues()) {
                     self.accept = accept
                 }
             }
-            public var headers: Operations.patch_sol_users_sol_me.Input.Headers
-            /// - Remark: Generated from `#/paths/users/me/PATCH/requestBody`.
+            public var headers: Operations.patch_sol_update_hyphen_profile.Input.Headers
+            /// - Remark: Generated from `#/paths/update-profile/PATCH/requestBody`.
             @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/users/me/PATCH/requestBody/content/application\/json`.
+                /// - Remark: Generated from `#/paths/update-profile/PATCH/requestBody/content/application\/json`.
                 case json(Components.Schemas.UpdateProfileRequest)
             }
-            public var body: Operations.patch_sol_users_sol_me.Input.Body
+            public var body: Operations.patch_sol_update_hyphen_profile.Input.Body
             /// Creates a new `Input`.
             ///
             /// - Parameters:
             ///   - headers:
             ///   - body:
             public init(
-                headers: Operations.patch_sol_users_sol_me.Input.Headers = .init(),
-                body: Operations.patch_sol_users_sol_me.Input.Body
+                headers: Operations.patch_sol_update_hyphen_profile.Input.Headers = .init(),
+                body: Operations.patch_sol_update_hyphen_profile.Input.Body
             ) {
                 self.headers = headers
                 self.body = body
@@ -1698,9 +1852,9 @@ public enum Operations {
         }
         @frozen public enum Output: Sendable, Hashable {
             public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/users/me/PATCH/responses/200/content`.
+                /// - Remark: Generated from `#/paths/update-profile/PATCH/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/users/me/PATCH/responses/200/content/application\/json`.
+                    /// - Remark: Generated from `#/paths/update-profile/PATCH/responses/200/content/application\/json`.
                     case json(Components.Schemas.User)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
@@ -1716,26 +1870,26 @@ public enum Operations {
                     }
                 }
                 /// Received HTTP response body
-                public var body: Operations.patch_sol_users_sol_me.Output.Ok.Body
+                public var body: Operations.patch_sol_update_hyphen_profile.Output.Ok.Body
                 /// Creates a new `Ok`.
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.patch_sol_users_sol_me.Output.Ok.Body) {
+                public init(body: Operations.patch_sol_update_hyphen_profile.Output.Ok.Body) {
                     self.body = body
                 }
             }
             /// Profile updated successfully
             ///
-            /// - Remark: Generated from `#/paths//users/me/patch/responses/200`.
+            /// - Remark: Generated from `#/paths//update-profile/patch/responses/200`.
             ///
             /// HTTP response code: `200 ok`.
-            case ok(Operations.patch_sol_users_sol_me.Output.Ok)
+            case ok(Operations.patch_sol_update_hyphen_profile.Output.Ok)
             /// The associated value of the enum case if `self` is `.ok`.
             ///
             /// - Throws: An error if `self` is not `.ok`.
             /// - SeeAlso: `.ok`.
-            public var ok: Operations.patch_sol_users_sol_me.Output.Ok {
+            public var ok: Operations.patch_sol_update_hyphen_profile.Output.Ok {
                 get throws {
                     switch self {
                     case let .ok(response):
@@ -1750,7 +1904,7 @@ public enum Operations {
             }
             /// Bad request
             ///
-            /// - Remark: Generated from `#/paths//users/me/patch/responses/400`.
+            /// - Remark: Generated from `#/paths//update-profile/patch/responses/400`.
             ///
             /// HTTP response code: `400 badRequest`.
             case badRequest(Components.Responses.BadRequest)
@@ -1773,7 +1927,7 @@ public enum Operations {
             }
             /// Unauthorized
             ///
-            /// - Remark: Generated from `#/paths//users/me/patch/responses/401`.
+            /// - Remark: Generated from `#/paths//update-profile/patch/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Components.Responses.Unauthorized)
@@ -1796,7 +1950,7 @@ public enum Operations {
             }
             /// Internal server error
             ///
-            /// - Remark: Generated from `#/paths//users/me/patch/responses/500`.
+            /// - Remark: Generated from `#/paths//update-profile/patch/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalServerError)

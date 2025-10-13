@@ -7,7 +7,7 @@ public enum HandleFormatValidation: Sendable, Equatable {
     case tooShort
     case tooLong
     case invalidCharacters
-    case startsWithUnderscore
+    case consecutivePeriods
     case allNumbers
     case reserved
     
@@ -18,13 +18,13 @@ public enum HandleFormatValidation: Sendable, Equatable {
         case .tooShort:
             return "Handle must be at least 3 characters"
         case .tooLong:
-            return "Handle must be 15 characters or less"
+            return "Handle must be 30 characters or less"
         case .invalidCharacters:
-            return "Use only lowercase letters, numbers, and underscores"
-        case .startsWithUnderscore:
-            return "Handle cannot start with an underscore"
+            return "Use only letters, numbers, periods, and underscores"
+        case .consecutivePeriods:
+            return "Cannot use consecutive periods"
         case .allNumbers:
-            return "Handle cannot be all numbers"
+            return "Handle cannot be only numbers"
         case .reserved:
             return "This handle is reserved"
         }
@@ -58,33 +58,35 @@ public actor HandleValidator {
     // MARK: - Format Validation
     
     /// Validate handle format (instant, no API call)
+    /// Follows Instagram/Threads rules: 3-30 chars, letters, numbers, periods, underscores
     public func validateFormat(_ handle: String) -> HandleFormatValidation {
         // Check length
         if handle.count < 3 {
             return .tooShort
         }
-        if handle.count > 15 {
+        if handle.count > 30 {
             return .tooLong
         }
         
-        // Check for reserved handles
+        // Check for reserved handles (case insensitive)
         if reservedHandles.contains(handle.lowercased()) {
             return .reserved
         }
         
-        // Check if starts with underscore
-        if handle.hasPrefix("_") {
-            return .startsWithUnderscore
-        }
-        
-        // Check if all numbers
-        if handle.allSatisfy({ $0.isNumber }) {
+        // Check if all numbers (including periods and underscores don't count)
+        let lettersOnly = handle.filter { $0.isLetter }
+        if lettersOnly.isEmpty && !handle.isEmpty {
             return .allNumbers
         }
         
-        // Check for valid characters (lowercase letters, numbers, underscores)
-        let validCharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz0123456789_")
-        let handleCharacters = CharacterSet(charactersIn: handle.lowercased())
+        // Check for consecutive periods
+        if handle.contains("..") {
+            return .consecutivePeriods
+        }
+        
+        // Check for valid characters (letters A-Z/a-z, numbers 0-9, periods, underscores)
+        let validCharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._")
+        let handleCharacters = CharacterSet(charactersIn: handle)
         
         if !handleCharacters.isSubset(of: validCharacters) {
             return .invalidCharacters

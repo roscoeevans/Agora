@@ -1,5 +1,4 @@
 import Foundation
-import AppFoundation
 
 /// Manages the complete authentication session lifecycle
 public actor SessionLifecycleManager {
@@ -135,3 +134,4 @@ public enum SessionInvalidReason: Sendable {
     case malformedToken
     case networkError
 }
+

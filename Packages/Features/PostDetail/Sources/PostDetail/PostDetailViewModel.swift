@@ -65,15 +65,17 @@ public struct Post: Identifiable, Codable, Sendable {
     public let id: String
     public let text: String
     public let author: String
+    public let authorDisplayHandle: String
     public let timestamp: Date
     public let likeCount: Int
     public let repostCount: Int
     public let replyCount: Int
     
-    public init(text: String, author: String, timestamp: Date = Date(), likeCount: Int = 0, repostCount: Int = 0, replyCount: Int = 0) {
+    public init(text: String, author: String, authorDisplayHandle: String? = nil, timestamp: Date = Date(), likeCount: Int = 0, repostCount: Int = 0, replyCount: Int = 0) {
         self.id = UUID().uuidString
         self.text = text
         self.author = author
+        self.authorDisplayHandle = authorDisplayHandle ?? author
         self.timestamp = timestamp
         self.likeCount = likeCount
         self.repostCount = repostCount
@@ -85,12 +87,14 @@ public struct Reply: Identifiable, Codable, Sendable {
     public let id: String
     public let text: String
     public let author: String
+    public let authorDisplayHandle: String
     public let timestamp: Date
     
-    public init(text: String, author: String, timestamp: Date = Date()) {
+    public init(text: String, author: String, authorDisplayHandle: String? = nil, timestamp: Date = Date()) {
         self.id = UUID().uuidString
         self.text = text
         self.author = author
+        self.authorDisplayHandle = authorDisplayHandle ?? author
         self.timestamp = timestamp
     }
 }

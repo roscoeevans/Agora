@@ -1,17 +1,10 @@
 import Foundation
 
+/// Compile-time environment configuration
+/// Uses #if directives to set values at compile time based on build configuration
+/// 
+/// For runtime configuration (URLs, API keys), use AppConfig instead
 struct EnvironmentConfig {
-    
-    // MARK: - API Configuration
-    static var apiBaseURL: String {
-        #if DEV_ENVIRONMENT
-        return "https://api-dev.agora.com"
-        #elseif STAGING_ENVIRONMENT
-        return "https://api-staging.agora.com"
-        #else
-        return "https://api.agora.com"
-        #endif
-    }
     
     // MARK: - Logging Configuration
     static var isLoggingEnabled: Bool {
@@ -22,18 +15,7 @@ struct EnvironmentConfig {
         #endif
     }
     
-    // MARK: - Analytics Configuration
-    static var analyticsKey: String {
-        #if DEV_ENVIRONMENT
-        return "dev-analytics-key"
-        #elseif STAGING_ENVIRONMENT
-        return "staging-analytics-key"
-        #else
-        return "prod-analytics-key"
-        #endif
-    }
-    
-    // MARK: - Feature Flags
+    // MARK: - Feature Flags (Compile-time)
     static var isDebugMenuEnabled: Bool {
         #if DEV_ENVIRONMENT
         return true

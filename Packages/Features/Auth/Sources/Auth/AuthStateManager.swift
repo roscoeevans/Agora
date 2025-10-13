@@ -2,12 +2,12 @@ import Foundation
 import SwiftUI
 import AppFoundation
 import Networking
-import AuthenticationServices
+import Media
 
 /// Main authentication state manager
 @Observable
 @MainActor
-public final class AuthStateManager: NSObject {
+public final class AuthStateManager {
     
     // MARK: - Published State
     
@@ -20,24 +20,21 @@ public final class AuthStateManager: NSObject {
     private let authService: AuthServiceProtocol
     private let apiClient: any AgoraAPIClient
     private let validator: HandleValidator
-    
-    // MARK: - Private State
-    
-    private var currentAuthController: ASAuthorizationController?
+    private let storageService: StorageService
     
     // MARK: - Initialization
     
     public init(
         authService: AuthServiceProtocol? = nil,
-        apiClient: (any AgoraAPIClient)? = nil
+        apiClient: (any AgoraAPIClient)? = nil,
+        storageService: StorageService? = nil
     ) {
         // Use provided dependencies or create default ones
         self.authService = authService ?? ServiceProvider.shared.authService()
         // Service provider returns base protocol, cast to full protocol
         self.apiClient = apiClient ?? (ServiceProvider.shared.apiClient() as! any AgoraAPIClient)
+        self.storageService = storageService ?? StorageService()
         self.validator = HandleValidator(apiClient: self.apiClient)
-        
-        super.init()
     }
     
     // MARK: - State Management
@@ -45,32 +42,66 @@ public final class AuthStateManager: NSObject {
     /// Check current authentication state on app launch
     public func checkAuthState() async {
         state = .initializing
+        isLoading = true
+        defer { isLoading = false }
         
+        // Check if user is authenticated via Supabase
+        let isAuthenticated = await authService.isAuthenticated
+        
+        guard isAuthenticated else {
+            state = .unauthenticated
+            return
+        }
+        
+        // User has valid Supabase session, try to fetch profile
         do {
-            // Check if user is authenticated
-            let isAuthenticated = await authService.isAuthenticated
-            
-            guard isAuthenticated else {
-                state = .unauthenticated
-                return
-            }
-            
-            // Try to fetch user profile
+            let userResponse = try await apiClient.getCurrentUserProfile()
+            let profile = UserProfile(from: userResponse)
+            state = .authenticated(profile: profile)
+            Logger.auth.info("User authenticated with profile: \(profile.handle)")
+        } catch {
+            // Authenticated with Supabase but no user profile in database
+            // This means they need to complete onboarding
             do {
-                let userResponse = try await apiClient.getCurrentUserProfile()
-                let profile = UserProfile(from: userResponse)
-                state = .authenticated(profile: profile)
-            } catch {
-                // User is authenticated but has no profile
-                // Get user ID from auth service
-                if let token = try? await authService.currentAccessToken() {
-                    // Parse JWT to get user ID (simplified - in production use proper JWT parsing)
-                    state = .authenticatedNoProfile(userId: "current_user")
+                if let token = try await authService.currentAccessToken() {
+                    let userId = try parseUserIdFromJWT(token)
+                    state = .authenticatedNoProfile(userId: userId)
+                    Logger.auth.info("User authenticated but no profile found, needs onboarding")
                 } else {
                     state = .unauthenticated
+                    Logger.auth.warning("No access token available, setting unauthenticated")
                 }
+            } catch {
+                Logger.auth.error("Failed to parse user ID from token: \(error)")
+                state = .unauthenticated
             }
         }
+    }
+    
+    /// Parse user ID from JWT token
+    private func parseUserIdFromJWT(_ token: String) throws -> String {
+        let segments = token.components(separatedBy: ".")
+        guard segments.count > 1 else {
+            throw AuthError.invalidState
+        }
+        
+        // Decode JWT payload (base64url)
+        var base64 = segments[1]
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        
+        // Pad to multiple of 4
+        while base64.count % 4 != 0 {
+            base64.append("=")
+        }
+        
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let sub = json["sub"] as? String else {
+            throw AuthError.invalidState
+        }
+        
+        return sub
     }
     
     // MARK: - Sign In with Apple
@@ -83,45 +114,26 @@ public final class AuthStateManager: NSObject {
         defer { isLoading = false }
         
         do {
-            // Use AuthenticationServices to present Sign in with Apple
-            let authResult = try await performAppleSignIn()
+            // Use auth service to sign in with Apple (handles Supabase integration)
+            let authResult = try await authService.signInWithApple()
+            Logger.auth.info("Sign in with Apple successful, user ID: \(authResult.user.id)")
             
-            // Check if user has a profile
+            // Check if user has a profile in our database
             do {
                 let userResponse = try await apiClient.getCurrentUserProfile()
                 let profile = UserProfile(from: userResponse)
                 state = .authenticated(profile: profile)
+                Logger.auth.info("User profile found: \(profile.handle)")
             } catch {
-                // No profile exists, need to create one
+                // No profile exists, need to create one via onboarding
                 state = .authenticatedNoProfile(userId: authResult.user.id)
+                Logger.auth.info("No profile found, proceeding to onboarding")
             }
         } catch {
             self.error = error
             state = .unauthenticated
+            Logger.auth.error("Sign in with Apple failed: \(error)")
             throw error
-        }
-    }
-    
-    /// Perform Apple Sign In using ASAuthorizationController
-    private func performAppleSignIn() async throws -> AuthResult {
-        return try await withCheckedThrowingContinuation { continuation in
-            let appleIDProvider = ASAuthorizationAppleIDProvider()
-            let request = appleIDProvider.createRequest()
-            request.requestedScopes = [.fullName, .email]
-            
-            let authController = ASAuthorizationController(authorizationRequests: [request])
-            authController.delegate = self
-            authController.presentationContextProvider = self
-            
-            self.currentAuthController = authController
-            
-            // Store continuation to be called in delegate methods
-            Task { @MainActor in
-                authController.performRequests()
-            }
-            
-            // Note: Continuation will be resumed in delegate methods
-            // This is simplified - in production, properly handle the continuation
         }
     }
     
@@ -131,9 +143,10 @@ public final class AuthStateManager: NSObject {
     public func createProfile(
         handle: String,
         displayHandle: String,
-        displayName: String
+        displayName: String,
+        avatarImage: UIImage? = nil
     ) async throws {
-        guard case .authenticatedNoProfile = state else {
+        guard case .authenticatedNoProfile(let userId) = state else {
             throw AuthError.invalidState
         }
         
@@ -149,11 +162,19 @@ public final class AuthStateManager: NSObject {
                 throw AuthError.invalidHandle(formatValidation.errorMessage ?? "Invalid handle")
             }
             
+            // Upload avatar if provided
+            var avatarUrl: String? = nil
+            if let avatarImage = avatarImage {
+                avatarUrl = try await storageService.uploadAvatar(image: avatarImage, userId: userId)
+                Logger.auth.info("Avatar uploaded successfully: \(avatarUrl ?? "")")
+            }
+            
             // Create profile via API
             let request = Components.Schemas.CreateProfileRequest(
                 handle: handle,
                 displayHandle: displayHandle,
-                displayName: displayName
+                displayName: displayName,
+                avatarUrl: avatarUrl
             )
             
             let userResponse = try await apiClient.createProfile(request: request)
@@ -192,41 +213,6 @@ public final class AuthStateManager: NSObject {
     }
 }
 
-// MARK: - ASAuthorizationControllerDelegate
-
-extension AuthStateManager: ASAuthorizationControllerDelegate {
-    public func authorizationController(
-        controller: ASAuthorizationController,
-        didCompleteWithAuthorization authorization: ASAuthorization
-    ) {
-        // Handle successful authorization
-        // This is simplified - in production, properly extract credentials and call API
-    }
-    
-    public func authorizationController(
-        controller: ASAuthorizationController,
-        didCompleteWithError error: Error
-    ) {
-        // Handle authorization error
-        Task { @MainActor in
-            self.error = error
-            self.state = .unauthenticated
-        }
-    }
-}
-
-// MARK: - ASAuthorizationControllerPresentationContextProviding
-
-extension AuthStateManager: ASAuthorizationControllerPresentationContextProviding {
-    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        // Return the key window
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = scene.windows.first else {
-            fatalError("No window available")
-        }
-        return window
-    }
-}
 
 // MARK: - Auth Errors
 

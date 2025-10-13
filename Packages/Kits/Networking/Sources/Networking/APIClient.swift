@@ -2,10 +2,15 @@ import Foundation
 import OpenAPIRuntime
 import OpenAPIURLSession
 import AppFoundation
+import HTTPTypes
 
 /// Main API client for Agora backend communication
 public final class APIClient: Sendable {
-    public static let shared = APIClient()
+    public static let shared: APIClient = {
+        // Get auth token provider from ServiceProvider for authenticated requests
+        let authProvider = ServiceProvider.shared.authTokenProvider()
+        return APIClient(authTokenProvider: authProvider)
+    }()
     
     private let client: Client
     private let authTokenProvider: AuthTokenProvider?
@@ -27,14 +32,24 @@ public final class APIClient: Sendable {
         configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 60
         
+        // Add Supabase anon key header for Edge Functions
+        configuration.httpAdditionalHeaders = [
+            "apikey": AppConfig.supabaseAnonKey
+        ]
+        
         let urlSession = URLSession(configuration: configuration)
         let transport = URLSessionTransport(configuration: .init(session: urlSession))
         
-        // Create OpenAPI client
-        // TODO: Add auth and retry interceptors when implemented
+        // Configure lenient ISO8601 date decoding (handles fractional seconds)
+        var converterConfig = Configuration()
+        converterConfig.dateTranscoder = .iso8601WithFractionalSeconds
+        
+        // Create OpenAPI client with Supabase authentication
         self.client = Client(
             serverURL: baseURL,
-            transport: transport
+            configuration: converterConfig,
+            transport: transport,
+            middlewares: [SupabaseAuthMiddleware(tokenProvider: authTokenProvider)]
         )
     }
     
@@ -65,6 +80,34 @@ extension APIClient {
         // For now, map all client errors to unknown error
         // This can be expanded as we understand the actual error types better
         return .unknownError(error)
+    }
+}
+
+// MARK: - Supabase Auth Middleware
+
+/// Middleware to add Supabase authentication headers
+struct SupabaseAuthMiddleware: ClientMiddleware {
+    let tokenProvider: AuthTokenProvider?
+    
+    func intercept(
+        _ request: HTTPRequest,
+        body: HTTPBody?,
+        baseURL: URL,
+        operationID: String,
+        next: (HTTPRequest, HTTPBody?, URL) async throws -> (HTTPResponse, HTTPBody?)
+    ) async throws -> (HTTPResponse, HTTPBody?) {
+        var request = request
+        
+        // Add user's access token if available, otherwise use anon key
+        // Supabase Edge Functions need the user's session token for auth
+        if let token = try? await tokenProvider?.currentAccessToken() {
+            request.headerFields[.authorization] = "Bearer \(token)"
+        } else {
+            // Fallback to anon key for unauthenticated requests
+            request.headerFields[.authorization] = "Bearer \(AppConfig.supabaseAnonKey)"
+        }
+        
+        return try await next(request, body, baseURL)
     }
 }
 // MARK: - Feed Operations

@@ -7,7 +7,7 @@ let package = Package(
     name: "Media",
     platforms: [
         .iOS(.v26),
-        .macOS(.v10_15)
+        .macOS(.v15)
     ],
     products: [
         .library(
@@ -16,13 +16,17 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../Networking")
+        .package(path: "../Networking"),
+        .package(path: "../../Shared/AppFoundation"),
+        .package(url: "https://github.com/supabase/supabase-swift", exact: "2.34.0")
     ],
     targets: [
         .target(
             name: "Media",
             dependencies: [
-                "Networking"
+                "Networking",
+                "AppFoundation",
+                .product(name: "Supabase", package: "supabase-swift")
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")

@@ -1,11 +1,10 @@
 import Foundation
 import Security
-import AppFoundation
 
 /// Protocol for keychain operations
 public protocol KeychainHelperProtocol: Sendable {
-    func storeSession(_ session: Session) async throws
-    func loadSession() async throws -> Session?
+    func storeSession(_ session: CachedSession) async throws
+    func loadSession() async throws -> CachedSession?
     func deleteCredentials() async
 }
 
@@ -24,18 +23,18 @@ public actor KeychainHelper: KeychainHelperProtocol {
     // MARK: - Public Methods
     
     /// Stores authentication session in keychain
-    public func storeSession(_ session: Session) async throws {
+    public func storeSession(_ session: CachedSession) async throws {
         let data = try JSONEncoder().encode(session)
         try await storeData(data, forKey: Keys.sessionData)
     }
     
     /// Loads authentication session from keychain
-    public func loadSession() async throws -> Session? {
+    public func loadSession() async throws -> CachedSession? {
         guard let data = try await loadData(forKey: Keys.sessionData) else {
             return nil
         }
         
-        return try JSONDecoder().decode(Session.self, from: data)
+        return try JSONDecoder().decode(CachedSession.self, from: data)
     }
     
     /// Deletes all stored credentials
@@ -115,3 +114,4 @@ public enum KeychainError: LocalizedError, Sendable {
         }
     }
 }
+

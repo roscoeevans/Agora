@@ -1,0 +1,866 @@
+---
+description: When tuning the Agora feed recommendation algorithm, debugging feed issues, understanding how For You recommendations work, or making changes to feed scoring, exploration strategies, or suppression logic. Use this rule when working with the reco_config table, Edge Function feed logic, post_impressions, bandit_stats, or any feed personalization features.
+---
+
+## Agora Feed Recommendation System
+
+### Overview
+
+Agora uses a sophisticated multi-armed bandit recommendation system that balances quality, social relevance, freshness, and exploration. The system is designed to avoid filter bubbles while maintaining engagement through personalized content delivery.
+
+**Key Characteristics:**
+- 7-day repeat suppression (hard guarantee via `post_impressions`)
+- Thompson Sampling for exploration (12% of feed by default)
+- Light follow influence (20% boost) to avoid echo chambers
+- Centralized JSONB configuration (zero-downtime tuning)
+- Transparent reasoning (every post includes `reasons[]`)
+
+### Architecture
+
+#### Core Components
+
+1. **Database Tables**
+   - `post_impressions` - User-specific impression tracking (7-day suppression)
+   - `post_events` - Event log for interactions (likes, views, etc.)
+   - `post_aggregates` - Materialized view (refreshed every 2 min)
+   - `graph_proximity` - Cached social graph distances
+   - `bandit_stats` - Multi-armed bandit trial/success counts
+   - `reco_config` - Master configuration (JSONB)
+
+2. **Edge Function**
+   - Location: Supabase Edge Function `feed`
+   - Endpoint: `/feed/for-you`
+   - Runtime: Deno (TypeScript)
+   - Auth: Required (user's session token via Bearer)
+
+3. **Scheduled Jobs**
+   - Refresh `post_aggregates` every 2 minutes (pg_cron)
+   - Prune old impressions (>90 days) daily at 3:15 AM
+
+### How Personalization Works
+
+#### 1. User-Specific Candidate Generation
+
+```typescript
+// Step 1: Get user's followees
+const { data: followees } = await supabaseClient
+  .from('follows')
+  .select('followee_id')
+  .eq('follower_id', userId);  // ← User-specific!
+
+// Step 2: Three pools
+// A. Follow Pool - Posts from people user follows
+const followPosts = candidate_posts_from_authors(followeeIds, 48h);
+
+// B. Quality Pool - High-engagement posts (global)
+const qualityPool = candidate_quality_pool(5000);
+
+// C. Explore Pool - Quality posts from outside user's graph
+const explorePool = qualityPool.filter(p => 
+  !followeeIds.includes(p.author_id)
+);
+```
+
+#### 2. User-Specific Suppression
+
+```typescript
+// Get posts THIS USER saw in last 7 days
+const { data: seen } = await supabaseClient
+  .from('post_impressions')
+  .select('post_id')
+  .eq('user_id', userId)           // ← User-specific!
+  .gte('created_at', 7_days_ago);
+
+// Remove from all pools
+candidates = candidates.filter(p => !seenSet.has(p.id));
+```
+
+**Key Point:** Same post can be shown to different users, but never to the same user within 7 days.
+
+#### 3. Personalized Scoring
+
+```typescript
+// Main formula
+score = freshness × (α·quality + β·relation + γ·similarity)
+
+// Relation score is user-specific:
+const isFollow = userFolloweeIds.has(post.author_id);  // ← Personalized
+const proximity = graph_proximity[userId][author_id];   // ← Personalized
+
+const relation = 
+  (isFollow ? 0.2 : 0.0) +    // +20% boost if user follows
+  (proximity || 0.0);          // Based on user's graph distance
+
+const relationScore = 0.25 × relation;
+```
+
+**Example:**
+- User A follows @alice → Post from @alice gets `+0.05` relation boost
+- User B doesn't follow @alice → Same post gets `0.0` relation boost
+- **Same post, different scores, different rankings**
+
+### Configuration Management
+
+#### Master Config Location
+
+All algorithm knobs live in the `reco_config` table:
+
+```sql
+-- View active config
+SELECT * FROM reco_config 
+WHERE env = 'staging' AND is_active = true;
+
+-- Pretty-print config
+SELECT 
+  version, 
+  is_active, 
+  jsonb_pretty(config) 
+FROM reco_config 
+WHERE env = 'staging'
+ORDER BY created_at DESC;
+```
+
+#### Configuration Schema
+
+```json
+{
+  "freshness": {
+    "tau_hours": 12  // Decay half-life (hours)
+  },
+  "weights": {
+    "like": 1.0,
+    "comment": 5.0,
+    "repost": 4.0,
+    "expand": 1.5,
+    "profile_visit": 3.0,
+    "follow_after_view": 8.0,
+    "hide": -12.0,
+    "mute": -25.0,
+    "block": -50.0
+  },
+  "mixing": {
+    "alpha_quality": 0.6,      // Quality signal weight
+    "beta_relation": 0.25,     // Relation signal weight
+    "gamma_similarity": 0.15   // Similarity signal weight (future)
+  },
+  "follow": {
+    "boost": 0.2,              // Follow multiplier (20%)
+    "catchup_every": 12,       // Insert follow post every N slots
+    "min_quality_floor": 0     // Minimum quality for follow posts
+  },
+  "explore": {
+    "curiosity_ratio": 0.12,   // % of feed from exploration (12%)
+    "epsilon": 0.05,           // ε-greedy parameter
+    "novelty_bonus": 0.25,     // Bonus for unseen posts
+    "min_trust_for_explore": 0,// Trust floor for explore candidates
+    "max_in_top10": 3          // Max explore items in top 10
+  },
+  "diversity": {
+    "avoid_back_to_back_author": true,
+    "topic_penalty": 0.0,
+    "author_repeat_window": 5
+  },
+  "suppression": {
+    "dedupe_days": 7           // Suppression window (days)
+  },
+  "quality_pool": {
+    "lookback_hours": 48,      // How far back to look
+    "limit": 5000              // Max candidates
+  }
+}
+```
+
+#### Updating Configuration
+
+**IMPORTANT:** Changes take effect immediately (no Edge Function redeploy needed).
+
+```sql
+-- 1. Insert new version with changes
+INSERT INTO reco_config (env, version, is_active, description, config)
+VALUES (
+  'staging',
+  '2025-10-13a',  -- Increment version
+  false,          -- Not active yet
+  'Increased exploration to 15%',
+  '{
+    "explore": {
+      "curiosity_ratio": 0.15,  -- Changed from 0.12
+      ...
+    },
+    ...
+  }'::jsonb
+);
+
+-- 2. Activate new version (deactivates all others)
+SELECT activate_reco_config('staging', '2025-10-13a');
+
+-- 3. Verify it's active
+SELECT version, is_active 
+FROM reco_config 
+WHERE env = 'staging' 
+ORDER BY created_at DESC;
+```
+
+### Common Tuning Scenarios
+
+#### Increase Exploration
+
+Users complaining about repetitive content or filter bubbles:
+
+```sql
+-- Raise exploration from 12% to 15%
+"explore": {
+  "curiosity_ratio": 0.15,     -- Was 0.12
+  "novelty_bonus": 0.30        -- Was 0.25
+}
+
+-- Lower follow influence
+"follow": {
+  "boost": 0.15                -- Was 0.20
+}
+```
+
+#### Favor Quality Over Exploration
+
+Users seeing too much low-quality explore content:
+
+```sql
+-- Increase quality weight, decrease relation
+"mixing": {
+  "alpha_quality": 0.7,        -- Was 0.6
+  "beta_relation": 0.20        -- Was 0.25
+}
+
+-- Reduce exploration
+"explore": {
+  "curiosity_ratio": 0.08      -- Was 0.12
+}
+```
+
+#### Boost Follow Visibility
+
+Users missing posts from people they follow:
+
+```sql
+-- Increase follow boost
+"follow": {
+  "boost": 0.30,               -- Was 0.20
+  "catchup_every": 8           -- Was 12 (more frequent)
+}
+
+-- Increase relation weight
+"mixing": {
+  "beta_relation": 0.30        -- Was 0.25
+}
+```
+
+#### Reduce Recency Bias
+
+Older quality posts not showing up:
+
+```sql
+-- Slower freshness decay
+"freshness": {
+  "tau_hours": 18              -- Was 12 (slower decay)
+}
+
+-- Increase lookback window
+"quality_pool": {
+  "lookback_hours": 72         -- Was 48
+}
+```
+
+### Debugging Feed Issues
+
+#### Issue: Feed Returns No Posts
+
+**Check:**
+1. User has seen everything (suppression too aggressive)
+2. No posts in quality pool (database empty or too old)
+3. `post_aggregates` not refreshed
+
+```sql
+-- Check suppression count
+SELECT COUNT(*) 
+FROM post_impressions 
+WHERE user_id = '<user-id>' 
+  AND created_at >= now() - interval '7 days';
+
+-- Check quality pool
+SELECT COUNT(*) 
+FROM posts 
+WHERE created_at >= now() - interval '48 hours';
+
+-- Check last aggregate refresh
+SELECT MAX(created_at) FROM post_aggregates;
+
+-- Manually refresh if needed
+SELECT refresh_post_aggregates();
+```
+
+#### Issue: Same Posts Repeating
+
+**Check:**
+1. Impressions not being written
+2. Suppression window too short
+
+```sql
+-- Verify impressions are being written
+SELECT COUNT(*), MAX(created_at) 
+FROM post_impressions 
+WHERE user_id = '<user-id>';
+
+-- Check if specific post was logged
+SELECT * FROM post_impressions 
+WHERE user_id = '<user-id>' 
+  AND post_id = '<post-id>';
+
+-- Increase suppression window if needed
+UPDATE reco_config 
+SET config = jsonb_set(
+  config, 
+  '{suppression,dedupe_days}', 
+  '14'  -- Increase from 7 to 14 days
+)
+WHERE env = 'staging' AND is_active = true;
+```
+
+#### Issue: Too Many Explore Posts
+
+**Check:**
+1. Explore ratio too high
+2. Diversity filter too aggressive
+
+```sql
+-- Lower exploration ratio
+UPDATE reco_config 
+SET config = jsonb_set(
+  config, 
+  '{explore,curiosity_ratio}', 
+  '0.08'  -- Decrease from 0.12
+)
+WHERE env = 'staging' AND is_active = true;
+```
+
+#### Issue: Slow Feed Loads
+
+**Check Edge Function logs:**
+
+```bash
+# Via MCP
+mcp_supabase_get_logs(project_id: 'iqebtllzptardlgpdnge', service: 'edge-function')
+```
+
+**Common causes:**
+- Too many candidates (reduce `quality_pool.limit`)
+- Large impression table (check if pruning is running)
+- Missing indexes
+
+```sql
+-- Check impression table size
+SELECT 
+  COUNT(*) as total_impressions,
+  COUNT(*) FILTER (WHERE created_at >= now() - interval '7 days') as recent
+FROM post_impressions;
+
+-- Check if pruning job is running
+SELECT jobname, schedule, command 
+FROM cron.job 
+WHERE jobname = 'prune_post_impressions_daily';
+```
+
+### Edge Function Code Location
+
+**File:** Supabase Edge Function `feed`  
+**Deploy via MCP:**
+
+```typescript
+mcp_supabase_deploy_edge_function(
+  project_id: 'iqebtllzptardlgpdnge',
+  name: 'feed',
+  entrypoint_path: 'index.ts',
+  files: [{ name: 'index.ts', content: '...' }]
+)
+```
+
+**Key sections to modify:**
+
+1. **Scoring function** (line ~185):
+```typescript
+function scorePost(p: Row): { score: number; reasons: Reasons } {
+  // Modify weights or formula here
+  const fresh = Math.exp(-ageH / tauH);
+  const quality = /* weighted sum */;
+  const relation = /* follow boost + proximity */;
+  const score = fresh * (alpha * q + beta * rel + gamma * sim);
+  return { score, reasons };
+}
+```
+
+2. **Diversity logic** (line ~250):
+```typescript
+// Author diversity
+if (a && seenAuthors.has(a)) continue;
+
+// Follow catch-up slot
+if (--followSlot <= 0) {
+  // Insert follow post
+}
+```
+
+3. **Exploration** (line ~225):
+```typescript
+// Thompson Sampling
+const exploreScored = candidates.map(c => {
+  const draw = betaSample(α₀ + successes, β₀ + failures);
+  const novelty = isNew ? noveltyBonus : 0;
+  return { ...c, _bandit: draw + novelty };
+});
+```
+
+### iOS Client Integration
+
+#### ForYouViewModel
+
+**Location:** `Packages/Features/HomeForYou/Sources/HomeForYou/ForYouViewModel.swift`
+
+**Post Model:**
+```swift
+public struct Post: Identifiable, Codable {
+    // Base fields
+    public let id: String
+    public let text: String
+    // ...
+    
+    // Enhanced feed fields
+    public let score: Double?
+    public let reasons: [RecommendationReason]?
+    public let explore: Bool?
+}
+
+public struct RecommendationReason: Codable {
+    public let signal: String
+    public let weight: Double
+}
+```
+
+**API Response Mapping:**
+```swift
+// EnhancedPost uses OpenAPI allOf composition
+let basePost = apiPost.value1      // Base Post fields
+let enhancedData = apiPost.value2  // Enhanced fields (score, reasons, explore)
+
+Post(
+    id: basePost.id,
+    text: basePost.text,
+    // ...
+    score: enhancedData.score.map(Double.init),
+    reasons: enhancedData.reasons?.map { 
+        RecommendationReason(signal: $0.signal, weight: Double($0.weight)) 
+    },
+    explore: enhancedData.explore
+)
+```
+
+### Monitoring & Analytics
+
+#### Key Metrics to Track
+
+**Via PostHog/Analytics:**
+- `feed_refresh_completed` → `post_count`, `explore_count`
+- `explore_impression` → `post_id`, `position`, `reasons`
+- `explore_success` → `post_id`, `action` (like, comment, repost)
+- `explore_failure` → `post_id`, `action` (hide, mute, block)
+
+**Via Database:**
+```sql
+-- Explore success rate
+SELECT 
+  entity_id,
+  successes,
+  trials,
+  CASE WHEN trials > 0 
+    THEN ROUND(100.0 * successes / trials, 2) 
+    ELSE 0 
+  END as success_rate_pct
+FROM bandit_stats
+WHERE entity_type = 'post'
+  AND trials >= 10
+ORDER BY success_rate_pct DESC;
+
+-- User engagement patterns
+SELECT 
+  user_id,
+  COUNT(*) as total_impressions,
+  COUNT(DISTINCT post_id) as unique_posts,
+  COUNT(DISTINCT page_id) as sessions
+FROM post_impressions
+WHERE created_at >= now() - interval '7 days'
+GROUP BY user_id
+ORDER BY total_impressions DESC;
+
+-- Diversity metrics
+SELECT 
+  page_id,
+  COUNT(DISTINCT jsonb_array_elements_text(reasons::jsonb)) as unique_signals,
+  COUNT(*) FILTER (WHERE reasons::jsonb @> '[{"signal":"follow_boost"}]') as follow_posts,
+  COUNT(*) as total_posts
+FROM post_impressions
+WHERE created_at >= now() - interval '1 day'
+GROUP BY page_id;
+```
+
+### Common Modification Patterns
+
+#### Adding New Event Types
+
+1. **Update enum:**
+```sql
+ALTER TYPE event_type ADD VALUE 'new_event_type';
+```
+
+2. **Update Edge Function:**
+```typescript
+// Add to success/failure logic
+if (event === 'new_event_type') {
+  await bandit_record_success('post', postId, 1);
+}
+```
+
+3. **Update config weights:**
+```sql
+UPDATE reco_config SET config = jsonb_set(
+  config,
+  '{weights,new_event_type}',
+  '3.0'
+) WHERE env = 'staging' AND is_active = true;
+```
+
+#### Adding New Explore Lanes
+
+**Phase 2 Enhancement:**
+
+```typescript
+// Define explore lanes with separate budgets
+const lanes = {
+  new_authors: {
+    candidates: authors.filter(a => a.follower_count < 100),
+    quota: 2
+  },
+  cross_community: {
+    candidates: authors.filter(a => overlap(user.graph, a.graph) < 0.1),
+    quota: 1
+  },
+  long_tail_topic: {
+    candidates: posts.filter(p => p.topic_popularity < 0.2),
+    quota: 1
+  }
+};
+
+// Sample from each lane using Thompson Sampling
+for (const [lane, config] of Object.entries(lanes)) {
+  const chosen = thompsonSample(config.candidates, config.quota);
+  exploreFeed.push(...chosen);
+}
+```
+
+#### Implementing Trust-Weighted Quality (Phase 2)
+
+**Current:** Raw engagement counts
+```sql
+CREATE MATERIALIZED VIEW post_aggregates AS
+SELECT 
+  post_id,
+  COALESCE(like_count, 0) as like_count,
+  ...
+```
+
+**Future:** Trust-weighted sums
+```sql
+CREATE MATERIALIZED VIEW post_aggregates_v2 AS
+SELECT
+  e.post_id,
+  SUM(CASE 
+    WHEN e.type = 'like' THEN u.trust_level * 1.0 
+    ELSE 0 
+  END) as weighted_like_score,
+  SUM(CASE 
+    WHEN e.type = 'comment' THEN u.trust_level * 5.0 
+    ELSE 0 
+  END) as weighted_comment_score,
+  ...
+FROM post_events e
+JOIN users u ON e.user_id = u.id
+WHERE e.created_at >= now() - interval '48 hours'
+GROUP BY e.post_id;
+```
+
+Then update scoring function to use weighted scores.
+
+### A/B Testing Strategy
+
+#### Experiment Setup
+
+1. **Create experiment variants:**
+```sql
+-- Variant A: Current (12% explore)
+INSERT INTO reco_config (env, version, description, config)
+VALUES ('staging', 'exp-explore-12', 'Control: 12% explore', '{...}'::jsonb);
+
+-- Variant B: Higher exploration (18%)
+INSERT INTO reco_config (env, version, description, config)
+VALUES ('staging', 'exp-explore-18', 'Treatment: 18% explore', 
+  jsonb_set(
+    (SELECT config FROM reco_config WHERE version = 'exp-explore-12'),
+    '{explore,curiosity_ratio}',
+    '0.18'
+  )
+);
+```
+
+2. **Assign users to variants:**
+```sql
+CREATE TABLE experiment_assignments (
+  user_id UUID PRIMARY KEY,
+  experiment_id TEXT NOT NULL,
+  variant TEXT NOT NULL,
+  assigned_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Random 50/50 split
+INSERT INTO experiment_assignments (user_id, experiment_id, variant)
+SELECT 
+  id,
+  'explore-ratio-test',
+  CASE WHEN random() < 0.5 THEN 'control' ELSE 'treatment' END
+FROM users;
+```
+
+3. **Update Edge Function to use variant:**
+```typescript
+// Check if user is in experiment
+const { data: assignment } = await supabase
+  .from('experiment_assignments')
+  .select('variant')
+  .eq('user_id', userId)
+  .eq('experiment_id', 'explore-ratio-test')
+  .single();
+
+const configVersion = assignment?.variant === 'treatment' 
+  ? 'exp-explore-18' 
+  : 'exp-explore-12';
+
+// Load variant-specific config
+const { data: config } = await supabase.rpc('get_reco_config_by_version', {
+  p_env: ENV,
+  p_version: configVersion
+});
+```
+
+### Troubleshooting Checklist
+
+When investigating feed issues:
+
+#### Step 1: Verify Database State
+```sql
+-- Check tables exist
+\dt post_*
+
+-- Check materialized view is fresh
+SELECT MAX(created_at) FROM post_aggregates;
+
+-- Check active config
+SELECT version, is_active FROM reco_config WHERE env = 'staging';
+```
+
+#### Step 2: Check Edge Function
+```bash
+# Get recent logs via MCP
+mcp_supabase_get_logs(project_id: 'iqebtllzptardlgpdnge', service: 'edge-function')
+
+# Look for:
+# - Auth failures (401)
+# - RPC errors (missing functions)
+# - Empty candidate pools
+# - Scoring errors
+```
+
+#### Step 3: Verify iOS Client
+```swift
+// Check APIClient is using auth token provider
+// Location: Packages/Kits/Networking/Sources/Networking/APIClient.swift
+
+public static let shared: APIClient = {
+    let authProvider = ServiceProvider.shared.authTokenProvider()
+    return APIClient(authTokenProvider: authProvider)
+}()
+
+// Verify middleware passes token
+struct SupabaseAuthMiddleware: ClientMiddleware {
+    let tokenProvider: AuthTokenProvider?
+    // Should use tokenProvider.currentAccessToken(), not anon key!
+}
+```
+
+#### Step 4: Check User-Specific Data
+```sql
+-- Check user's follow graph
+SELECT COUNT(*) as follows_count
+FROM follows
+WHERE follower_id = '<user-id>';
+
+-- Check user's impression history
+SELECT COUNT(*) as seen_count
+FROM post_impressions
+WHERE user_id = '<user-id>'
+  AND created_at >= now() - interval '7 days';
+
+-- Check available candidates
+SELECT COUNT(*) as available_posts
+FROM posts
+WHERE created_at >= now() - interval '48 hours'
+  AND id NOT IN (
+    SELECT post_id FROM post_impressions
+    WHERE user_id = '<user-id>'
+      AND created_at >= now() - interval '7 days'
+  );
+```
+
+### Performance Optimization
+
+#### If Feed Loads Are Slow (>500ms)
+
+1. **Check index usage:**
+```sql
+-- Verify indexes are being used
+SELECT 
+  schemaname, 
+  tablename, 
+  indexname, 
+  idx_scan,
+  idx_tup_read
+FROM pg_stat_user_indexes
+WHERE tablename IN ('post_impressions', 'post_aggregates', 'follows')
+ORDER BY idx_scan DESC;
+```
+
+2. **Reduce candidate pool size:**
+```sql
+UPDATE reco_config SET config = jsonb_set(
+  config,
+  '{quality_pool,limit}',
+  '2000'  -- Reduce from 5000
+)
+WHERE env = 'staging' AND is_active = true;
+```
+
+3. **Consider materialized view partitioning:**
+```sql
+-- If post_aggregates gets huge (>1M rows)
+CREATE MATERIALIZED VIEW post_aggregates_recent AS
+SELECT * FROM post_aggregates
+WHERE created_at >= now() - interval '7 days';
+```
+
+### Future Enhancements
+
+#### Phase 2: Similarity Signal
+
+Add user embeddings for lookalike recommendations:
+
+```sql
+-- User similarity table
+CREATE TABLE user_similarities (
+  user_id UUID NOT NULL,
+  similar_user_id UUID NOT NULL,
+  cosine_sim FLOAT8 NOT NULL,
+  computed_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (user_id, similar_user_id)
+);
+
+-- Compute nightly from follow/like vectors
+-- Then join into scoring:
+SELECT sim.cosine_sim
+FROM user_similarities sim
+WHERE sim.user_id = <requesting-user>
+  AND sim.similar_user_id = <post-author>;
+```
+
+#### Phase 3: Per-User Bandit Stats
+
+Make bandit learning user-specific:
+
+```sql
+-- Change bandit_stats primary key
+ALTER TABLE bandit_stats 
+DROP CONSTRAINT bandit_stats_pkey;
+
+ALTER TABLE bandit_stats 
+ADD COLUMN user_id UUID;
+
+ALTER TABLE bandit_stats 
+ADD PRIMARY KEY (user_id, entity_type, entity_id);
+
+-- Now each user has their own success/failure tracking
+```
+
+### Critical Files Reference
+
+**Migrations:** `database/migrations/003-008_*.sql`  
+**Edge Function:** Supabase Dashboard > Edge Functions > `feed`  
+**iOS ViewModel:** `Packages/Features/HomeForYou/Sources/HomeForYou/ForYouViewModel.swift`  
+**API Spec:** `OpenAPI/agora.yaml` (EnhancedPost schema)  
+**Config Table:** `public.reco_config` in Supabase  
+**Documentation:** `docs/FEED_ALGORITHM.md`
+
+### Quick Reference Commands
+
+```sql
+-- View active config
+SELECT jsonb_pretty(config) FROM reco_config 
+WHERE env = 'staging' AND is_active = true;
+
+-- Test scoring for a specific post
+SELECT * FROM post_aggregates WHERE post_id = '<post-id>';
+
+-- Check suppression for user
+SELECT post_id, created_at, reasons 
+FROM post_impressions 
+WHERE user_id = '<user-id>' 
+ORDER BY created_at DESC LIMIT 20;
+
+-- View bandit performance
+SELECT 
+  entity_id,
+  trials,
+  successes,
+  ROUND(100.0 * successes / NULLIF(trials, 0), 1) as success_rate
+FROM bandit_stats 
+WHERE entity_type = 'post' 
+  AND trials >= 5
+ORDER BY trials DESC;
+```
+
+### When to Regenerate OpenAPI Types
+
+**Always regenerate after:**
+- Changing response schemas in `agora.yaml`
+- Adding new endpoints
+- Modifying request/response fields
+
+```bash
+cd /Users/roscoeevans/Developer/Agora
+bash Scripts/generate-openapi.sh
+```
+
+This updates `Packages/Kits/Networking/Sources/Networking/Generated/Types.swift` and `Client.swift`.
+
+### Remember
+
+1. **Config changes are instant** - No Edge Function redeploy needed
+2. **Suppression is user-specific** - Same post can show to different users
+3. **Scoring is personalized** - Follow boost and graph proximity are per-user
+4. **Exploration adapts** - Bandit stats learn from user behavior
+5. **All changes are versioned** - Easy rollback via `activate_reco_config()`
+
+The feed is a living, learning system that gets smarter as users engage! 🧠✨

@@ -13,6 +13,7 @@ let package = Package(
     dependencies: [
         .package(path: "../../Kits/DesignSystem"),
         .package(path: "../../Kits/Networking"),
+        .package(path: "../../Kits/Media"),
         .package(path: "../../Shared/AppFoundation")
     ],
     targets: [
@@ -21,6 +22,7 @@ let package = Package(
             dependencies: [
                 "DesignSystem",
                 "Networking",
+                "Media",
                 "AppFoundation"
             ],
             path: "Sources/Auth",
@@ -29,7 +31,7 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "AuthFeatureTests",
+            name: "AuthTests",
             dependencies: ["AuthFeature"],
             path: "Tests/AuthTests",
             swiftSettings: [

@@ -10,9 +10,9 @@ APP_DISPLAY_NAME = Agora (Dev)
 BUNDLE_ID_SUFFIX = .dev
 
 // URLs
-API_BASE_URL = https://api-dev.myapp.com
-WEBSOCKET_URL = wss://ws-dev.myapp.com
-UNIVERSAL_LINKS_HOST = dev.agora.social
+API_BASE_URL = https:/$()/iqebtllzptardlgpdnge.supabase.co/functions/v1
+WEBSOCKET_URL = wss:/$()/ws-staging.myapp.com
+UNIVERSAL_LINKS_HOST = staging.agora.social
 
 // App Groups & Keychain
 APP_GROUP = group.com.agoraapp.ios.dev
@@ -24,9 +24,9 @@ ANALYTICS_WRITE_KEY = dev-analytics-key-placeholder
 // App Icon
 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon-Dev
 
-// Supabase Configuration
-SUPABASE_URL = https://your-dev-project.supabase.co
-SUPABASE_ANON_KEY = your-dev-anon-key-here
+// Supabase Configuration (using agora-staging for development)
+SUPABASE_URL = https:/$()/iqebtllzptardlgpdnge.supabase.co
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxZWJ0bGx6cHRhcmRsZ3BkbmdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4OTk2MjIsImV4cCI6MjA3NTQ3NTYyMn0.0_AviqFR5SeQI8tkSm9oM0PB4gKWJHGWhcbzTTRLoC4
 
 // Other Settings
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG DEV_ENVIRONMENT

@@ -22,35 +22,40 @@ struct ContentView: View {
             // Home Tab - Combined For You and Following feeds
             HomeView()
                 .tabItem {
-                    Label("Home", systemImage: "house")
+                    Image(systemName: "house")
+                        .accessibilityLabel("Home")
                 }
                 .tag(0)
             
             // Search Tab - Find users and posts
             SearchView()
                 .tabItem {
-                    Label("Search", systemImage: "magnifyingglass")
+                    Image(systemName: "magnifyingglass")
+                        .accessibilityLabel("Search")
                 }
                 .tag(1)
             
             // DMs Tab - Direct messages
             DMThreadsView()
                 .tabItem {
-                    Label("Messages", systemImage: "message")
+                    Image(systemName: "message")
+                        .accessibilityLabel("Messages")
                 }
                 .tag(2)
             
             // Notifications Tab - Activity and mentions
             NotificationsView()
                 .tabItem {
-                    Label("Notifications", systemImage: "bell")
+                    Image(systemName: "bell")
+                        .accessibilityLabel("Notifications")
                 }
                 .tag(3)
             
             // Profile Tab - User profile and settings
             ProfileView()
                 .tabItem {
-                    Label("Profile", systemImage: "person.circle")
+                    Image(systemName: "person.circle")
+                        .accessibilityLabel("Profile")
                 }
                 .tag(4)
         }
@@ -65,7 +70,7 @@ struct ContentView: View {
             
             // Quick test - verify environment configuration
             print("🌍 Environment: \(EnvironmentConfig.environmentName)")
-            print("🔗 API URL: \(EnvironmentConfig.apiBaseURL)")
+            print("🔗 API URL: \(AppConfig.apiBaseURL)")
             print("📝 Logging: \(EnvironmentConfig.isLoggingEnabled)")
         }
     }

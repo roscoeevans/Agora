@@ -22,6 +22,7 @@
 		3122BDC72E95FC4700E495EE /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC02E95FC4700E495EE /* Resources/Assets.xcassets */; };
 		3122BDC82E95FC4700E495EE /* Resources/Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC12E95FC4700E495EE /* Resources/Localizable.strings */; };
 		3122BDC92E95FC4700E495EE /* Resources/Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC22E95FC4700E495EE /* Resources/Secrets.plist */; };
+		31499DF52E9C70EA0079E2D2 /* AuthFeature in Frameworks */ = {isa = PBXBuildFile; productRef = AuthFeature /* AuthFeature */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				EnvironmentConfig.swift,
+				RootView.swift,
 			);
 			target = 3122BD8F2E95FC4500E495EE /* Agora */;
 		};
@@ -88,6 +90,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				31499DF52E9C70EA0079E2D2 /* AuthFeature in Frameworks */,
 				310C73BF2E962CCF00AA5C35 /* DMs in Frameworks */,
 				310C73BE2E962CCF00AA5C35 /* Notifications in Frameworks */,
 				310C73BD2E962CCF00AA5C35 /* Search in Frameworks */,
@@ -168,6 +171,7 @@
 			);
 			name = Agora;
 			packageProductDependencies = (
+				AuthFeature /* AuthFeature */,
 				Home /* Home */,
 				HomeForYou /* HomeForYou */,
 				HomeFollowing /* HomeFollowing */,
@@ -262,6 +266,7 @@
 			mainGroup = 3122BD872E95FC4500E495EE;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */,
 				HomePackage /* XCLocalSwiftPackageReference "Packages/Features/Home" */,
 				HomeForYouPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeForYou" */,
 				HomeFollowingPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeFollowing" */,
@@ -425,11 +430,16 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Agora;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Agora needs access to your camera to take photos and videos for posts.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Agora can help you find friends by accessing your contacts.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Agora needs access to your microphone to record videos with audio.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Agora needs access to your photo library to select photos and videos for posts.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -507,11 +517,16 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Agora;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Agora needs access to your camera to take photos and videos for posts.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Agora can help you find friends by accessing your contacts.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Agora needs access to your microphone to record videos with audio.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Agora needs access to your photo library to select photos and videos for posts.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -543,11 +558,16 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Agora;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Agora needs access to your camera to take photos and videos for posts.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Agora can help you find friends by accessing your contacts.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Agora needs access to your microphone to record videos with audio.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Agora needs access to your photo library to select photos and videos for posts.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -828,6 +848,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Auth;
+		};
 		ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Features/Compose;
@@ -871,6 +895,11 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AuthFeature /* AuthFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */;
+			productName = AuthFeature;
+		};
 		Compose /* Compose */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */;

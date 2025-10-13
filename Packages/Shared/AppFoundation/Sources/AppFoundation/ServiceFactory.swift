@@ -45,11 +45,11 @@ public struct DefaultServiceFactory: ServiceFactory {
     
     public static func authService() throws -> AuthServiceProtocol {
         do {
-            // Use mock services in dev/staging, real services in production
-            let useMocks = !AppConfig.isProduction
-            let env = AppConfig.isProduction ? "Production" : AppConfig.isStaging ? "Staging" : "Debug"
+            // Use mock services ONLY in development, real services in staging and production
+            let useMocks = AppConfig.isDevelopment
+            let env = AppConfig.isProduction ? "Production" : AppConfig.isStaging ? "Staging" : "Development"
             print("[ServiceFactory] authService() for \(env) environment")
-            print("[ServiceFactory]   mockExternalServices = \(useMocks)")
+            print("[ServiceFactory]   useMocks = \(useMocks)")
             
             if useMocks {
                 print("[ServiceFactory]   ➜ Creating MOCK authentication service")
@@ -69,8 +69,8 @@ public struct DefaultServiceFactory: ServiceFactory {
     
     public static func phoneVerifier() throws -> PhoneVerifierProtocol {
         do {
-            // Use mock services in dev/staging, real services in production
-            let useMocks = !AppConfig.isProduction
+            // Use mock services ONLY in development, real services in staging and production
+            let useMocks = AppConfig.isDevelopment
             
             if useMocks {
                 print("[ServiceFactory] Creating mock phone verifier service")
@@ -90,8 +90,8 @@ public struct DefaultServiceFactory: ServiceFactory {
     
     public static func captchaService() throws -> CaptchaServiceProtocol {
         do {
-            // Use mock services in dev/staging, real services in production
-            let useMocks = !AppConfig.isProduction
+            // Use mock services ONLY in development, real services in staging and production
+            let useMocks = AppConfig.isDevelopment
             
             if useMocks {
                 print("[ServiceFactory] Creating mock captcha service")
@@ -113,7 +113,7 @@ public struct DefaultServiceFactory: ServiceFactory {
         // Check if Networking module has registered an API client provider
         guard let provider = apiClientProvider else {
             throw ServiceFactoryError.dependencyMissing(
-                "API client provider not registered. Call Networking.forceLoad() at app startup."
+                "API client provider not registered. Ensure NetworkingServiceFactory.register() is called at app startup."
             )
         }
         
@@ -125,14 +125,26 @@ public struct DefaultServiceFactory: ServiceFactory {
     private static func createProductionAuthService() throws -> AuthServiceProtocol {
         // Create production auth service using Supabase
         print("[ServiceFactory] Creating Supabase authentication service")
-        return SupabaseAuthService()
+        // Note: SupabaseAuthService init must be called on MainActor
+        // We return a nonisolated wrapper that ensures proper isolation
+        return MainActor.assumeIsolated {
+            SupabaseAuthService()
+        }
     }
     
     private static func createProductionPhoneVerifier() throws -> PhoneVerifierProtocol {
-        // TODO: Implement production phone verifier creation
-        // This would create a TwilioPhoneVerifier with AppConfig.twilioVerifyServiceSid
-        // For now, we'll throw an error to indicate it's not implemented
-        throw ServiceFactoryError.productionServiceNotImplemented("PhoneVerifier")
+        // Create production phone verifier using Twilio Verify
+        print("[ServiceFactory] Creating Twilio phone verifier service")
+        
+        // TODO: Get Twilio credentials from AppConfig when ready
+        // For now, throw an error since Twilio credentials aren't configured yet
+        throw ServiceFactoryError.productionServiceNotImplemented("PhoneVerifier - Twilio credentials not configured")
+        
+        // Future implementation:
+        // let accountSid = AppConfig.twilioAccountSid
+        // let authToken = AppConfig.twilioAuthToken
+        // let serviceSid = AppConfig.twilioVerifyServiceSid
+        // return TwilioPhoneVerifier(accountSid: accountSid, authToken: authToken, serviceSid: serviceSid)
     }
     
     private static func createProductionCaptchaService() throws -> CaptchaServiceProtocol {

@@ -10,8 +10,8 @@ APP_DISPLAY_NAME = Agora
 BUNDLE_ID_SUFFIX =
 
 // URLs
-API_BASE_URL = https://api.agora.com
-WEBSOCKET_URL = wss://ws.agora.com
+API_BASE_URL = https:/$()/api.agora.com
+WEBSOCKET_URL = wss:/$()/ws.agora.com
 UNIVERSAL_LINKS_HOST = app.agora.social
 
 // App Groups & Keychain
@@ -25,7 +25,7 @@ ANALYTICS_WRITE_KEY = production-analytics-key-placeholder
 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
 
 // Supabase Configuration
-SUPABASE_URL = https://gnvavfpjjbkabcmsztui.supabase.co
+SUPABASE_URL = https:/$()/gnvavfpjjbkabcmsztui.supabase.co
 SUPABASE_ANON_KEY = your-production-anon-key-here
 
 // Swift Compilation Conditions

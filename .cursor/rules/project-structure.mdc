@@ -53,7 +53,6 @@ Reusable functionality modules that provide specific capabilities:
 ```
 Kits/
 ├── Analytics/                 # PostHog analytics wrapper
-├── Auth/                      # Sign in with Apple + phone verification
 ├── DesignSystem/              # UI components, colors, typography
 ├── Media/                     # Image/video capture, processing, upload
 ├── Moderation/                # Content moderation and reporting
@@ -62,6 +61,8 @@ Kits/
 ├── Recommender/               # Recommendation engine client
 └── Verification/              # Device attestation and anti-bot
 ```
+
+**Note**: Authentication services (Sign in with Apple, phone verification, session management) live in `AppFoundation`, not as a Kit. The Auth feature module provides only UI/UX components.
 
 #### Shared (`Packages/Shared/`)
 Cross-cutting concerns and shared utilities:
@@ -76,8 +77,14 @@ Shared/
 - `Environment.swift`: Environment detection (staging/production)
 - `AppConfig.swift`: Central configuration management
 - `ServiceFactory.swift`: Factory for environment-appropriate services
-- `ServiceProtocols.swift`: Protocol definitions for all services
+- `ServiceProtocols.swift`: Protocol definitions for all services (Auth, Phone, Captcha, etc.)
+- `SupabaseAuthService.swift`: Production authentication implementation
+- `SessionStore.swift`: Actor-based session and token management
+- `KeychainHelper.swift`: Secure credential storage in Keychain
+- `SessionLifecycleManager.swift`: Automatic token refresh and session monitoring
+- `TwilioPhoneVerifier.swift`: Production phone verification implementation
 - `MockServices.swift`: Mock implementations for testing/staging
+- `AuthTokenProvider.swift`: Token provider protocol for Networking module
 
 #### ThirdParty (`Packages/ThirdParty/`)
 Third-party SDK integrations:
@@ -88,6 +95,84 @@ ThirdParty/
 ├── OneSignal/                 # Push notification service
 ├── PostHog/                   # Analytics SDK
 └── Sentry/                    # Crash reporting SDK
+```
+
+### Authentication Architecture
+
+Authentication in Agora follows a clean separation between UI and services:
+
+#### Auth Feature Module (`Features/Auth`)
+**Purpose**: User-facing authentication UI and app-level state management
+
+**Contents**:
+- `WelcomeView.swift`: Sign in with Apple landing screen
+- `OnboardingView.swift`: Multi-step profile creation flow
+- `HandleInputView.swift`: Handle selection with real-time validation
+- `AuthStateManager.swift`: App-level `@Observable` state coordinator
+- `HandleValidator.swift`: Handle format and availability checking (actor)
+- `Models/AuthState.swift`: App authentication state enum
+- `Models/UserProfile.swift`: User profile data model
+
+**Dependencies**: DesignSystem, Networking, AppFoundation
+
+**Responsibilities**:
+- Presenting authentication UI flows
+- Managing app-level auth state transitions
+- Coordinating user onboarding experience
+- Handle validation and availability checking
+
+#### AppFoundation Authentication (`Shared/AppFoundation`)
+**Purpose**: Core authentication services and session management
+
+**Service Protocols**:
+- `AuthServiceProtocol`: Sign in with Apple, session management, token refresh
+- `PhoneVerifierProtocol`: Phone verification code sending and validation
+- `CaptchaServiceProtocol`: Captcha challenge presentation and verification
+- `AuthTokenProvider`: Token provider for authenticated API requests
+
+**Production Implementations**:
+- `SupabaseAuthService`: Production auth using Supabase Auth
+- `TwilioPhoneVerifier`: Production phone verification via Twilio Verify
+- `SessionStore`: Actor-based session and token storage
+- `KeychainHelper`: Secure credential persistence in Keychain
+- `SessionLifecycleManager`: Automatic token refresh and expiration handling
+
+**Mock Implementations** (in `MockServices.swift`):
+- `MockAuthService`: Mock authentication for staging/development
+- `MockPhoneVerifier`: Mock phone verification
+- `MockCaptchaService`: Mock captcha challenges
+
+**Service Factory**:
+- `ServiceFactory`: Protocol for environment-appropriate service creation
+- `DefaultServiceFactory`: Production implementation using environment detection
+- `ServiceProvider`: Convenience wrapper with fallback handling
+
+**Design Principles**:
+1. **Protocol-Oriented**: All services defined as protocols for testability
+2. **Environment-Aware**: Factory pattern selects mock vs production based on `AppConfig`
+3. **Actor-Safe**: Session management uses Swift actors for thread safety
+4. **Secure**: Credentials stored in Keychain with appropriate access controls
+5. **Single Source of Truth**: All auth service logic in AppFoundation, not scattered
+
+#### Why No AuthKit?
+
+Authentication services are in `AppFoundation` (Shared) rather than a separate Kit because:
+
+1. **Foundation-Level Concern**: Authentication is a cross-cutting concern used by nearly every feature
+2. **Tight Integration**: Auth services integrate deeply with environment config and app lifecycle
+3. **Avoid Circular Dependencies**: Many kits need auth services; having AuthKit would create dependency issues
+4. **Protocol First**: Service protocols belong in Shared; implementations stay with protocols
+5. **Simplicity**: One place for all auth code is clearer than splitting UI (Feature) and Services (Kit)
+
+#### Dependency Flow
+```
+Auth Feature (UI)
+    ↓ depends on
+AppFoundation (Service Protocols + Implementations)
+    ↓ provides tokens to
+Networking Kit (API Client)
+    ↓ used by
+All Features (API access)
 ```
 
 ### Package Structure Standards
@@ -175,10 +260,10 @@ Features (top level)
 ├── Kits (middle level)
 │   ├── DesignSystem (foundation)
 │   ├── Networking (foundation)
-│   ├── Auth (foundation)
+│   ├── Media (foundation)
 │   └── [other kits]
 └── Shared (foundation level)
-    ├── AppFoundation
+    ├── AppFoundation (includes all auth services)
     └── TestSupport
 ```
 

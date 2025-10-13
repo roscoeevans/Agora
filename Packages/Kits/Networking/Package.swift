@@ -5,7 +5,8 @@ let package = Package(
     name: "Networking",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v26)
+        .iOS(.v26),
+        .macOS(.v15)
     ],
     products: [
         .library(

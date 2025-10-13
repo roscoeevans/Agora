@@ -1,7 +1,29 @@
 import Foundation
 
+/// Actor to guard shared mutable state for stub client
+/// Follows Swift concurrency best practice: use actors to guard shared mutable state
+private actor ProfileStore {
+    private var profiles: [String: Components.Schemas.User] = [:]
+    
+    func store(_ user: Components.Schemas.User) {
+        profiles[user.id] = user
+    }
+    
+    func hasProfiles() -> Bool {
+        !profiles.isEmpty
+    }
+    
+    func firstProfile() -> Components.Schemas.User? {
+        profiles.values.first
+    }
+}
+
 /// Stub implementation of AgoraAPIClient for development and testing
 public final class StubAgoraClient: AgoraAPIClient {
+    
+    // Track created profiles in memory (for stub simulation)
+    // Actor provides async-safe access to mutable state
+    private let profileStore = ProfileStore()
     
     public init() {}
     
@@ -16,6 +38,7 @@ public final class StubAgoraClient: AgoraAPIClient {
             Post(
                 id: "post-1",
                 authorId: "user-123",
+                authorDisplayHandle: "user_agora_team",
                 text: "This is a test post from the stub client! 🚀",
                 likeCount: 42,
                 repostCount: 7,
@@ -25,6 +48,7 @@ public final class StubAgoraClient: AgoraAPIClient {
             Post(
                 id: "post-2",
                 authorId: "user-456",
+                authorDisplayHandle: "TestUser",
                 text: "Another mock post for testing the feed UI.",
                 likeCount: 15,
                 repostCount: 2,
@@ -34,6 +58,7 @@ public final class StubAgoraClient: AgoraAPIClient {
             Post(
                 id: "post-3",
                 authorId: "user-789",
+                authorDisplayHandle: "DevAccount",
                 text: "Stub client is great for offline development! 💡",
                 linkUrl: "https://example.com",
                 likeCount: 28,
@@ -87,14 +112,19 @@ public final class StubAgoraClient: AgoraAPIClient {
         // Simulate network delay
         try await Task.sleep(for: .milliseconds(600))
         
-        // Return mock created user
-        return Components.Schemas.User(
+        // Create mock user
+        let user = Components.Schemas.User(
             id: UUID().uuidString,
             handle: request.handle,
             displayHandle: request.displayHandle,
             displayName: request.displayName,
             createdAt: Date()
         )
+        
+        // Store in memory for stub simulation
+        await profileStore.store(user)
+        
+        return user
     }
     
     public func checkHandle(handle: String) async throws -> Components.Schemas.CheckHandleResponse {
@@ -127,16 +157,18 @@ public final class StubAgoraClient: AgoraAPIClient {
         // Simulate network delay
         try await Task.sleep(for: .milliseconds(300))
         
-        // Return mock current user
-        return Components.Schemas.User(
-            id: "mock-user-id",
-            handle: "currentuser",
-            displayHandle: "CurrentUser",
-            displayName: "Current User",
-            bio: "This is the currently logged in mock user",
-            avatarUrl: nil,
-            createdAt: Date().addingTimeInterval(-86400 * 30)
-        )
+        // Check if user has created a profile (actor-safe access)
+        let hasProfile = await profileStore.hasProfiles()
+        let profile = await profileStore.firstProfile()
+        
+        if hasProfile, let profile = profile {
+            // Return the created profile
+            return profile
+        } else {
+            // No profile exists - simulate 404
+            // In real implementation, this would be a 404 HTTP error
+            throw NetworkError.notFound(message: "Profile not found")
+        }
     }
     
     public func updateProfile(request: Components.Schemas.UpdateProfileRequest) async throws -> Components.Schemas.User {

@@ -29,7 +29,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
         
         // Local Feature Packages
-        .package(path: "Packages/Features/Auth"),
+        .package(path: "Packages/Features/Auth"), // Exports as AuthFeature to avoid Supabase conflict
         .package(path: "Packages/Features/Home"),
         .package(path: "Packages/Features/HomeForYou"),
         .package(path: "Packages/Features/HomeFollowing"),
@@ -45,7 +45,6 @@ let package = Package(
         .package(path: "Packages/Kits/DesignSystem"),
         .package(path: "Packages/Kits/Networking"),
         .package(path: "Packages/Kits/Persistence"),
-        .package(path: "Packages/Kits/AgoraAuth"),
         .package(path: "Packages/Kits/Media"),
         .package(path: "Packages/Kits/Analytics"),
         .package(path: "Packages/Kits/Moderation"),

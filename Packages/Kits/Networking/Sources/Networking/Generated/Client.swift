@@ -289,15 +289,15 @@ public struct Client: APIProtocol {
     }
     /// Create user profile after authentication
     ///
-    /// - Remark: HTTP `POST /users/profile`.
-    /// - Remark: Generated from `#/paths//users/profile/post`.
-    public func post_sol_users_sol_profile(_ input: Operations.post_sol_users_sol_profile.Input) async throws -> Operations.post_sol_users_sol_profile.Output {
+    /// - Remark: HTTP `POST /create-profile`.
+    /// - Remark: Generated from `#/paths//create-profile/post`.
+    public func post_sol_create_hyphen_profile(_ input: Operations.post_sol_create_hyphen_profile.Input) async throws -> Operations.post_sol_create_hyphen_profile.Output {
         try await client.send(
             input: input,
-            forOperation: Operations.post_sol_users_sol_profile.id,
+            forOperation: Operations.post_sol_create_hyphen_profile.id,
             serializer: { input in
                 let path = try converter.renderedPath(
-                    template: "/users/profile",
+                    template: "/create-profile",
                     parameters: []
                 )
                 var request: HTTPTypes.HTTPRequest = .init(
@@ -324,7 +324,7 @@ public struct Client: APIProtocol {
                 switch response.status.code {
                 case 201:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.post_sol_users_sol_profile.Output.Created.Body
+                    let body: Operations.post_sol_create_hyphen_profile.Output.Created.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -390,7 +390,7 @@ public struct Client: APIProtocol {
                     return .unauthorized(.init(body: body))
                 case 409:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.post_sol_users_sol_profile.Output.Conflict.Body
+                    let body: Operations.post_sol_create_hyphen_profile.Output.Conflict.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -446,15 +446,15 @@ public struct Client: APIProtocol {
     }
     /// Check if handle is available
     ///
-    /// - Remark: HTTP `GET /users/check-handle`.
-    /// - Remark: Generated from `#/paths//users/check-handle/get`.
-    public func get_sol_users_sol_check_hyphen_handle(_ input: Operations.get_sol_users_sol_check_hyphen_handle.Input) async throws -> Operations.get_sol_users_sol_check_hyphen_handle.Output {
+    /// - Remark: HTTP `GET /check-handle`.
+    /// - Remark: Generated from `#/paths//check-handle/get`.
+    public func get_sol_check_hyphen_handle(_ input: Operations.get_sol_check_hyphen_handle.Input) async throws -> Operations.get_sol_check_hyphen_handle.Output {
         try await client.send(
             input: input,
-            forOperation: Operations.get_sol_users_sol_check_hyphen_handle.id,
+            forOperation: Operations.get_sol_check_hyphen_handle.id,
             serializer: { input in
                 let path = try converter.renderedPath(
-                    template: "/users/check-handle",
+                    template: "/check-handle",
                     parameters: []
                 )
                 var request: HTTPTypes.HTTPRequest = .init(
@@ -479,7 +479,7 @@ public struct Client: APIProtocol {
                 switch response.status.code {
                 case 200:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.get_sol_users_sol_check_hyphen_handle.Output.Ok.Body
+                    let body: Operations.get_sol_check_hyphen_handle.Output.Ok.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -557,15 +557,15 @@ public struct Client: APIProtocol {
     }
     /// Get current user profile
     ///
-    /// - Remark: HTTP `GET /users/me`.
-    /// - Remark: Generated from `#/paths//users/me/get`.
-    public func get_sol_users_sol_me(_ input: Operations.get_sol_users_sol_me.Input) async throws -> Operations.get_sol_users_sol_me.Output {
+    /// - Remark: HTTP `GET /get-current-profile`.
+    /// - Remark: Generated from `#/paths//get-current-profile/get`.
+    public func get_sol_get_hyphen_current_hyphen_profile(_ input: Operations.get_sol_get_hyphen_current_hyphen_profile.Input) async throws -> Operations.get_sol_get_hyphen_current_hyphen_profile.Output {
         try await client.send(
             input: input,
-            forOperation: Operations.get_sol_users_sol_me.id,
+            forOperation: Operations.get_sol_get_hyphen_current_hyphen_profile.id,
             serializer: { input in
                 let path = try converter.renderedPath(
-                    template: "/users/me",
+                    template: "/get-current-profile",
                     parameters: []
                 )
                 var request: HTTPTypes.HTTPRequest = .init(
@@ -583,7 +583,7 @@ public struct Client: APIProtocol {
                 switch response.status.code {
                 case 200:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.get_sol_users_sol_me.Output.Ok.Body
+                    let body: Operations.get_sol_get_hyphen_current_hyphen_profile.Output.Ok.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -627,7 +627,7 @@ public struct Client: APIProtocol {
                     return .unauthorized(.init(body: body))
                 case 404:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.get_sol_users_sol_me.Output.NotFound.Body
+                    let body: Operations.get_sol_get_hyphen_current_hyphen_profile.Output.NotFound.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -683,15 +683,15 @@ public struct Client: APIProtocol {
     }
     /// Update current user profile
     ///
-    /// - Remark: HTTP `PATCH /users/me`.
-    /// - Remark: Generated from `#/paths//users/me/patch`.
-    public func patch_sol_users_sol_me(_ input: Operations.patch_sol_users_sol_me.Input) async throws -> Operations.patch_sol_users_sol_me.Output {
+    /// - Remark: HTTP `PATCH /update-profile`.
+    /// - Remark: Generated from `#/paths//update-profile/patch`.
+    public func patch_sol_update_hyphen_profile(_ input: Operations.patch_sol_update_hyphen_profile.Input) async throws -> Operations.patch_sol_update_hyphen_profile.Output {
         try await client.send(
             input: input,
-            forOperation: Operations.patch_sol_users_sol_me.id,
+            forOperation: Operations.patch_sol_update_hyphen_profile.id,
             serializer: { input in
                 let path = try converter.renderedPath(
-                    template: "/users/me",
+                    template: "/update-profile",
                     parameters: []
                 )
                 var request: HTTPTypes.HTTPRequest = .init(
@@ -718,7 +718,7 @@ public struct Client: APIProtocol {
                 switch response.status.code {
                 case 200:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.patch_sol_users_sol_me.Output.Ok.Body
+                    let body: Operations.patch_sol_update_hyphen_profile.Output.Ok.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [

@@ -39,6 +39,7 @@ public struct WelcomeView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Welcome to Agora")
+        .preferredColorScheme(.dark)
     }
     
     // MARK: - Branding Section

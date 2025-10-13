@@ -52,6 +52,24 @@ This approach provides:
 - ✅ **Version controlled** - changes are visible in PRs
 - ✅ **Swift 6.2 compatible** - no plugin compatibility issues
 
+## Setup
+
+The Networking kit must be registered at app startup:
+
+```swift
+import Networking
+
+@main
+struct AgoraApp: App {
+    init() {
+        // Register networking services first
+        NetworkingServiceFactory.register()
+    }
+}
+```
+
+This explicit registration ensures proper initialization order and avoids hidden dependencies.
+
 ## Usage
 
 ### Getting an API Client
@@ -64,11 +82,7 @@ import AppFoundation
 let apiClient = ServiceProvider.shared.apiClient()
 
 // Or create directly
-let config = AppConfig.shared
-let client = NetworkingServiceFactory.makeAPIClient(
-    config: config,
-    useStub: config.mockExternalServices
-)
+let client = NetworkingServiceFactory.makeAPIClient(useStub: false)
 ```
 
 ### Making API Calls

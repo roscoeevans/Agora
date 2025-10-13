@@ -60,7 +60,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /users/profile:
+  /create-profile:
     post:
       summary: Create user profile after authentication
       tags: [Users]
@@ -92,18 +92,18 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /users/check-handle:
+  /check-handle:
     get:
       summary: Check if handle is available
       tags: [Users]
       parameters:
         - name: handle
           in: query
-          description: Handle to check (lowercase)
+          description: Handle to check (case-insensitive, stored as lowercase)
           required: true
           schema:
             type: string
-            pattern: '^[a-z0-9_]{3,15}$'
+            pattern: '^[a-zA-Z0-9._]{3,30}$'
       responses:
         '200':
           description: Handle availability status
@@ -116,7 +116,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /users/me:
+  /get-current-profile:
     get:
       summary: Get current user profile
       tags: [Users]
@@ -140,6 +140,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /update-profile:
     patch:
       summary: Update current user profile
       tags: [Users]
@@ -293,18 +294,22 @@ components:
       properties:
         handle:
           type: string
-          pattern: '^[a-z0-9_]{3,15}$'
-          description: Canonical lowercase handle (3-15 chars, alphanumeric + underscore)
+          pattern: '^[a-z0-9._]{3,30}$'
+          description: Canonical lowercase handle (3-30 chars, letters, numbers, periods, underscores). Instagram/Threads-style rules.
         displayHandle:
           type: string
           minLength: 3
-          maxLength: 15
-          description: User's preferred capitalization (e.g., "RockyEvans")
+          maxLength: 30
+          description: User's preferred capitalization (e.g., "Rocky.Evans")
         displayName:
           type: string
           minLength: 1
           maxLength: 50
           description: Display name shown in profile
+        avatarUrl:
+          type: string
+          format: uri
+          description: Optional URL to user's avatar image in Supabase Storage
 
     UpdateProfileRequest:
       type: object
@@ -344,6 +349,7 @@ components:
       required:
         - id
         - authorId
+        - authorDisplayHandle
         - text
         - createdAt
       properties:
@@ -352,6 +358,9 @@ components:
         authorId:
           type: string
           format: uuid
+        authorDisplayHandle:
+          type: string
+          description: Author's unique handle with their preferred capitalization
         text:
           type: string
           maxLength: 70
@@ -380,16 +389,49 @@ components:
           type: string
           format: date-time
 
+    EnhancedPost:
+      allOf:
+        - $ref: '#/components/schemas/Post'
+        - type: object
+          properties:
+            score:
+              type: number
+              format: float
+              description: Recommendation score for this post
+            reasons:
+              type: array
+              description: Transparent reasoning for why this post appears
+              items:
+                type: object
+                required:
+                  - signal
+                  - weight
+                properties:
+                  signal:
+                    type: string
+                    description: Signal name (e.g., 'fresh', 'quality', 'relation')
+                  weight:
+                    type: number
+                    format: float
+                    description: Weight contribution of this signal
+            explore:
+              type: boolean
+              description: Whether this post is from the exploration pool
+
     FeedResponse:
       type: object
       required:
         - posts
-        - nextCursor
       properties:
+        pageId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Unique identifier for this page of results
         posts:
           type: array
           items:
-            $ref: '#/components/schemas/Post'
+            $ref: '#/components/schemas/EnhancedPost'
         nextCursor:
           type: string
           nullable: true
@@ -401,14 +443,16 @@ components:
         - message
       properties:
         code:
-          type: string
-          description: Error code
+          type: integer
+          description: HTTP status code
         message:
           type: string
           description: Error message
         details:
-          type: object
-          description: Additional error details
+          oneOf:
+            - type: string
+            - type: object
+          description: Additional error details (string or object)
 
   responses:
     BadRequest:

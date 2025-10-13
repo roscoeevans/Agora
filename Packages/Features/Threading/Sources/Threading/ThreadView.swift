@@ -62,16 +62,20 @@ struct ThreadPostView: View {
             }
             
             VStack(alignment: .leading, spacing: SpacingTokens.xs) {
-                HStack {
-                    Text(post.author)
+                HStack(spacing: SpacingTokens.xs) {
+                    Text(post.authorDisplayHandle)
                         .font(TypographyScale.calloutEmphasized)
                         .foregroundColor(ColorTokens.primaryText)
                     
-                    Spacer()
-                    
-                    Text(post.timestamp, style: .relative)
+                    Text("·")
                         .font(TypographyScale.caption1)
                         .foregroundColor(ColorTokens.tertiaryText)
+                    
+                    Text(RelativeTimeFormatter.format(post.timestamp))
+                        .font(TypographyScale.caption1)
+                        .foregroundColor(ColorTokens.tertiaryText)
+                    
+                    Spacer()
                 }
                 
                 Text(post.text)

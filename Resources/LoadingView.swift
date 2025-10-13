@@ -2,8 +2,10 @@ import SwiftUI
 import DesignSystem
 
 /// Simple loading view shown during auth state initialization
-struct LoadingView: View {
-    var body: some View {
+public struct LoadingView: View {
+    public init() {}
+    
+    public var body: some View {
         ZStack {
             ColorTokens.background
                 .ignoresSafeArea()

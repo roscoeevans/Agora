@@ -1,30 +1,7 @@
 import Foundation
 
-/// Protocol for phone verification services
-public protocol PhoneVerifier: Sendable {
-    /// Sends a verification code to the specified phone number
-    /// - Parameter phoneNumber: The phone number to verify (E.164 format)
-    /// - Returns: Verification session ID for tracking the verification
-    /// - Throws: PhoneVerificationError if sending fails
-    func sendVerificationCode(to phoneNumber: String) async throws -> String
-    
-    /// Verifies the code entered by the user
-    /// - Parameters:
-    ///   - code: The verification code entered by the user
-    ///   - sessionId: The session ID returned from sendVerificationCode
-    /// - Returns: True if verification is successful
-    /// - Throws: PhoneVerificationError if verification fails
-    func verifyCode(_ code: String, sessionId: String) async throws -> Bool
-    
-    /// Checks the current verification status
-    /// - Parameter sessionId: The session ID to check
-    /// - Returns: Current verification status
-    /// - Throws: PhoneVerificationError if status check fails
-    func getVerificationStatus(sessionId: String) async throws -> VerificationStatus
-}
-
-/// Twilio Verify implementation of PhoneVerifier
-public final class TwilioPhoneVerifier: PhoneVerifier {
+/// Twilio Verify implementation of PhoneVerifierProtocol
+public final class TwilioPhoneVerifier: PhoneVerifierProtocol {
     
     // MARK: - Private Properties
     
@@ -47,7 +24,7 @@ public final class TwilioPhoneVerifier: PhoneVerifier {
         self.session = session
     }
     
-    // MARK: - PhoneVerifier Implementation
+    // MARK: - PhoneVerifierProtocol Implementation
     
     public func sendVerificationCode(to phoneNumber: String) async throws -> String {
         let url = URL(string: "https://verify.twilio.com/v2/Services/\(serviceSid)/Verifications")!
@@ -138,44 +115,6 @@ public final class TwilioPhoneVerifier: PhoneVerifier {
     }
 }
 
-// MARK: - Supporting Types
-
-public enum VerificationStatus: String, Sendable, CaseIterable {
-    case pending = "pending"
-    case approved = "approved"
-    case canceled = "canceled"
-    case expired = "expired"
-}
-
-public enum PhoneVerificationError: LocalizedError, Sendable {
-    case invalidPhoneNumber
-    case sendFailed(Int)
-    case verificationFailed(Int)
-    case statusCheckFailed(Int)
-    case networkError
-    case invalidCode
-    case sessionExpired
-    
-    public var errorDescription: String? {
-        switch self {
-        case .invalidPhoneNumber:
-            return "Invalid phone number format"
-        case .sendFailed(let code):
-            return "Failed to send verification code (HTTP \(code))"
-        case .verificationFailed(let code):
-            return "Verification failed (HTTP \(code))"
-        case .statusCheckFailed(let code):
-            return "Status check failed (HTTP \(code))"
-        case .networkError:
-            return "Network error occurred"
-        case .invalidCode:
-            return "Invalid verification code"
-        case .sessionExpired:
-            return "Verification session has expired"
-        }
-    }
-}
-
 // MARK: - Twilio API Models
 
 private struct TwilioVerificationResponse: Codable {
@@ -191,46 +130,3 @@ private struct TwilioVerificationCheckResponse: Codable {
     let to: String
 }
 
-// MARK: - Mock Implementation
-
-/// Mock implementation of PhoneVerifier for testing and development
-public actor MockPhoneVerifier: PhoneVerifier {
-    
-    public var shouldSucceed: Bool = true
-    public var verificationDelay: TimeInterval = 0
-    
-    public init() {}
-    
-    public func sendVerificationCode(to phoneNumber: String) async throws -> String {
-        if verificationDelay > 0 {
-            try await Task.sleep(nanoseconds: UInt64(verificationDelay * 1_000_000_000))
-        }
-        
-        guard shouldSucceed else {
-            throw PhoneVerificationError.sendFailed(400)
-        }
-        
-        return "mock_session_\(UUID().uuidString)"
-    }
-    
-    public func verifyCode(_ code: String, sessionId: String) async throws -> Bool {
-        if verificationDelay > 0 {
-            try await Task.sleep(nanoseconds: UInt64(verificationDelay * 1_000_000_000))
-        }
-        
-        guard shouldSucceed else {
-            throw PhoneVerificationError.verificationFailed(400)
-        }
-        
-        // Accept "123456" as valid code for testing
-        return code == "123456"
-    }
-    
-    public func getVerificationStatus(sessionId: String) async throws -> VerificationStatus {
-        guard shouldSucceed else {
-            throw PhoneVerificationError.statusCheckFailed(400)
-        }
-        
-        return .pending
-    }
-}

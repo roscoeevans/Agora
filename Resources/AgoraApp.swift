@@ -8,20 +8,32 @@
 import SwiftUI
 import AppFoundation
 import DesignSystem
+import AuthFeature
+import Networking
+import Observation
 
 @main
 struct AgoraApp: App {
+    @State private var authManager: AuthStateManager
+    
     init() {
-        // Initialize app-level services
+        // Register networking services FIRST, before creating any managers
+        NetworkingServiceFactory.register()
+        
+        // Now safe to create auth manager (which needs API client)
+        _authManager = State(initialValue: AuthStateManager())
+        
+        // Initialize other app-level services
         setupLogging()
         setupAppearance()
     }
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .onAppear {
-                    // Additional app lifecycle setup can go here
+            RootView()
+                .environment(authManager)
+                .task {
+                    await authManager.checkAuthState()
                 }
         }
     }
@@ -37,7 +49,7 @@ struct AgoraApp: App {
         
         // Configure additional appearance settings
         configureNavigationBarAppearance()
-        configureTabBarAppearance()
+        // Let tab bar use default iOS behavior for proper background rendering
     }
     
     private func configureNavigationBarAppearance() {
@@ -55,15 +67,5 @@ struct AgoraApp: App {
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
-    }
-    
-    private func configureTabBarAppearance() {
-        // Configure tab bar for dark mode
-        let appearance = UITabBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.systemBackground
-        
-        UITabBar.appearance().standardAppearance = appearance
-        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 }

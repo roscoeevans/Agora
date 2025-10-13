@@ -67,36 +67,43 @@ struct PostCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpacingTokens.sm) {
             // Author and timestamp header
-            HStack(alignment: .top) {
+            HStack(alignment: .top, spacing: SpacingTokens.sm) {
                 // Author avatar placeholder
                 Circle()
                     .fill(ColorTokens.agoraBrand)
                     .frame(width: 40, height: 40)
                     .overlay {
-                        Text(String(post.author.prefix(1)))
+                        Text(String(post.authorDisplayHandle.prefix(1)))
                             .font(TypographyScale.calloutEmphasized)
                             .foregroundColor(.white)
                     }
                 
                 VStack(alignment: .leading, spacing: SpacingTokens.xxs) {
-                    Text(post.author)
-                        .font(TypographyScale.calloutEmphasized)
-                        .foregroundColor(ColorTokens.primaryText)
+                    // Display handle and timestamp on same line
+                    HStack(spacing: SpacingTokens.xs) {
+                        Text(post.authorDisplayHandle)
+                            .font(TypographyScale.calloutEmphasized)
+                            .foregroundColor(ColorTokens.primaryText)
+                        
+                        Text("·")
+                            .font(TypographyScale.caption1)
+                            .foregroundColor(ColorTokens.tertiaryText)
+                        
+                        Text(RelativeTimeFormatter.format(post.timestamp))
+                            .font(TypographyScale.caption1)
+                            .foregroundColor(ColorTokens.tertiaryText)
+                    }
                     
-                    Text(post.timestamp, style: .relative)
-                        .font(TypographyScale.caption1)
-                        .foregroundColor(ColorTokens.tertiaryText)
+                    // Post content aligned under display handle
+                    Text(post.text)
+                        .font(TypographyScale.body)
+                        .foregroundColor(ColorTokens.primaryText)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 
                 Spacer()
             }
-            
-            // Post content
-            Text(post.text)
-                .font(TypographyScale.body)
-                .foregroundColor(ColorTokens.primaryText)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
             
             // Interaction buttons
             HStack(spacing: SpacingTokens.xl) {

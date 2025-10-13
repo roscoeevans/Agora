@@ -73,7 +73,7 @@ public final class AgoraSupabaseClient: @unchecked Sendable {
 
 extension SupabaseClient {
     /// Convenience method to get current session safely
-    public func currentSession() async throws -> Session? {
+    public func currentSession() async throws -> Auth.Session? {
         return try await self.auth.session
     }
 

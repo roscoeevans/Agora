@@ -2,53 +2,80 @@ import Foundation
 import OpenAPIRuntime
 import OpenAPIURLSession
 import HTTPTypes
+import AppFoundation
 
 /// Production implementation of AgoraAPIClient using OpenAPI-generated code
 public final class OpenAPIAgoraClient: AgoraAPIClient {
-    private let baseURL: URL
-    private let session: URLSession
-    private let authToken: String?
-    
-    // NOTE: Once OpenAPI generation is complete, we'll add:
-    // private let transport: any ClientTransport
-    // private let client: Client
+    private let client: Client
+    private let authTokenProvider: AuthTokenProvider
     
     /// Initialize OpenAPI-based Agora API client
     /// - Parameters:
     ///   - baseURL: Base URL for the API
     ///   - session: URLSession for networking (defaults to .shared)
-    ///   - authToken: Optional bearer token for authenticated requests
-    public init(baseURL: URL, session: URLSession = .shared, authToken: String? = nil) {
-        self.baseURL = baseURL
-        self.session = session
-        self.authToken = authToken
+    ///   - authTokenProvider: Provider for auth tokens
+    public init(
+        baseURL: URL, 
+        session: URLSession = .shared, 
+        authTokenProvider: AuthTokenProvider
+    ) {
+        self.authTokenProvider = authTokenProvider
         
-        // TODO: Once OpenAPI generation is complete, initialize transport and client:
-        // self.transport = URLSessionTransport(
-        //     configuration: .init(
-        //         session: session
-        //     )
-        // )
-        // self.client = Client(
-        //     serverURL: baseURL,
-        //     transport: transport,
-        //     middlewares: [AuthMiddleware(token: authToken)]
-        // )
+        let transport = URLSessionTransport(
+            configuration: .init(session: session)
+        )
+        
+        // Configure lenient ISO8601 date decoding (handles fractional seconds)
+        var converterConfig = Configuration()
+        converterConfig.dateTranscoder = .iso8601WithFractionalSeconds
+        
+        self.client = Client(
+            serverURL: baseURL,
+            configuration: converterConfig,
+            transport: transport,
+            middlewares: [AuthMiddleware(tokenProvider: authTokenProvider)]
+        )
     }
     
     // MARK: - Feed Operations
     
     public func fetchForYouFeed(cursor: String?, limit: Int?) async throws -> FeedResponse {
-        // TODO: Replace with generated API call once available
-        // Example (after generation):
-        // let response = try await client.get_slash_feed_slash_for_hyphen_you(
-        //     query: .init(cursor: cursor, limit: limit)
-        // )
-        // return try response.ok.body.json
+        let response = try await client.get_sol_feed_sol_for_hyphen_you(
+            query: .init(cursor: cursor, limit: limit)
+        )
         
-        // Temporary implementation returns empty feed
-        print("[OpenAPIAgoraClient] fetchForYouFeed not yet wired to generated client")
-        return FeedResponse(posts: [], nextCursor: nil)
+        switch response {
+        case .ok(let ok):
+            let generatedResponse = try ok.body.json
+            // Convert from generated Components.Schemas.FeedResponse to manual FeedResponse
+            // EnhancedPost uses allOf, so properties are in value1 (the base Post)
+            let posts = generatedResponse.posts.map { enhancedPost in
+                let post = enhancedPost.value1
+                return Post(
+                    id: post.id,
+                    authorId: post.authorId,
+                    authorDisplayHandle: post.authorDisplayHandle,
+                    text: post.text,
+                    linkUrl: post.linkUrl,
+                    mediaBundleId: post.mediaBundleId,
+                    replyToPostId: post.replyToPostId,
+                    quotePostId: post.quotePostId,
+                    likeCount: post.likeCount ?? 0,
+                    repostCount: post.repostCount ?? 0,
+                    replyCount: post.replyCount ?? 0,
+                    visibility: post.visibility.flatMap { PostVisibility(rawValue: $0.rawValue) } ?? .public,
+                    createdAt: post.createdAt
+                )
+            }
+            return FeedResponse(posts: posts, nextCursor: generatedResponse.nextCursor)
+        case .unauthorized:
+            throw NetworkError.authenticationRequired
+        case .internalServerError(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Internal server error")
+        case .undocumented(let statusCode, _):
+            throw NetworkError.httpError(statusCode: statusCode, data: nil)
+        }
     }
     
     // MARK: - Authentication Operations
@@ -83,37 +110,65 @@ public final class OpenAPIAgoraClient: AgoraAPIClient {
     // MARK: - User Profile Operations
     
     public func createProfile(request: Components.Schemas.CreateProfileRequest) async throws -> Components.Schemas.User {
-        // TODO: Replace with generated API call once available
-        // Example (after generation):
-        // let response = try await client.post_slash_users_slash_profile(
-        //     body: .json(request)
-        // )
-        // return try response.created.body.json
+        let response = try await client.post_sol_create_hyphen_profile(
+            .init(body: .json(request))
+        )
         
-        print("[OpenAPIAgoraClient] createProfile not yet wired to generated client")
-        throw NetworkError.serverError(message: "Not yet implemented")
+        switch response {
+        case .created(let created):
+            return try created.body.json
+        case .badRequest(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Bad request")
+        case .unauthorized:
+            throw NetworkError.authenticationRequired
+        case .conflict(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Conflict")
+        case .internalServerError(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Internal server error")
+        case .undocumented(let statusCode, _):
+            throw NetworkError.httpError(statusCode: statusCode, data: nil)
+        }
     }
     
     public func checkHandle(handle: String) async throws -> Components.Schemas.CheckHandleResponse {
-        // TODO: Replace with generated API call once available
-        // Example (after generation):
-        // let response = try await client.get_slash_users_slash_check_hyphen_handle(
-        //     query: .init(handle: handle)
-        // )
-        // return try response.ok.body.json
+        let response = try await client.get_sol_check_hyphen_handle(
+            query: .init(handle: handle)
+        )
         
-        print("[OpenAPIAgoraClient] checkHandle not yet wired to generated client")
-        throw NetworkError.serverError(message: "Not yet implemented")
+        switch response {
+        case .ok(let ok):
+            return try ok.body.json
+        case .badRequest(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Invalid handle format")
+        case .internalServerError(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Internal server error")
+        case .undocumented(let statusCode, _):
+            throw NetworkError.httpError(statusCode: statusCode, data: nil)
+        }
     }
     
     public func getCurrentUserProfile() async throws -> Components.Schemas.User {
-        // TODO: Replace with generated API call once available
-        // Example (after generation):
-        // let response = try await client.get_slash_users_slash_me()
-        // return try response.ok.body.json
+        let response = try await client.get_sol_get_hyphen_current_hyphen_profile(.init())
         
-        print("[OpenAPIAgoraClient] getCurrentUserProfile not yet wired to generated client")
-        throw NetworkError.serverError(message: "Not yet implemented")
+        switch response {
+        case .ok(let ok):
+            return try ok.body.json
+        case .unauthorized:
+            throw NetworkError.authenticationRequired
+        case .notFound(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.notFound(message: errorBody?.message ?? "Profile not found")
+        case .internalServerError(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Internal server error")
+        case .undocumented(let statusCode, _):
+            throw NetworkError.httpError(statusCode: statusCode, data: nil)
+        }
     }
     
     public func updateProfile(request: Components.Schemas.UpdateProfileRequest) async throws -> Components.Schemas.User {
@@ -133,7 +188,7 @@ public final class OpenAPIAgoraClient: AgoraAPIClient {
 
 /// Middleware to add Bearer token to requests
 private struct AuthMiddleware: ClientMiddleware {
-    let token: String?
+    let tokenProvider: AuthTokenProvider
     
     func intercept(
         _ request: HTTPRequest,
@@ -143,9 +198,12 @@ private struct AuthMiddleware: ClientMiddleware {
         next: (HTTPRequest, HTTPBody?, URL) async throws -> (HTTPResponse, HTTPBody?)
     ) async throws -> (HTTPResponse, HTTPBody?) {
         var modifiedRequest = request
-        if let token = token {
+        
+        // Get current access token
+        if let token = try? await tokenProvider.currentAccessToken() {
             modifiedRequest.headerFields[.authorization] = "Bearer \(token)"
         }
+        
         return try await next(modifiedRequest, body, baseURL)
     }
 }

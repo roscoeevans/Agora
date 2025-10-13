@@ -51,7 +51,7 @@ import Foundation
 /// - **State**: AuthStateManager (@Observable for SwiftUI integration)
 /// - **Views**: SwiftUI views following Apple design guidelines
 
-public enum Auth {
+public enum AuthFeatureInfo {
     /// Module version
     public static let version = "1.0.0"
 }

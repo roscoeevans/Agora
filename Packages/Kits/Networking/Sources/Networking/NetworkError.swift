@@ -9,6 +9,7 @@ public enum NetworkError: LocalizedError, Sendable {
     case encodingError(Error)
     case httpError(statusCode: Int, data: Data?)
     case authenticationRequired
+    case notFound(message: String)
     case networkUnavailable
     case timeout
     case rateLimited(retryAfter: TimeInterval?)
@@ -31,6 +32,8 @@ public enum NetworkError: LocalizedError, Sendable {
             return "HTTP error with status code: \(statusCode)"
         case .authenticationRequired:
             return "Authentication required"
+        case .notFound(let message):
+            return message
         case .networkUnavailable:
             return "Network unavailable"
         case .timeout:

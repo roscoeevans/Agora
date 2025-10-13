@@ -1,0 +1,324 @@
+---
+description: How and when to create and use injectable dependencies in the Agora iOS app (Swift 6.2 • iOS 26). Zero-magic DI via protocols + initializer injection + SwiftUI Environment. Clear scopes, placement, naming, and testing guidance.
+alwaysApply: false
+tags:
+  - ios
+  - swift
+  - swiftui
+  - architecture
+  - dependency-injection
+---
+
+## Agora DI & Injectable Dependencies (Swift 6.2 • iOS 26)
+
+### Philosophy (TL;DR)
+
+- Prefer pure functions and initializer injection.
+- Define protocols at the boundary, keep live implementations in `Kits/*`, and feature-specific coordinators in `Features/*`.
+- Pass dependencies explicitly; use SwiftUI Environment only for app-wide services that many features need (analytics, auth/session, networking).
+- One Composition Root (app bootstrap) wires real implementations; tests inject fakes/mocks.
+- Protect shared mutable state with actors; mark UI-touching services `@MainActor`.
+
+### When to Create an Injectable Dependency
+
+Create a protocol + injectable type when the code:
+
+1. Talks to the outside world (network, file system, keychain, clipboard, push, camera, AV, haptics).
+2. Maintains process-wide or cross-feature state (session, auth, feature flags, in-memory caches).
+3. Encapsulates policies likely to evolve (retry/backoff, moderation checks, rate limiters).
+4. Must be test-isolated (e.g., time provider, UUID/ULID generator, clock, randomness).
+5. Is used by 2+ features or straddles Kits ↔ Features.
+
+**Do not** make DI types for:
+- Pure mappers/formatters/validators.
+- One-off helpers used in a single file (prefer local functions or private types).
+- SwiftUI view models that only adapt inputs to outputs (inject their services instead).
+
+### Scopes (Lifetimes)
+
+| Scope | Lifetime | Examples | Where Constructed |
+|-------|----------|----------|-------------------|
+| **App** | App process | NetworkingClient, AnalyticsClient, AuthSession, ImageLoader | Composition Root (AgoraApp, AppBootstrap) |
+| **Feature** | Feature screen flow | ComposeCoordinator, MediaUploader, SearchCoordinator | Feature entry point / coordinator |
+| **Request** | Single operation / task lifespan | UploadTicket, FeedPageRequest, PhoneVerifyAttempt | Factory method on a service |
+
+**Rules:**
+- Default to **App** scope for stateless clients talking to external systems.
+- Use **Feature** scope for navigation/coordination and short-lived caches.
+- Use **Request** scope for parameterized operations or cancellation islands.
+
+### Directory & Naming
+
+**Protocols (interfaces):** in `Kits/*` or the most general module that defines the boundary.
+- `Kits/Networking/Sources/Networking/NetworkingClient.swift` (protocol)
+- `Kits/Analytics/Sources/Analytics/AnalyticsClient.swift` (protocol)
+
+**Live impls:** same module, suffix `Live` (and optional platform feature flags if needed).
+- `NetworkingClientLive.swift`, `AnalyticsClientLive.swift`
+
+**Mocks/Fakes:** test targets or `Kits/*TestingSupport`, suffix `Fake` or `Mock`.
+
+**Factories:** `…Factory` protocols (e.g., `MediaUploaderFactory`), live impl `…FactoryLive`.
+
+**Environment keys (SwiftUI):** in `Kits/AppSupport` (or `Kits/DesignSystem` if you already centralize app env).
+- `Dependencies.swift` (container), `Dependencies+Environment.swift` (keys).
+
+### Minimal Patterns
+
+#### 1) Protocol + Live Impl (Kits)
+
+```swift
+// Kits/Networking/Sources/Networking/NetworkingClient.swift
+public protocol NetworkingClient: Sendable {
+  func send<T: Decodable>(_ request: HTTPRequest) async throws -> T
+}
+
+// Kits/Networking/Sources/Networking/NetworkingClientLive.swift
+import Foundation
+
+public struct NetworkingClientLive: NetworkingClient, Sendable {
+  public init(session: URLSession = .shared) { self.session = session }
+  private let session: URLSession
+
+  public func send<T: Decodable>(_ request: HTTPRequest) async throws -> T {
+    let (data, response) = try await session.data(for: request.urlRequest)
+    try HTTPError.throwIfNeeded(response: response, data: data)
+    return try JSONDecoder().decode(T.self, from: data)
+  }
+}
+```
+
+#### 2) Dependency Container (lightweight)
+
+```swift
+// Kits/AppSupport/Sources/AppSupport/Dependencies.swift
+public struct Dependencies: Sendable {
+  public var networking: NetworkingClient
+  public var analytics: AnalyticsClient
+  public var auth: AuthSession
+  public var clock: Clock // protocol you define for time
+  
+  public init(
+    networking: NetworkingClient,
+    analytics: AnalyticsClient,
+    auth: AuthSession,
+    clock: Clock
+  ) {
+    self.networking = networking
+    self.analytics = analytics
+    self.auth = auth
+    self.clock = clock
+  }
+}
+```
+
+#### 3) SwiftUI Environment Bridge (App-wide only)
+
+```swift
+// Kits/AppSupport/Sources/AppSupport/Dependencies+Environment.swift
+import SwiftUI
+
+private struct DependenciesKey: EnvironmentKey {
+  static let defaultValue: Dependencies = .init(
+    networking: NetworkingClientLive(),
+    analytics: AnalyticsClientLive(),
+    auth: AuthSessionLive(),
+    clock: SystemClock()
+  )
+}
+
+public extension EnvironmentValues {
+  var deps: Dependencies {
+    get { self[DependenciesKey.self] }
+    set { self[DependenciesKey.self] = newValue }
+  }
+}
+```
+
+**Usage (feature root view):**
+
+```swift
+import SwiftUI
+import AppSupport
+
+public struct ForYouView: View {
+  @Environment(\.deps) private var deps
+
+  public var body: some View {
+    FeedList(
+      viewModel: .init(
+        feedService: FeedServiceLive(networking: deps.networking, analytics: deps.analytics)
+      )
+    )
+  }
+}
+```
+
+#### 4) Initializer Injection (Preferred inside features)
+
+```swift
+@Observable
+public final class FeedViewModel {
+  private let feedService: FeedService
+  public private(set) var phase: Phase<[Post]> = .idle
+
+  public init(feedService: FeedService) {
+    self.feedService = feedService
+  }
+
+  public func loadNextPage() async {
+    phase = .loading
+    do { phase = .success(try await feedService.page()) }
+    catch { phase = .failure(error) }
+  }
+}
+```
+
+#### 5) Actor-backed Shared State
+
+```swift
+public actor AuthSession {
+  public var user: User? { state.user }
+  public init(storage: KeychainStorage) { self.storage = storage }
+
+  public func signIn(token: String) async throws { /* … */ }
+  public func signOut() async throws { /* … */ }
+
+  private struct State { var user: User? = nil }
+  private var state = State()
+  private let storage: KeychainStorage
+}
+```
+
+Mark UI-bound services `@MainActor` if they must interact with UIKit/SwiftUI/Haptics.
+
+### Factories & Request Scope
+
+When an operation needs per-request configuration or cancellation:
+
+```swift
+public protocol MediaUploaderFactory {
+  func makeUploader(context: UploadContext) -> MediaUploader
+}
+
+public struct MediaUploaderFactoryLive: MediaUploaderFactory {
+  public init(networking: NetworkingClient) { self.networking = networking }
+  private let networking: NetworkingClient
+
+  public func makeUploader(context: UploadContext) -> MediaUploader {
+    MediaUploaderLive(networking: networking, context: context)
+  }
+}
+```
+
+Inject the factory at feature boundary; create the uploader as needed.
+
+### Composition Root (App Bootstrap)
+
+Wire everything once:
+
+```swift
+// App target
+@main
+struct AgoraApp: App {
+  private let deps: Dependencies = {
+    let networking = NetworkingClientLive(session: .shared)
+    let analytics = AnalyticsClientLive()
+    let auth = AuthSessionLive(storage: KeychainStorageLive())
+    return Dependencies(networking: networking, analytics: analytics, auth: auth, clock: SystemClock())
+  }()
+
+  var body: some Scene {
+    WindowGroup {
+      RootView()
+        .environment(\.deps, deps)
+    }
+  }
+}
+```
+
+Environment only holds app-wide services; all feature-specific wiring stays in initializers.
+
+### Testing & Overrides
+
+#### Unit tests (Swift Testing or XCTest)
+
+- Inject fakes directly via initializers.
+- For UI tests/snapshot tests, override `Environment(\.deps)` at the root of the tested view.
+
+```swift
+// Example unit test
+@Test
+func loads_first_page() async throws {
+  let fakeFeed = FeedServiceFake(pages: [[.fixture()]])
+  let vm = FeedViewModel(feedService: fakeFeed)
+  await vm.loadNextPage()
+  #expect(vm.phase.isSuccess)
+}
+
+// Example SwiftUI override in a view test
+let deps = Dependencies(
+  networking: NetworkingClientFake(responses: …),
+  analytics: AnalyticsClientSpy(),
+  auth: AuthSessionFake(),
+  clock: TestClock()
+)
+
+let sut = ForYouView()
+  .environment(\.deps, deps)
+
+assertSnapshot(of: sut)
+```
+
+**Fakes vs Mocks:**
+- **Fake:** lightweight in-memory implementation; deterministic and preferred.
+- **Mock:** records calls/expectations; use sparingly for verification.
+
+### Concurrency & Safety Rules
+
+1. All dependencies must be `Sendable`; annotate types or wrap state in actors.
+2. Use `@MainActor` for UI/haptics; keep network/IO off main actor.
+3. **Cancellation:** any async method that starts work should be cancellation-cooperative (check `Task.isCancelled`).
+4. Long-lived services expose async APIs; avoid completion handlers.
+
+### Analytics & Logging
+
+- Do not sprinkle analytics calls across views. Inject `AnalyticsClient` and centralize events in coordinators/services.
+- `AnalyticsClient` protocol should be fire-and-forget; never throw. Queue in background if needed.
+
+### Error Mapping
+
+- Map lower-level errors to domain errors near the boundary (`Kits/*`), not in views.
+- Provide small value types like `UserFacingError: LocalizedError` only at the feature layer.
+
+### Policy Checks & Anti-Bot
+
+- Wrap risk/attestation checks behind `VerificationClient` (protocol) with feature-level policy orchestrators.
+- Inject these clients into Compose/DMs/Post flows; never call external SDKs directly from views.
+
+### Do / Don't
+
+#### Do
+
+- Define protocols at boundaries; keep live impls near them.
+- Prefer initializer injection; use Environment only for app-wide services.
+- Use actors for shared mutable state.
+- Provide factories for request-scoped tasks.
+- Keep containers lightweight; no service locator.
+
+#### Don't
+
+- Don't create singletons via `static let shared` (except pure, stateless utilities).
+- Don't pass entire containers deep; pass only what a type needs.
+- Don't call network/storage directly from views.
+- Don't hide side effects in property getters.
+
+### Checklist for New Dependency
+
+- [ ] Is it boundary/IO/cross-feature stateful? If no, keep it pure.
+- [ ] Define a protocol with the minimum surface.
+- [ ] Implement `Live` in `Kits/*`, ensure `Sendable` and concurrency correctness.
+- [ ] Decide scope (App/Feature/Request) and whether a Factory is needed.
+- [ ] Add fake to testing support.
+- [ ] Wire in Composition Root; expose via `Environment(\.deps)` only if broadly used.
+- [ ] Add a thin coordinator/service in `Features/*` if it composes multiple dependencies.

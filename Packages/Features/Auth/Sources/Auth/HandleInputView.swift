@@ -47,22 +47,17 @@ public struct HandleInputView: View {
             // Validation feedback
             validationFeedback
             
-            // Display handle preview
-            if !displayHandle.isEmpty {
-                displayHandlePreview
-            }
-            
             // Suggestions if handle is taken
             if !suggestions.isEmpty {
                 suggestionsSection
             }
         }
-        .onChange(of: handle) { oldValue, newValue in
-            handleTextChange(newValue)
-        }
         .onChange(of: displayHandle) { oldValue, newValue in
             // Update handle to lowercase version
-            handle = newValue.lowercased()
+            let lowercased = newValue.lowercased()
+            handle = lowercased
+            // Trigger validation immediately
+            handleTextChange(lowercased)
         }
     }
     
@@ -83,11 +78,11 @@ public struct HandleInputView: View {
                 .autocorrectionDisabled()
                 .focused($isFocused)
                 .accessibilityLabel("Handle input")
-                .accessibilityHint("Enter your desired handle, 3 to 15 characters")
+                .accessibilityHint("Enter your desired handle, 3 to 30 characters")
                 .onChange(of: displayHandle) { _, newValue in
-                    // Limit to 15 characters
-                    if newValue.count > 15 {
-                        displayHandle = String(newValue.prefix(15))
+                    // Limit to 30 characters
+                    if newValue.count > 30 {
+                        displayHandle = String(newValue.prefix(30))
                     }
                 }
             
@@ -132,6 +127,7 @@ public struct HandleInputView: View {
     
     @ViewBuilder
     private var validationFeedback: some View {
+        // Only show errors (unmet requirements), not success messages
         if let errorMessage = formatValidation.errorMessage {
             Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                 .font(.caption)
@@ -142,38 +138,17 @@ public struct HandleInputView: View {
                 .font(.caption)
                 .foregroundStyle(.red)
                 .accessibilityLabel("Error: Handle is already taken")
-        } else if case .available = availabilityStatus {
-            Label("Handle is available", systemImage: "checkmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.green)
-                .accessibilityLabel("Success: Handle is available")
         }
         
-        // Character count
-        HStack {
-            Spacer()
-            Text("\(handle.count)/15")
-                .font(.caption)
-                .foregroundStyle(handle.count > 15 ? .red : ColorTokens.tertiaryText)
-                .accessibilityLabel("\(handle.count) out of 15 characters")
-        }
-    }
-    
-    // MARK: - Display Handle Preview
-    
-    private var displayHandlePreview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Display As")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(ColorTokens.secondaryText)
-            
-            Text("@\(displayHandle)")
-                .font(.title3.weight(.medium))
-                .foregroundStyle(ColorTokens.primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(ColorTokens.primary.opacity(0.1))
-                .cornerRadius(8)
+        // Character count (only show if approaching or exceeding limit)
+        if handle.count > 25 || handle.count > 30 {
+            HStack {
+                Spacer()
+                Text("\(handle.count)/30")
+                    .font(.caption)
+                    .foregroundStyle(handle.count > 30 ? .red : ColorTokens.tertiaryText)
+                    .accessibilityLabel("\(handle.count) out of 30 characters")
+            }
         }
     }
     
@@ -226,21 +201,29 @@ public struct HandleInputView: View {
     // MARK: - Actions
     
     private func handleTextChange(_ newValue: String) {
+        // Skip validation for empty handles
+        guard !newValue.isEmpty else {
+            formatValidation = .valid
+            availabilityStatus = .unchecked
+            isValid = false
+            return
+        }
+        
+        // Show progress immediately when validation starts
+        availabilityStatus = .checking
+        
         Task {
             // Validate format first
-            let validation = await validator.validateFormat(handle)
+            let validation = await validator.validateFormat(newValue)
             await MainActor.run {
                 formatValidation = validation
             }
             
             // If format is valid, check availability
             if validation == .valid {
-                await MainActor.run {
-                    availabilityStatus = .checking
-                }
-                
+                // Keep showing progress while checking availability
                 do {
-                    let availability = try await validator.checkAvailability(handle)
+                    let availability = try await validator.checkAvailability(newValue)
                     await MainActor.run {
                         availabilityStatus = availability.available ? .available : .unavailable
                         suggestions = availability.suggestions

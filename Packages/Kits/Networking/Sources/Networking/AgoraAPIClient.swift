@@ -65,6 +65,7 @@ public struct FeedResponse: Sendable, Codable {
 public struct Post: Sendable, Codable, Identifiable {
     public let id: String
     public let authorId: String
+    public let authorDisplayHandle: String
     public let text: String
     public let linkUrl: String?
     public let mediaBundleId: String?
@@ -79,6 +80,7 @@ public struct Post: Sendable, Codable, Identifiable {
     public init(
         id: String,
         authorId: String,
+        authorDisplayHandle: String,
         text: String,
         linkUrl: String? = nil,
         mediaBundleId: String? = nil,
@@ -92,6 +94,7 @@ public struct Post: Sendable, Codable, Identifiable {
     ) {
         self.id = id
         self.authorId = authorId
+        self.authorDisplayHandle = authorDisplayHandle
         self.text = text
         self.linkUrl = linkUrl
         self.mediaBundleId = mediaBundleId

@@ -7,26 +7,25 @@ import AppFoundation
 
 /// Factory for creating API clients based on environment configuration
 public struct NetworkingServiceFactory {
-    // Auto-register on first access to this type
-    private static let autoRegister: Void = {
+    
+    /// Register the API client provider with ServiceFactory
+    /// Call this once at app startup
+    public static func register() {
         DefaultServiceFactory.apiClientProvider = {
             return NetworkingServiceFactory.makeAPIClient(useStub: false)
         }
-        print("[NetworkingServiceFactory] Auto-registered API client provider")
-    }()
+        print("[NetworkingServiceFactory] Registered API client provider")
+    }
     
     /// Create an API client appropriate for the current environment
     /// - Parameters:
     ///   - useStub: Force use of stub client (useful for development/testing)
-    ///   - authToken: Optional authentication token
+    ///   - authTokenProvider: Auth token provider (optional, can be injected later)
     /// - Returns: Configured API client
     public static func makeAPIClient(
         useStub: Bool = false,
-        authToken: String? = nil
+        authTokenProvider: AuthTokenProvider? = nil
     ) -> any AgoraAPIClient {
-        // Ensure auto-registration happened
-        _ = autoRegister
-        
         #if DEBUG
         // In debug builds, allow forcing stub client via parameter
         if useStub {
@@ -38,14 +37,19 @@ public struct NetworkingServiceFactory {
         // Create production OpenAPI-based client
         print("[NetworkingServiceFactory] Creating OpenAPI-based API client")
         print("[NetworkingServiceFactory]   Base URL: \(AppConfig.apiBaseURL)")
+        
+        // Get auth token provider - only when not provided
+        // This breaks the circular dependency by making it lazy
+        let provider = authTokenProvider ?? ServiceProvider.shared.authTokenProvider()
+        
         return OpenAPIAgoraClient(
             baseURL: AppConfig.apiBaseURL,
             session: .shared,
-            authToken: authToken
+            authTokenProvider: provider
         )
     }
     
-    /// Create an API client with automatic auth token injection
+    /// Create an API client with explicit auth token provider
     /// - Parameters:
     ///   - useStub: Force use of stub client
     ///   - authTokenProvider: Provider for fetching current auth token
@@ -53,9 +57,8 @@ public struct NetworkingServiceFactory {
     public static func makeAuthenticatedAPIClient(
         useStub: Bool = false,
         authTokenProvider: AuthTokenProvider
-    ) async -> any AgoraAPIClient {
-        let token = try? await authTokenProvider.currentAccessToken()
-        return makeAPIClient(useStub: useStub, authToken: token)
+    ) -> any AgoraAPIClient {
+        return makeAPIClient(useStub: useStub, authTokenProvider: authTokenProvider)
     }
 }
 

@@ -10,6 +10,8 @@ public struct OnboardingView: View {
     @State private var handle = ""
     @State private var displayHandle = ""
     @State private var displayName = ""
+    @State private var profileImage: UIImage?
+    @State private var showImagePicker = false
     @State private var isHandleValid = false
     @State private var isCreating = false
     @State private var showError = false
@@ -37,6 +39,7 @@ public struct OnboardingView: View {
                     }
                     .padding(24)
                 }
+                .background(ColorTokens.background)
                 
                 // Bottom navigation
                 VStack {
@@ -48,12 +51,14 @@ public struct OnboardingView: View {
             }
             .navigationTitle("Create Profile")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(ColorTokens.background, for: .navigationBar)
             .alert("Error", isPresented: $showError) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(errorMessage)
             }
         }
+        .preferredColorScheme(.dark)
     }
     
     // MARK: - Progress Indicator
@@ -101,7 +106,7 @@ public struct OnboardingView: View {
     // MARK: - Display Name Step
     
     private var displayNameStep: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             Text("What's Your Name?")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(ColorTokens.primaryText)
@@ -111,7 +116,54 @@ public struct OnboardingView: View {
                 .font(.body)
                 .foregroundStyle(ColorTokens.secondaryText)
             
-            TextField("Display Name", text: $displayName)
+            // Profile picture upload (optional)
+            VStack(spacing: 12) {
+                Button {
+                    showImagePicker = true
+                } label: {
+                    if let profileImage = profileImage {
+                        Image(uiImage: profileImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 80, height: 80)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(ColorTokens.primary, lineWidth: 2)
+                            )
+                    } else {
+                        ZStack {
+                            Circle()
+                                .fill(ColorTokens.secondaryBackground)
+                                .frame(width: 80, height: 80)
+                            
+                            VStack(spacing: 4) {
+                                Image(systemName: "person.crop.circle.fill.badge.plus")
+                                    .font(.system(size: 32))
+                                    .foregroundStyle(ColorTokens.secondaryText)
+                            }
+                        }
+                    }
+                }
+                .accessibilityLabel("Add profile picture")
+                .accessibilityHint("Optional. Tap to select a photo")
+                
+                Text("Add Photo")
+                    .font(.caption)
+                    .foregroundStyle(ColorTokens.secondaryText)
+                
+                if profileImage != nil {
+                    Button("Remove Photo", role: .destructive) {
+                        profileImage = nil
+                    }
+                    .font(.caption)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            
+            // Display name input - allows spaces, emojis, any characters
+            TextField("Display Name", text: $displayName, axis: .vertical)
                 .font(.title3)
                 .padding(16)
                 .background(ColorTokens.secondaryBackground)
@@ -120,15 +172,25 @@ public struct OnboardingView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(ColorTokens.separator, lineWidth: 1)
                 )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
                 .accessibilityLabel("Display name input")
-                .accessibilityHint("Enter your full name or display name")
+                .accessibilityHint("Enter your full name, can include spaces, emojis, and special characters")
+                .onChange(of: displayName) { _, newValue in
+                    // Limit to 64 characters (Instagram limit)
+                    if newValue.count > 64 {
+                        displayName = String(newValue.prefix(64))
+                    }
+                }
             
-            // Character count
-            HStack {
-                Spacer()
-                Text("\(displayName.count)/50")
-                    .font(.caption)
-                    .foregroundStyle(displayName.count > 50 ? .red : ColorTokens.tertiaryText)
+            // Character count (only show when approaching limit)
+            if displayName.count > 50 || displayName.count > 64 {
+                HStack {
+                    Spacer()
+                    Text("\(displayName.count)/64")
+                        .font(.caption)
+                        .foregroundStyle(displayName.count > 64 ? .red : ColorTokens.tertiaryText)
+                }
             }
             
             // Preview
@@ -139,19 +201,29 @@ public struct OnboardingView: View {
                         .foregroundStyle(ColorTokens.secondaryText)
                     
                     HStack(spacing: 12) {
-                        Circle()
-                            .fill(ColorTokens.primary.opacity(0.2))
-                            .frame(width: 48, height: 48)
-                            .overlay(
-                                Text(String(displayName.prefix(1)))
-                                    .font(.title3.weight(.semibold))
-                                    .foregroundStyle(ColorTokens.primary)
-                            )
+                        // Profile picture or initial
+                        if let profileImage = profileImage {
+                            Image(uiImage: profileImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 48, height: 48)
+                                .clipShape(Circle())
+                        } else {
+                            Circle()
+                                .fill(ColorTokens.primary.opacity(0.2))
+                                .frame(width: 48, height: 48)
+                                .overlay(
+                                    Text(String(displayName.prefix(1)))
+                                        .font(.title3.weight(.semibold))
+                                        .foregroundStyle(ColorTokens.primary)
+                                )
+                        }
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text(displayName)
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(ColorTokens.primaryText)
+                                .lineLimit(1)
                             
                             Text("@\(displayHandle)")
                                 .font(.subheadline)
@@ -164,6 +236,9 @@ public struct OnboardingView: View {
                     .cornerRadius(12)
                 }
             }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(image: $profileImage)
         }
     }
     
@@ -223,7 +298,7 @@ public struct OnboardingView: View {
         case .handle:
             return isHandleValid && !handle.isEmpty && !displayHandle.isEmpty
         case .displayName:
-            return !displayName.isEmpty && displayName.count <= 50
+            return !displayName.isEmpty && displayName.count <= 64
         }
     }
     
@@ -250,7 +325,8 @@ public struct OnboardingView: View {
             try await authManager.createProfile(
                 handle: handle,
                 displayHandle: displayHandle,
-                displayName: displayName
+                displayName: displayName,
+                avatarImage: profileImage
             )
             
             // Success! AuthStateManager will update state
@@ -285,6 +361,54 @@ enum OnboardingStep: Int, CaseIterable {
 }
 
 // MARK: - Preview
+
+// MARK: - Image Picker
+
+import PhotosUI
+
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.dismiss) private var dismiss
+    
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.filter = .images
+        config.selectionLimit = 1
+        
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            parent.dismiss()
+            
+            guard let provider = results.first?.itemProvider else { return }
+            
+            if provider.canLoadObject(ofClass: UIImage.self) {
+                provider.loadObject(ofClass: UIImage.self) { object, _ in
+                    guard let uiImage = object as? UIImage else { return }
+                    Task { @MainActor in
+                        self.parent.image = uiImage
+                    }
+                }
+            }
+        }
+    }
+}
 
 #Preview {
     OnboardingView()
