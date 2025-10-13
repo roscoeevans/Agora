@@ -23,8 +23,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Supabase", package: "supabase-swift")
             ]
-            // Note: Compilation conditions (DEV_ENVIRONMENT, STAGING_ENVIRONMENT, PROD_ENVIRONMENT)
-            // are inherited from the app target's .xcconfig files
+            // Note: Environment detection uses runtime bundle ID checks (AppConfig.isStaging, etc.)
+            // Swift packages do NOT inherit compilation conditions from the main app target.
         ),
         .testTarget(
             name: "AppFoundationTests",

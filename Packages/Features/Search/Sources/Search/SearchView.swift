@@ -7,36 +7,49 @@
 
 import SwiftUI
 import DesignSystem
+import AppFoundation
 
 public struct SearchView: View {
-    @State private var viewModel = SearchViewModel()
+    @Environment(\.deps) private var deps
+    @State private var viewModel: SearchViewModel?
     @State private var searchText = ""
     
     public init() {}
     
     public var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Search results
-                if searchText.isEmpty {
-                    EmptySearchView()
-                } else if viewModel.isLoading {
-                    LoadingView()
-                } else if viewModel.searchResults.isEmpty {
-                    NoResultsView(query: searchText)
-                } else {
-                    SearchResultsList(results: viewModel.searchResults)
+        Group {
+            if let viewModel = viewModel {
+                NavigationStack {
+                    VStack(spacing: 0) {
+                        // Search results
+                        if searchText.isEmpty {
+                            EmptySearchView()
+                        } else if viewModel.isLoading {
+                            LoadingView()
+                        } else if viewModel.searchResults.isEmpty {
+                            NoResultsView(query: searchText)
+                        } else {
+                            SearchResultsList(results: viewModel.searchResults)
+                        }
+                    }
+                    .navigationTitle("Search")
+                    .navigationBarTitleDisplayMode(.large)
+                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+                    .searchable(text: $searchText, prompt: "Search users and posts")
+                    .onChange(of: searchText) { _, newValue in
+                        Task {
+                            await viewModel.search(query: newValue)
+                        }
+                    }
                 }
+            } else {
+                LoadingView()
             }
-            .navigationTitle("Search")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .searchable(text: $searchText, prompt: "Search users and posts")
-            .onChange(of: searchText) { _, newValue in
-                Task {
-                    await viewModel.search(query: newValue)
-                }
-            }
+        }
+        .task {
+            // Initialize view model with dependencies from environment
+            // Following DI rule: dependencies injected from environment
+            self.viewModel = SearchViewModel(networking: deps.networking)
         }
     }
 }

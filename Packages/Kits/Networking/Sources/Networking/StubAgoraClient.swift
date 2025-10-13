@@ -3,9 +3,9 @@ import Foundation
 /// Actor to guard shared mutable state for stub client
 /// Follows Swift concurrency best practice: use actors to guard shared mutable state
 private actor ProfileStore {
-    private var profiles: [String: Components.Schemas.User] = [:]
+    private var profiles: [String: User] = [:]
     
-    func store(_ user: Components.Schemas.User) {
+    func store(_ user: User) {
         profiles[user.id] = user
     }
     
@@ -13,7 +13,7 @@ private actor ProfileStore {
         !profiles.isEmpty
     }
     
-    func firstProfile() -> Components.Schemas.User? {
+    func firstProfile() -> User? {
         profiles.values.first
     }
 }
@@ -43,7 +43,14 @@ public final class StubAgoraClient: AgoraAPIClient {
                 likeCount: 42,
                 repostCount: 7,
                 replyCount: 3,
-                createdAt: Date().addingTimeInterval(-3600)
+                createdAt: Date().addingTimeInterval(-3600),
+                score: 0.85,
+                reasons: [
+                    RecommendationReason(signal: "quality", weight: 0.45),
+                    RecommendationReason(signal: "fresh", weight: 0.25),
+                    RecommendationReason(signal: "relation", weight: 0.15)
+                ],
+                explore: false
             ),
             Post(
                 id: "post-2",
@@ -53,7 +60,13 @@ public final class StubAgoraClient: AgoraAPIClient {
                 likeCount: 15,
                 repostCount: 2,
                 replyCount: 1,
-                createdAt: Date().addingTimeInterval(-7200)
+                createdAt: Date().addingTimeInterval(-7200),
+                score: 0.62,
+                reasons: [
+                    RecommendationReason(signal: "fresh", weight: 0.40),
+                    RecommendationReason(signal: "quality", weight: 0.22)
+                ],
+                explore: true
             ),
             Post(
                 id: "post-3",
@@ -64,7 +77,14 @@ public final class StubAgoraClient: AgoraAPIClient {
                 likeCount: 28,
                 repostCount: 5,
                 replyCount: 8,
-                createdAt: Date().addingTimeInterval(-10800)
+                createdAt: Date().addingTimeInterval(-10800),
+                score: 0.73,
+                reasons: [
+                    RecommendationReason(signal: "quality", weight: 0.35),
+                    RecommendationReason(signal: "engagement", weight: 0.30),
+                    RecommendationReason(signal: "relation", weight: 0.08)
+                ],
+                explore: false
             )
         ]
         
@@ -108,16 +128,17 @@ public final class StubAgoraClient: AgoraAPIClient {
     
     // MARK: - User Profile Operations
     
-    public func createProfile(request: Components.Schemas.CreateProfileRequest) async throws -> Components.Schemas.User {
+    public func createProfile(request: CreateProfileRequest) async throws -> User {
         // Simulate network delay
         try await Task.sleep(for: .milliseconds(600))
         
         // Create mock user
-        let user = Components.Schemas.User(
+        let user = User(
             id: UUID().uuidString,
             handle: request.handle,
             displayHandle: request.displayHandle,
             displayName: request.displayName,
+            avatarUrl: request.avatarUrl,
             createdAt: Date()
         )
         
@@ -127,7 +148,7 @@ public final class StubAgoraClient: AgoraAPIClient {
         return user
     }
     
-    public func checkHandle(handle: String) async throws -> Components.Schemas.CheckHandleResponse {
+    public func checkHandle(handle: String) async throws -> CheckHandleResponse {
         // Simulate network delay for debounce testing
         try await Task.sleep(for: .milliseconds(400))
         
@@ -147,13 +168,13 @@ public final class StubAgoraClient: AgoraAPIClient {
             ]
         }
         
-        return Components.Schemas.CheckHandleResponse(
+        return CheckHandleResponse(
             available: isAvailable,
             suggestions: isAvailable ? nil : suggestions
         )
     }
     
-    public func getCurrentUserProfile() async throws -> Components.Schemas.User {
+    public func getCurrentUserProfile() async throws -> User {
         // Simulate network delay
         try await Task.sleep(for: .milliseconds(300))
         
@@ -171,12 +192,12 @@ public final class StubAgoraClient: AgoraAPIClient {
         }
     }
     
-    public func updateProfile(request: Components.Schemas.UpdateProfileRequest) async throws -> Components.Schemas.User {
+    public func updateProfile(request: UpdateProfileRequest) async throws -> User {
         // Simulate network delay
         try await Task.sleep(for: .milliseconds(500))
         
         // Return updated mock user
-        return Components.Schemas.User(
+        return User(
             id: "mock-user-id",
             handle: "currentuser",
             displayHandle: request.displayHandle ?? "CurrentUser",

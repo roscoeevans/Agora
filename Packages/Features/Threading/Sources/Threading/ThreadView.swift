@@ -7,32 +7,47 @@
 
 import SwiftUI
 import DesignSystem
+import AppFoundation
 
 public struct ThreadView: View {
-    @State private var viewModel: ThreadViewModel
+    @Environment(\.deps) private var deps
+    @State private var viewModel: ThreadViewModel?
+    
+    private let threadId: String
     
     public init(threadId: String) {
-        self._viewModel = State(initialValue: ThreadViewModel(threadId: threadId))
+        self.threadId = threadId
     }
     
     public var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(viewModel.threadPosts.enumerated()), id: \.element.id) { index, post in
-                    ThreadPostView(
-                        post: post,
-                        isLast: index == viewModel.threadPosts.count - 1
-                    )
+        Group {
+            if let viewModel = viewModel {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(viewModel.threadPosts.enumerated()), id: \.element.id) { index, post in
+                            ThreadPostView(
+                                post: post,
+                                isLast: index == viewModel.threadPosts.count - 1
+                            )
+                        }
+                    }
                 }
+                .navigationTitle("Thread")
+                .navigationBarTitleDisplayMode(.inline)
+                .refreshable {
+                    await viewModel.refresh()
+                }
+                .task {
+                    await viewModel.loadThread()
+                }
+            } else {
+                ProgressView()
             }
         }
-        .navigationTitle("Thread")
-        .navigationBarTitleDisplayMode(.inline)
-        .refreshable {
-            await viewModel.refresh()
-        }
         .task {
-            await viewModel.loadThread()
+            // Initialize view model with dependencies from environment
+            // Following DI rule: dependencies injected from environment
+            self.viewModel = ThreadViewModel(threadId: threadId, networking: deps.networking)
         }
     }
 }

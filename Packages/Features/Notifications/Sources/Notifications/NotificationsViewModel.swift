@@ -16,9 +16,11 @@ public class NotificationsViewModel {
     public var isLoading = false
     public var error: Error?
     
-    private let networking: APIClient
+    private let networking: any AgoraAPIClient
     
-    public init(networking: APIClient = APIClient.shared) {
+    /// Initialize NotificationsViewModel with explicit dependencies
+    /// Following the DI rule pattern
+    public init(networking: any AgoraAPIClient) {
         self.networking = networking
     }
     

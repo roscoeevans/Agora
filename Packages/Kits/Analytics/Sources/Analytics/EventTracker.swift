@@ -1,4 +1,5 @@
 import Foundation
+import AppFoundation
 
 /// Type-safe event definitions
 public enum AnalyticsEvent {
@@ -111,34 +112,41 @@ public enum AnalyticsEvent {
 }
 
 /// Type-safe event tracker
-@MainActor
-public final class EventTracker {
-    public static let shared = EventTracker()
+/// 
+/// Provides a higher-level API for tracking type-safe analytics events.
+/// This is a feature-scoped helper that wraps AnalyticsClient.
+/// 
+/// Not marked @MainActor as analytics tracking can happen from any context.
+public final class EventTracker: Sendable {
+    private let analyticsClient: AnalyticsClient
     
-    private let analyticsManager: AnalyticsManager
-    
-    private init(analyticsManager: AnalyticsManager = .shared) {
-        self.analyticsManager = analyticsManager
+    /// Initialize with explicit analytics client dependency
+    /// Following the DI rule: no singletons, explicit injection
+    public init(analyticsClient: AnalyticsClient) {
+        self.analyticsClient = analyticsClient
     }
     
     /// Tracks a type-safe analytics event
-    public func track(_ event: AnalyticsEvent) {
-        analyticsManager.track(event: event.name, properties: event.properties)
+    public func track(_ event: AnalyticsEvent) async {
+        // Copy properties to ensure Sendable safety
+        // Analytics properties are typically simple value types (String, Int, Bool)
+        let properties = event.properties
+        await analyticsClient.track(event: event.name, properties: properties)
     }
     
     /// Tracks a custom event with properties
-    public func track(event: String, properties: EventProperties = [:]) {
-        analyticsManager.track(event: event, properties: properties)
+    public func track(event: String, properties: EventProperties = [:]) async {
+        await analyticsClient.track(event: event, properties: properties)
     }
     
     /// Tracks screen view with automatic timing
-    public func trackScreenView(_ screenName: String) {
-        track(.screenViewed(screenName: screenName))
+    public func trackScreenView(_ screenName: String) async {
+        await track(.screenViewed(screenName: screenName))
     }
     
     /// Tracks error with context
-    public func trackError(_ error: Error, context: String = "") {
+    public func trackError(_ error: Error, context: String = "") async {
         let errorDescription = error.localizedDescription
-        track(.errorOccurred(error: errorDescription, context: context))
+        await track(.errorOccurred(error: errorDescription, context: context))
     }
 }

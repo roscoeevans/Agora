@@ -1,4 +1,5 @@
 import Foundation
+import AppFoundation
 import Networking
 
 /// User profile model
@@ -33,7 +34,18 @@ public struct UserProfile: Sendable, Codable, Identifiable, Equatable {
 // MARK: - Convenience Initializers
 
 extension UserProfile {
-    /// Create from OpenAPI generated User type
+    /// Create from AppFoundation User type (protocol response)
+    public init(from apiUser: User) {
+        self.id = apiUser.id
+        self.handle = apiUser.handle
+        self.displayHandle = apiUser.displayHandle
+        self.displayName = apiUser.displayName
+        self.bio = apiUser.bio
+        self.avatarUrl = apiUser.avatarUrl
+        self.createdAt = apiUser.createdAt
+    }
+    
+    /// Create from OpenAPI generated User type (for backward compatibility)
     public init(from apiUser: Components.Schemas.User) {
         self.id = apiUser.id
         self.handle = apiUser.handle

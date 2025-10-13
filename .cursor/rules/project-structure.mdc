@@ -76,6 +76,8 @@ Shared/
 **AppFoundation Contents:**
 - `Environment.swift`: Environment detection (staging/production)
 - `AppConfig.swift`: Central configuration management
+- `Dependencies.swift`: Lightweight DI container holding app-wide services
+- `Dependencies+Environment.swift`: SwiftUI environment keys for dependency injection
 - `ServiceFactory.swift`: Factory for environment-appropriate services
 - `ServiceProtocols.swift`: Protocol definitions for all services (Auth, Phone, Captcha, etc.)
 - `SupabaseAuthService.swift`: Production authentication implementation
@@ -244,8 +246,11 @@ let package = Package(
 - **Views**: `{Feature}View.swift` (e.g., `ComposeView.swift`)
 - **ViewModels**: `{Feature}ViewModel.swift` (e.g., `ComposeViewModel.swift`)
 - **Models**: `{Feature}.swift` (e.g., `Compose.swift`)
-- **Services**: `{Service}Service.swift` (e.g., `AuthService.swift`)
-- **Extensions**: `{Type}+{Purpose}.swift` (e.g., `String+Validation.swift`)
+- **Services/Clients**: `{Service}Client.swift` or `{Service}Service.swift` (e.g., `NetworkingClient.swift`, `AuthService.swift`)
+- **Service Implementations**: `{Service}ClientLive.swift` or `{Service}ServiceLive.swift` (e.g., `NetworkingClientLive.swift`)
+- **Test Fakes**: `{Service}ClientFake.swift` or `{Service}Mock.swift` (e.g., `NetworkingClientFake.swift`)
+- **Factories**: `{Service}Factory.swift` with implementation `{Service}FactoryLive.swift` (e.g., `MediaUploaderFactory.swift`)
+- **Extensions**: `{Type}+{Purpose}.swift` (e.g., `String+Validation.swift`, `Dependencies+Environment.swift`)
 
 #### Resources
 - **Assets**: Use `.xcassets` bundles within package `Resources/` directory
@@ -272,6 +277,58 @@ Features (top level)
 - **Kits** → Other Kits, Shared
 - **Shared** → Minimal external dependencies only
 - **ThirdParty** → Self-contained, no internal dependencies
+
+### Dependency Injection Patterns
+
+Agora follows a zero-magic dependency injection approach using protocols, initializer injection, and SwiftUI Environment for app-wide services. See `ios-di-injection.mdc` for complete guidelines.
+
+#### Key Principles
+
+1. **Protocol-Based Boundaries**: Define service protocols in `Kits/*` or the most general module
+2. **Live Implementations**: Suffix production implementations with `Live` (e.g., `NetworkingClientLive`)
+3. **Test Doubles**: Suffix test implementations with `Fake` or `Mock` (e.g., `NetworkingClientFake`)
+4. **Initializer Injection**: Pass dependencies explicitly through initializers (preferred)
+5. **SwiftUI Environment**: Use only for app-wide services (networking, analytics, auth session)
+6. **Single Composition Root**: Wire all dependencies once in `AgoraApp.swift`
+
+#### Dependency Container Location
+
+The lightweight `Dependencies` container lives in `Shared/AppFoundation`:
+
+```swift
+// Shared/AppFoundation/Sources/AppFoundation/Dependencies.swift
+public struct Dependencies: Sendable {
+  public var networking: NetworkingClient
+  public var analytics: AnalyticsClient
+  public var auth: AuthSession
+  // ... other app-wide services
+}
+
+// Shared/AppFoundation/Sources/AppFoundation/Dependencies+Environment.swift
+// SwiftUI Environment keys for dependency injection
+```
+
+#### Service Scopes
+
+- **App Scope**: Long-lived services created once at app launch (networking, analytics, auth session)
+- **Feature Scope**: Created at feature entry point (coordinators, feature-specific services)
+- **Request Scope**: Per-operation instances created via factory methods (upload tickets, page requests)
+
+#### Where DI Components Live
+
+- **Service Protocols**: In the Kit that defines the capability (e.g., `Kits/Networking/NetworkingClient.swift`)
+- **Live Implementations**: Same Kit as protocol (e.g., `Kits/Networking/NetworkingClientLive.swift`)
+- **Test Fakes**: In test targets or `Shared/TestSupport`
+- **Factories**: In the Kit providing the service (e.g., `Kits/Media/MediaUploaderFactory.swift`)
+- **Dependencies Container**: `Shared/AppFoundation/Dependencies.swift`
+- **Environment Keys**: `Shared/AppFoundation/Dependencies+Environment.swift`
+
+#### Concurrency & Safety
+
+- All dependencies must conform to `Sendable`
+- Use Swift actors for shared mutable state
+- Mark UI-touching services with `@MainActor`
+- Keep network/IO services off the main actor
 
 ### Testing Structure
 
@@ -635,6 +692,8 @@ Each package must include a `README.md` with:
 ### Related Documentation
 
 For more information on specific aspects of the project structure:
+- **Dependency Injection**: See `ios-di-injection.mdc` for complete DI guidelines and patterns
 - **Environment Strategy**: See `environment-strategy.mdc` for detailed environment configuration
 - **Project Blueprint**: See `docs/agora-mvp-blueprint.md` for overall architecture
 - **Creating Rules**: See `creating-rules.mdc` for documentation standards
+- **Swift Concurrency**: See `swift-concurrency.mdc` for async/await, actors, and Sendable patterns

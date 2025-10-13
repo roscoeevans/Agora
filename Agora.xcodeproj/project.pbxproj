@@ -57,7 +57,6 @@
 		3165C5B32E9C338C00A21708 /* Exceptions for "Resources" folder in "Agora" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				EnvironmentConfig.swift,
 				RootView.swift,
 			);
 			target = 3122BD8F2E95FC4500E495EE /* Agora */;
@@ -451,6 +450,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

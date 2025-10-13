@@ -7,49 +7,67 @@
 
 import SwiftUI
 import DesignSystem
+import AppFoundation
+import Analytics
+import Networking
 
 // Typealias for consistency with ContentView expectations
 public typealias HomeFollowingView = FollowingView
 
 public struct FollowingView: View {
-    @State private var viewModel = FollowingViewModel()
+    @Environment(\.deps) private var deps
+    @State private var viewModel: FollowingViewModel?
     
     public init() {}
     
     public var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: SpacingTokens.md) {
-                    if viewModel.posts.isEmpty && !viewModel.isLoading {
-                        EmptyStateView()
-                    } else {
-                        ForEach(viewModel.posts, id: \.id) { post in
-                            PostCardView(post: post) {
-                                // TODO: Navigate to post detail
+        Group {
+            if let viewModel = viewModel {
+                NavigationStack {
+                    ScrollView {
+                        LazyVStack(spacing: SpacingTokens.md) {
+                            if viewModel.posts.isEmpty && !viewModel.isLoading {
+                                EmptyStateView()
+                            } else {
+                                ForEach(viewModel.posts, id: \.id) { post in
+                                    PostCardView(post: post) {
+                                        // TODO: Navigate to post detail
+                                    }
+                                }
                             }
                         }
+                        .padding(.horizontal, SpacingTokens.md)
+                    }
+                    .navigationTitle("Following")
+                    .navigationBarTitleDisplayMode(.large)
+                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+                    .refreshable {
+                        await viewModel.refresh()
+                    }
+                    .overlay {
+                        if viewModel.isLoading && viewModel.posts.isEmpty {
+                            LoadingView()
+                        }
+                    }
+                    .alert("Error", isPresented: .constant(viewModel.error != nil)) {
+                        Button("OK") {
+                            viewModel.error = nil
+                        }
+                    } message: {
+                        Text(viewModel.error?.localizedDescription ?? "An unknown error occurred")
                     }
                 }
-                .padding(.horizontal, SpacingTokens.md)
+            } else {
+                LoadingView()
             }
-            .navigationTitle("Following")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .refreshable {
-                await viewModel.refresh()
-            }
-            .overlay {
-                if viewModel.isLoading && viewModel.posts.isEmpty {
-                    LoadingView()
-                }
-            }
-            .alert("Error", isPresented: .constant(viewModel.error != nil)) {
-                Button("OK") {
-                    viewModel.error = nil
-                }
-            } message: {
-                Text(viewModel.error?.localizedDescription ?? "An unknown error occurred")
-            }
+        }
+        .task {
+            // Initialize view model with dependencies from environment
+            // Following DI rule: dependencies injected from environment
+            self.viewModel = FollowingViewModel(
+                networking: deps.networking,
+                analytics: deps.analytics
+            )
         }
     }
 }

@@ -119,7 +119,7 @@ public struct ColorTokens: Sendable {
     public static let primary = Color.accentColor
     
     /// Variant of the primary color for secondary brand elements.
-    public static let primaryVariant = Color.blue
+    public static let primaryVariant = Color("AgoraBrand", bundle: .module)
     
     // MARK: - System Colors (Adaptive for Dark Mode)
     #if canImport(UIKit)
@@ -135,7 +135,7 @@ public struct ColorTokens: Sendable {
     public static let quaternaryText = Color(UIColor.quaternaryLabel)
     
     // MARK: - Interactive Colors (Adaptive for Dark Mode)
-    public static let link = Color(UIColor.link)
+    public static let link = Color("AgoraBrand", bundle: .module)
     public static let separator = Color(UIColor.separator)
     public static let opaqueSeparator = Color(UIColor.opaqueSeparator)
     #else
@@ -150,7 +150,7 @@ public struct ColorTokens: Sendable {
     public static let tertiaryText = Color.gray.opacity(0.7)
     public static let quaternaryText = Color.gray.opacity(0.5)
     
-    public static let link = Color.blue
+    public static let link = Color("AgoraBrand", bundle: .module)
     public static let separator = Color.gray.opacity(0.3)
     public static let opaqueSeparator = Color.gray.opacity(0.3)
     #endif
@@ -159,11 +159,11 @@ public struct ColorTokens: Sendable {
     public static let success = Color(.systemGreen)
     public static let warning = Color(.systemOrange)
     public static let error = Color(.systemRed)
-    public static let info = Color(.systemBlue)
+    public static let info = Color("AgoraTertiary", bundle: .module)
     
     // MARK: - App-Specific Colors (Adaptive for Dark Mode)
-    public static let agoraBrand = Color(.systemBlue)
-    public static let agoraAccent = Color(.systemPink)
+    public static let agoraBrand = Color("AgoraBrand", bundle: .module)
+    public static let agoraAccent = Color("AgoraAccent", bundle: .module)
     #if canImport(UIKit)
     public static let agoraSurface = Color(UIColor.secondarySystemBackground)
     #else
@@ -174,12 +174,13 @@ public struct ColorTokens: Sendable {
     // These use custom colors from bundle resources with proper dark mode support
     public static let agoraBrandCustom = Color("AgoraBrand", bundle: .module)
     public static let agoraAccentCustom = Color("AgoraAccent", bundle: .module)
+    public static let agoraTertiaryCustom = Color("AgoraTertiary", bundle: .module)
     
     // MARK: - Dark Mode Optimized Colors
     /// Primary brand color optimized for dark mode
-    public static let agoraBrandDark = Color(.systemBlue)
+    public static let agoraBrandDark = Color("AgoraBrand", bundle: .module)
     /// Accent color optimized for dark mode  
-    public static let agoraAccentDark = Color(.systemPink)
+    public static let agoraAccentDark = Color("AgoraAccent", bundle: .module)
     /// Surface color for dark mode cards and panels
     public static let agoraSurfaceDark = Color(UIColor.secondarySystemBackground)
     /// Elevated surface for dark mode modals
@@ -187,9 +188,9 @@ public struct ColorTokens: Sendable {
     
     // MARK: - Light Mode Optimized Colors
     /// Primary brand color optimized for light mode
-    public static let agoraBrandLight = Color(.systemBlue)
+    public static let agoraBrandLight = Color("AgoraBrand", bundle: .module)
     /// Accent color optimized for light mode
-    public static let agoraAccentLight = Color(.systemPink)
+    public static let agoraAccentLight = Color("AgoraAccent", bundle: .module)
     /// Surface color for light mode cards and panels
     public static let agoraSurfaceLight = Color(UIColor.secondarySystemBackground)
     /// Elevated surface for light mode modals
@@ -201,6 +202,7 @@ public struct ColorTokens: Sendable {
 public extension Color {
     static let agoraPrimary = ColorTokens.primary
     static let agoraSecondary = ColorTokens.secondaryText
+    static let agoraTertiary = ColorTokens.agoraTertiaryCustom
     static let agoraBackground = ColorTokens.background
     static let agoraSurface = ColorTokens.agoraSurface
 }

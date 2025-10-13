@@ -14,11 +14,15 @@ let package = Package(
             targets: ["Analytics"]
         ),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(name: "AppFoundation", path: "../../Shared/AppFoundation"),
+    ],
     targets: [
         .target(
             name: "Analytics",
-            dependencies: [],
+            dependencies: [
+                "AppFoundation",
+            ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
             ]

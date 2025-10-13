@@ -4,8 +4,21 @@ import Foundation
 public enum AppConfig {
     // MARK: - Info.plist Key Access
     
-    private static func value(_ key: String) -> String {
+    /// Check if we're running in a preview environment
+    private static var isPreview: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    }
+    
+    private static func value(_ key: String, previewFallback: String? = nil) -> String {
+        // In preview environment, return fallback value if provided
+        if isPreview, let fallback = previewFallback {
+            return fallback
+        }
+        
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String else {
+            if isPreview, let fallback = previewFallback {
+                return fallback
+            }
             fatalError("Missing Info.plist key: \(key). Ensure \(key) is set in your .xcconfig files.")
         }
         return value
@@ -15,16 +28,18 @@ public enum AppConfig {
     
     /// API base URL (e.g., https://api.agora.social or https://staging-api.agora.social)
     public static let apiBaseURL: URL = {
-        guard let url = URL(string: value("API_BASE_URL")) else {
-            fatalError("Invalid API_BASE_URL: \(value("API_BASE_URL"))")
+        let urlString = value("API_BASE_URL", previewFallback: "https://preview.example.com")
+        guard let url = URL(string: urlString) else {
+            fatalError("Invalid API_BASE_URL: \(urlString)")
         }
         return url
     }()
     
     /// WebSocket URL (e.g., wss://ws.agora.social)
     public static let websocketURL: URL = {
-        guard let url = URL(string: value("WEBSOCKET_URL")) else {
-            fatalError("Invalid WEBSOCKET_URL: \(value("WEBSOCKET_URL"))")
+        let urlString = value("WEBSOCKET_URL", previewFallback: "wss://preview.example.com")
+        guard let url = URL(string: urlString) else {
+            fatalError("Invalid WEBSOCKET_URL: \(urlString)")
         }
         return url
     }()
@@ -32,33 +47,34 @@ public enum AppConfig {
     // MARK: - Universal Links
     
     /// Universal links host (e.g., app.agora.social or staging.agora.social)
-    public static let linksHost: String = value("UNIVERSAL_LINKS_HOST")
+    public static let linksHost: String = value("UNIVERSAL_LINKS_HOST", previewFallback: "preview.agora.social")
     
     // MARK: - App Groups & Keychain
     
     /// App Group identifier for shared containers
-    public static let appGroup: String = value("APP_GROUP")
+    public static let appGroup: String = value("APP_GROUP", previewFallback: "group.com.agoraapp.ios.preview")
     
     /// Keychain access group for shared keychain items
-    public static let keychainGroup: String = value("KEYCHAIN_GROUP")
+    public static let keychainGroup: String = value("KEYCHAIN_GROUP", previewFallback: "com.agoraapp.ios.preview")
     
     // MARK: - Analytics
     
     /// Analytics write key (PostHog, Segment, etc.)
-    public static let analyticsWriteKey: String = value("ANALYTICS_WRITE_KEY")
+    public static let analyticsWriteKey: String = value("ANALYTICS_WRITE_KEY", previewFallback: "preview-analytics-key")
     
     // MARK: - Supabase Configuration
     
     /// Supabase project URL
     public static let supabaseURL: URL = {
-        guard let url = URL(string: value("SUPABASE_URL")) else {
-            fatalError("Invalid SUPABASE_URL: \(value("SUPABASE_URL"))")
+        let urlString = value("SUPABASE_URL", previewFallback: "https://preview.supabase.co")
+        guard let url = URL(string: urlString) else {
+            fatalError("Invalid SUPABASE_URL: \(urlString)")
         }
         return url
     }()
     
     /// Supabase anonymous key
-    public static let supabaseAnonKey: String = value("SUPABASE_ANON_KEY")
+    public static let supabaseAnonKey: String = value("SUPABASE_ANON_KEY", previewFallback: "preview-anon-key")
     
     /// Web share base URL for deep links
     public static let webShareBaseURL: URL = {

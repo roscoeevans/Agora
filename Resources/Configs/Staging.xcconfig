@@ -33,3 +33,7 @@ SWIFT_ACTIVE_COMPILATION_CONDITIONS = STAGING_ENVIRONMENT
 
 // Preprocessor Definitions
 GCC_PREPROCESSOR_DEFINITIONS = STAGING_ENVIRONMENT=1
+
+// Swift Compilation Mode (for SwiftUI Previews)
+SWIFT_COMPILATION_MODE = wholemodule
+SWIFT_COMPILATION_MODE[sdk=iphonesimulator*] = singlefile

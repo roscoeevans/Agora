@@ -17,9 +17,11 @@ public class ThreadViewModel {
     public var error: Error?
     
     private let threadId: String
-    private let networking: APIClient
+    private let networking: any AgoraAPIClient
     
-    public init(threadId: String, networking: APIClient = APIClient.shared) {
+    /// Initialize ThreadViewModel with explicit dependencies
+    /// Following the DI rule pattern
+    public init(threadId: String, networking: any AgoraAPIClient) {
         self.threadId = threadId
         self.networking = networking
     }

@@ -17,10 +17,15 @@ public class FollowingViewModel {
     public var isLoading = false
     public var error: Error?
     
-    private let networking: APIClient
-    private let analytics: AnalyticsManager
+    private let networking: any AgoraAPIClient
+    private let analytics: AnalyticsClient
     
-    public init(networking: APIClient = APIClient.shared, analytics: AnalyticsManager = AnalyticsManager.shared) {
+    /// Initialize FollowingViewModel with explicit dependencies
+    /// Following the DI rule pattern
+    public init(
+        networking: any AgoraAPIClient,
+        analytics: AnalyticsClient
+    ) {
         self.networking = networking
         self.analytics = analytics
         
@@ -33,23 +38,23 @@ public class FollowingViewModel {
         defer { isLoading = false }
         
         do {
-            analytics.track(event: "feed_refresh_started", properties: ["feed_type": "following"])
+            await analytics.track(event: "feed_refresh_started", properties: ["feed_type": "following"])
             
             // TODO: Implement actual API call
             // For now, simulate network delay and reload placeholder data
             try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
             loadPlaceholderData()
             
-            analytics.track(event: "feed_refresh_completed", properties: ["feed_type": "following", "post_count": posts.count])
+            await analytics.track(event: "feed_refresh_completed", properties: ["feed_type": "following", "post_count": posts.count])
         } catch {
             self.error = error
-            analytics.track(event: "feed_refresh_failed", properties: ["feed_type": "following", "error": error.localizedDescription])
+            await analytics.track(event: "feed_refresh_failed", properties: ["feed_type": "following", "error": error.localizedDescription])
         }
     }
     
     public func loadMore() async {
         // TODO: Implement pagination
-        analytics.track(event: "feed_load_more", properties: ["feed_type": "following"])
+        await analytics.track(event: "feed_load_more", properties: ["feed_type": "following"])
     }
     
     private func loadPlaceholderData() {

@@ -50,7 +50,7 @@ All colors automatically adapt to light and dark modes with **dark mode as the d
 - **Background Colors**: `ColorTokens.background`, `ColorTokens.secondaryBackground`
 - **Text Colors**: `ColorTokens.primaryText`, `ColorTokens.secondaryText`
 - **Status Colors**: `ColorTokens.success`, `ColorTokens.warning`, `ColorTokens.error`
-- **Brand Colors**: `ColorTokens.agoraBrand`, `ColorTokens.agoraAccent` (with custom dark mode variants)
+- **Brand Colors**: `ColorTokens.agoraBrandCustom` (#FF3466), `ColorTokens.agoraAccentCustom` (#ED90FC), `ColorTokens.agoraTertiaryCustom` (#34C3FC) - all with custom dark mode variants
 
 ### Typography
 

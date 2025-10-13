@@ -7,50 +7,63 @@
 
 import SwiftUI
 import DesignSystem
+import AppFoundation
 
 public struct DMThreadsView: View {
-    @State private var viewModel = DMThreadsViewModel()
+    @Environment(\.deps) private var deps
+    @State private var viewModel: DMThreadsViewModel?
     
     public init() {}
     
     public var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    if viewModel.threads.isEmpty && !viewModel.isLoading {
-                        EmptyStateView()
-                    } else {
-                        ForEach(viewModel.threads, id: \.id) { thread in
-                            DMThreadRow(thread: thread) {
-                                // TODO: Navigate to chat view
+        Group {
+            if let viewModel = viewModel {
+                NavigationStack {
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            if viewModel.threads.isEmpty && !viewModel.isLoading {
+                                EmptyStateView()
+                            } else {
+                                ForEach(viewModel.threads, id: \.id) { thread in
+                                    DMThreadRow(thread: thread) {
+                                        // TODO: Navigate to chat view
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-            .navigationTitle("Messages")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        // TODO: Start new conversation
-                    }) {
-                        Image(systemName: "square.and.pencil")
-                            .foregroundColor(ColorTokens.agoraBrand)
+                    .navigationTitle("Messages")
+                    .navigationBarTitleDisplayMode(.large)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(action: {
+                                // TODO: Start new conversation
+                            }) {
+                                Image(systemName: "square.and.pencil")
+                                    .foregroundColor(ColorTokens.agoraBrand)
+                            }
+                        }
+                    }
+                    .refreshable {
+                        await viewModel.refresh()
+                    }
+                    .overlay {
+                        if viewModel.isLoading && viewModel.threads.isEmpty {
+                            LoadingView()
+                        }
+                    }
+                    .task {
+                        await viewModel.loadThreads()
                     }
                 }
+            } else {
+                LoadingView()
             }
-            .refreshable {
-                await viewModel.refresh()
-            }
-            .overlay {
-                if viewModel.isLoading && viewModel.threads.isEmpty {
-                    LoadingView()
-                }
-            }
-            .task {
-                await viewModel.loadThreads()
-            }
+        }
+        .task {
+            // Initialize view model with dependencies from environment
+            // Following DI rule: dependencies injected from environment
+            self.viewModel = DMThreadsViewModel(networking: deps.networking)
         }
     }
 }

@@ -60,7 +60,7 @@ Create a protocol + injectable type when the code:
 
 **Factories:** `…Factory` protocols (e.g., `MediaUploaderFactory`), live impl `…FactoryLive`.
 
-**Environment keys (SwiftUI):** in `Kits/AppSupport` (or `Kits/DesignSystem` if you already centralize app env).
+**Environment keys (SwiftUI):** in `Shared/AppFoundation`.
 - `Dependencies.swift` (container), `Dependencies+Environment.swift` (keys).
 
 ### Minimal Patterns
@@ -91,7 +91,7 @@ public struct NetworkingClientLive: NetworkingClient, Sendable {
 #### 2) Dependency Container (lightweight)
 
 ```swift
-// Kits/AppSupport/Sources/AppSupport/Dependencies.swift
+// Shared/AppFoundation/Sources/AppFoundation/Dependencies.swift
 public struct Dependencies: Sendable {
   public var networking: NetworkingClient
   public var analytics: AnalyticsClient
@@ -115,7 +115,7 @@ public struct Dependencies: Sendable {
 #### 3) SwiftUI Environment Bridge (App-wide only)
 
 ```swift
-// Kits/AppSupport/Sources/AppSupport/Dependencies+Environment.swift
+// Shared/AppFoundation/Sources/AppFoundation/Dependencies+Environment.swift
 import SwiftUI
 
 private struct DependenciesKey: EnvironmentKey {
@@ -139,7 +139,7 @@ public extension EnvironmentValues {
 
 ```swift
 import SwiftUI
-import AppSupport
+import AppFoundation
 
 public struct ForYouView: View {
   @Environment(\.deps) private var deps
@@ -295,6 +295,46 @@ assertSnapshot(of: sut)
 
 - Wrap risk/attestation checks behind `VerificationClient` (protocol) with feature-level policy orchestrators.
 - Inject these clients into Compose/DMs/Post flows; never call external SDKs directly from views.
+
+### Built-in Dependencies
+
+The `Dependencies` container includes these app-wide services:
+
+#### EnvironmentConfig
+
+Provides compile-time build configuration and feature flags. Injectable for testing.
+
+```swift
+// Usage in a view model or service
+class DebugMenuViewModel {
+  private let environment: EnvironmentConfig
+  
+  init(environment: EnvironmentConfig) {
+    self.environment = environment
+  }
+  
+  var isMenuAvailable: Bool {
+    environment.isDebugMenuEnabled
+  }
+}
+
+// In a view
+@Environment(\.deps) private var deps
+let viewModel = DebugMenuViewModel(environment: deps.environment)
+
+// In tests
+let testEnv = EnvironmentConfigFake(
+  isLoggingEnabled: true,
+  isDebugMenuEnabled: true,
+  environmentName: "Test"
+)
+let vm = DebugMenuViewModel(environment: testEnv)
+```
+
+Benefits:
+- Test code that behaves differently per environment without needing different build targets
+- Mock feature flags and logging states
+- No static global state
 
 ### Do / Don't
 

@@ -16,10 +16,10 @@ public class SearchViewModel {
     public var isLoading = false
     public var error: Error?
     
-    private let networking: APIClient
+    private let networking: any AgoraAPIClient
     private var searchTask: Task<Void, Never>?
     
-    public init(networking: APIClient = APIClient.shared) {
+    public init(networking: any AgoraAPIClient) {
         self.networking = networking
     }
     

@@ -133,12 +133,16 @@ final class ColorTokensTests: XCTestCase {
         XCTAssertNotNil(ColorTokens.agoraBrand)
         XCTAssertNotNil(ColorTokens.agoraAccent)
         XCTAssertNotNil(ColorTokens.agoraSurface)
+        XCTAssertNotNil(ColorTokens.agoraBrandCustom)
+        XCTAssertNotNil(ColorTokens.agoraAccentCustom)
+        XCTAssertNotNil(ColorTokens.agoraTertiaryCustom)
     }
     
     func testBackwardCompatibilityExtensions() {
         // Test that the backward compatibility extensions work
         XCTAssertNotNil(Color.agoraPrimary)
         XCTAssertNotNil(Color.agoraSecondary)
+        XCTAssertNotNil(Color.agoraTertiary)
         XCTAssertNotNil(Color.agoraBackground)
         XCTAssertNotNil(Color.agoraSurface)
     }

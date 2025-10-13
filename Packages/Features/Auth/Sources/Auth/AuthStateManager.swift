@@ -170,7 +170,7 @@ public final class AuthStateManager {
             }
             
             // Create profile via API
-            let request = Components.Schemas.CreateProfileRequest(
+            let request = CreateProfileRequest(
                 handle: handle,
                 displayHandle: displayHandle,
                 displayName: displayName,

@@ -26,12 +26,14 @@ public class ComposeViewModel {
         !isPosting 
     }
     
-    private let networking: APIClient
+    private let networking: any AgoraAPIClient
     private let verificationManager: AppAttestManager
     
+    /// Initialize ComposeViewModel with explicit dependencies
+    /// Following the DI rule pattern
     public init(
-        networking: APIClient = APIClient.shared,
-        verificationManager: AppAttestManager = AppAttestManager.shared
+        networking: any AgoraAPIClient,
+        verificationManager: AppAttestManager
     ) {
         self.networking = networking
         self.verificationManager = verificationManager

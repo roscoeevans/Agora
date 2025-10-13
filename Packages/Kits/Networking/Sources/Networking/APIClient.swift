@@ -5,13 +5,26 @@ import AppFoundation
 import HTTPTypes
 
 /// Main API client for Agora backend communication
-public final class APIClient: Sendable {
-    public static let shared: APIClient = {
-        // Get auth token provider from ServiceProvider for authenticated requests
-        let authProvider = ServiceProvider.shared.authTokenProvider()
-        return APIClient(authTokenProvider: authProvider)
-    }()
-    
+/// 
+/// This is a concrete implementation that conforms to AgoraAPIClient protocol.
+/// Use the protocol for dependency injection, not this concrete class.
+/// 
+/// **Dependency Injection**: This class should be instantiated via the Dependencies
+/// container and injected through initializers. Do not create instances directly
+/// in production code.
+/// 
+/// Example usage:
+/// ```swift
+/// // In a ViewModel init:
+/// public init(networking: any AgoraAPIClient) {
+///     self.networking = networking
+/// }
+/// 
+/// // In a View with environment:
+/// @Environment(\.deps) private var deps
+/// let viewModel = MyViewModel(networking: deps.networking)
+/// ```
+public final class APIClient: AgoraAPIClient, Sendable {
     private let client: Client
     private let authTokenProvider: AuthTokenProvider?
     private let baseURL: URL
@@ -144,13 +157,172 @@ extension APIClient {
     }
 }
 
+// MARK: - AgoraAPIClient Protocol Conformance
+
+extension APIClient {
+    /// Fetch For You feed (protocol method)
+    /// Bridges to internal getForYouFeed implementation
+    public func fetchForYouFeed(cursor: String?, limit: Int?) async throws -> FeedResponse {
+        let response = try await getForYouFeed(cursor: cursor, limit: limit ?? 20)
+        // Convert from generated Components.Schemas.FeedResponse to protocol FeedResponse
+        let posts = response.posts.map { enhancedPost in
+            let post = enhancedPost.value1
+            let enhanced = enhancedPost.value2
+            
+            // Map recommendation reasons from generated types to protocol types
+            let reasons = enhanced.reasons?.map { reason in
+                RecommendationReason(
+                    signal: reason.signal,
+                    weight: Double(reason.weight)
+                )
+            }
+            
+            return Post(
+                id: post.id,
+                authorId: post.authorId,
+                authorDisplayHandle: post.authorDisplayHandle,
+                text: post.text,
+                linkUrl: post.linkUrl,
+                mediaBundleId: post.mediaBundleId,
+                replyToPostId: post.replyToPostId,
+                quotePostId: post.quotePostId,
+                likeCount: post.likeCount ?? 0,
+                repostCount: post.repostCount ?? 0,
+                replyCount: post.replyCount ?? 0,
+                visibility: post.visibility.flatMap { PostVisibility(rawValue: $0.rawValue) } ?? .public,
+                createdAt: post.createdAt,
+                score: enhanced.score.map(Double.init),
+                reasons: reasons,
+                explore: enhanced.explore
+            )
+        }
+        return FeedResponse(posts: posts, nextCursor: response.nextCursor)
+    }
+    
+    public func beginSignInWithApple(nonce: String) async throws -> SWABeginResponse {
+        let response = try await beginSignInWithAppleInternal(nonce: nonce)
+        return SWABeginResponse(authUrl: response.authUrl ?? "")
+    }
+    
+    public func finishSignInWithApple(identityToken: String, authorizationCode: String) async throws -> AuthResponse {
+        let response = try await finishSignInWithAppleInternal(identityToken: identityToken, authorizationCode: authorizationCode)
+        return AuthResponse(
+            accessToken: response.accessToken ?? "",
+            refreshToken: response.refreshToken ?? "",
+            user: User(
+                id: response.user.id ?? "",
+                handle: response.user.handle ?? "",
+                displayHandle: response.user.displayHandle ?? "",
+                displayName: response.user.displayName ?? "",
+                bio: response.user.bio,
+                avatarUrl: response.user.avatarUrl,
+                createdAt: response.user.createdAt ?? Date()
+            )
+        )
+    }
+    
+    public func createProfile(request: CreateProfileRequest) async throws -> User {
+        return try await performRequest { client in
+            let response = try await client.post_sol_create_hyphen_profile(
+                body: .json(request.toComponentsSchemas())
+            )
+            
+            switch response {
+            case .created(let createdResponse):
+                switch createdResponse.body {
+                case .json(let user):
+                    return user.toAppFoundation()
+                }
+            case .badRequest:
+                throw NetworkError.serverError(message: "Bad request")
+            case .unauthorized:
+                throw NetworkError.authenticationRequired
+            case .conflict:
+                throw NetworkError.serverError(message: "Handle already taken")
+            case .internalServerError:
+                throw NetworkError.serverError(message: "Internal server error")
+            case .undocumented(let statusCode, _):
+                throw NetworkError.httpError(statusCode: statusCode, data: nil)
+            }
+        }
+    }
+    
+    public func checkHandle(handle: String) async throws -> CheckHandleResponse {
+        return try await performRequest { client in
+            let response = try await client.get_sol_check_hyphen_handle(
+                query: .init(handle: handle)
+            )
+            
+            switch response {
+            case .ok(let okResponse):
+                switch okResponse.body {
+                case .json(let checkResponse):
+                    return checkResponse.toAppFoundation()
+                }
+            case .badRequest:
+                throw NetworkError.serverError(message: "Bad request")
+            case .internalServerError:
+                throw NetworkError.serverError(message: "Internal server error")
+            case .undocumented(let statusCode, _):
+                throw NetworkError.httpError(statusCode: statusCode, data: nil)
+            }
+        }
+    }
+    
+    public func getCurrentUserProfile() async throws -> User {
+        return try await performRequest { client in
+            let response = try await client.get_sol_get_hyphen_current_hyphen_profile()
+            
+            switch response {
+            case .ok(let okResponse):
+                switch okResponse.body {
+                case .json(let user):
+                    return user.toAppFoundation()
+                }
+            case .unauthorized:
+                throw NetworkError.authenticationRequired
+            case .notFound:
+                throw NetworkError.serverError(message: "Profile not found")
+            case .internalServerError:
+                throw NetworkError.serverError(message: "Internal server error")
+            case .undocumented(let statusCode, _):
+                throw NetworkError.httpError(statusCode: statusCode, data: nil)
+            }
+        }
+    }
+    
+    public func updateProfile(request: UpdateProfileRequest) async throws -> User {
+        return try await performRequest { client in
+            let response = try await client.patch_sol_update_hyphen_profile(
+                body: .json(request.toComponentsSchemas())
+            )
+            
+            switch response {
+            case .ok(let okResponse):
+                switch okResponse.body {
+                case .json(let user):
+                    return user.toAppFoundation()
+                }
+            case .badRequest:
+                throw NetworkError.serverError(message: "Bad request")
+            case .unauthorized:
+                throw NetworkError.authenticationRequired
+            case .internalServerError:
+                throw NetworkError.serverError(message: "Internal server error")
+            case .undocumented(let statusCode, _):
+                throw NetworkError.httpError(statusCode: statusCode, data: nil)
+            }
+        }
+    }
+}
+
 // MARK: - Authentication Operations
 
 extension APIClient {
-    /// Begin Sign in with Apple flow
+    /// Begin Sign in with Apple flow (internal implementation)
     /// - Parameter nonce: Random nonce for security
     /// - Returns: Apple authentication URL
-    public func beginSignInWithApple(nonce: String) async throws -> Components.Schemas.SWABeginResponse {
+    private func beginSignInWithAppleInternal(nonce: String) async throws -> Components.Schemas.SWABeginResponse {
         return try await performRequest { client in
             let response = try await client.post_sol_auth_sol_swa_sol_begin(
                 body: .json(.init(nonce: nonce))
@@ -172,12 +344,12 @@ extension APIClient {
         }
     }
     
-    /// Complete Sign in with Apple flow
+    /// Complete Sign in with Apple flow (internal implementation)
     /// - Parameters:
     ///   - identityToken: Apple identity token
     ///   - authorizationCode: Apple authorization code
     /// - Returns: Authentication response with tokens and user info
-    public func finishSignInWithApple(
+    private func finishSignInWithAppleInternal(
         identityToken: String,
         authorizationCode: String
     ) async throws -> Components.Schemas.AuthResponse {

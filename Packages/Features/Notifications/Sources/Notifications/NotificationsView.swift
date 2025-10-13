@@ -7,39 +7,52 @@
 
 import SwiftUI
 import DesignSystem
+import AppFoundation
 
 public struct NotificationsView: View {
-    @State private var viewModel = NotificationsViewModel()
+    @Environment(\.deps) private var deps
+    @State private var viewModel: NotificationsViewModel?
     
     public init() {}
     
     public var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: SpacingTokens.xs) {
-                    if viewModel.notifications.isEmpty && !viewModel.isLoading {
-                        EmptyStateView()
-                    } else {
-                        ForEach(viewModel.notifications, id: \.id) { notification in
-                            NotificationRow(notification: notification)
+        Group {
+            if let viewModel = viewModel {
+                NavigationStack {
+                    ScrollView {
+                        LazyVStack(spacing: SpacingTokens.xs) {
+                            if viewModel.notifications.isEmpty && !viewModel.isLoading {
+                                EmptyStateView()
+                            } else {
+                                ForEach(viewModel.notifications, id: \.id) { notification in
+                                    NotificationRow(notification: notification)
+                                }
+                            }
                         }
                     }
+                    .navigationTitle("Notifications")
+                    .navigationBarTitleDisplayMode(.large)
+                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+                    .refreshable {
+                        await viewModel.refresh()
+                    }
+                    .overlay {
+                        if viewModel.isLoading && viewModel.notifications.isEmpty {
+                            LoadingView()
+                        }
+                    }
+                    .task {
+                        await viewModel.loadNotifications()
+                    }
                 }
+            } else {
+                LoadingView()
             }
-            .navigationTitle("Notifications")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .refreshable {
-                await viewModel.refresh()
-            }
-            .overlay {
-                if viewModel.isLoading && viewModel.notifications.isEmpty {
-                    LoadingView()
-                }
-            }
-            .task {
-                await viewModel.loadNotifications()
-            }
+        }
+        .task {
+            // Initialize view model with dependencies from environment
+            // Following DI rule: dependencies injected from environment
+            self.viewModel = NotificationsViewModel(networking: deps.networking)
         }
     }
 }

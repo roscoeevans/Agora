@@ -7,55 +7,77 @@
 
 import SwiftUI
 import DesignSystem
+import AppFoundation
+import Analytics
+import Networking
 
 public struct HomeForYouView: View {
-    @State private var viewModel = ForYouViewModel()
-    @State private var coordinator = ForYouCoordinator()
+    @Environment(\.deps) private var deps
+    @State private var viewModel: ForYouViewModel?
+    @State private var coordinator: ForYouCoordinator?
     
     public init() {}
     
     public var body: some View {
-        NavigationStack(path: $coordinator.navigationPath) {
-            ScrollView {
-                LazyVStack(spacing: SpacingTokens.md) {
-                    if viewModel.posts.isEmpty && !viewModel.isLoading {
-                        AgoraEmptyStateView.emptyFeed()
-                    } else {
-                        ForEach(viewModel.posts, id: \.id) { post in
-                            PostCardView(post: post) {
-                                coordinator.navigateToPost(post)
+        Group {
+            if let viewModel = viewModel, coordinator != nil {
+                NavigationStack(path: Binding(
+                    get: { coordinator?.navigationPath ?? NavigationPath() },
+                    set: { coordinator?.navigationPath = $0 }
+                )) {
+                    ScrollView {
+                        LazyVStack(spacing: SpacingTokens.md) {
+                            if viewModel.posts.isEmpty && !viewModel.isLoading {
+                                AgoraEmptyStateView.emptyFeed()
+                            } else {
+                                ForEach(viewModel.posts, id: \.id) { post in
+                                    PostCardView(post: post) {
+                                        coordinator?.navigateToPost(post)
+                                    }
+                                }
                             }
                         }
+                        .padding(.horizontal, SpacingTokens.md)
                     }
-                }
-                .padding(.horizontal, SpacingTokens.md)
-            }
-            .navigationTitle("For You")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .refreshable {
-                await viewModel.refresh()
-            }
-            .overlay {
-                if viewModel.isLoading && viewModel.posts.isEmpty {
-                    AgoraLoadingView.feedLoading()
-                }
-            }
-            .alert("Couldn't Load Feed", isPresented: .constant(viewModel.error != nil)) {
-                Button("Try Again") {
-                    viewModel.error = nil
-                    Task {
+                    .navigationTitle("For You")
+                    .navigationBarTitleDisplayMode(.large)
+                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+                    .refreshable {
                         await viewModel.refresh()
                     }
+                    .overlay {
+                        if viewModel.isLoading && viewModel.posts.isEmpty {
+                            AgoraLoadingView.feedLoading()
+                        }
+                    }
+                    .alert("Couldn't Load Feed", isPresented: .constant(viewModel.error != nil)) {
+                        Button("Try Again") {
+                            viewModel.error = nil
+                            Task {
+                                await viewModel.refresh()
+                            }
+                        }
+                        Button("OK", role: .cancel) {
+                            viewModel.error = nil
+                        }
+                    } message: {
+                        Text("We couldn't load your feed. Please check your connection and try again.")
+                    }
                 }
-                Button("OK", role: .cancel) {
-                    viewModel.error = nil
-                }
-            } message: {
-                Text("We couldn't load your feed. Please check your connection and try again.")
+                .environment(coordinator)
+            } else {
+                AgoraLoadingView.feedLoading()
             }
         }
-        .environment(coordinator)
+        .task {
+            // Initialize view model and coordinator with dependencies from environment
+            // Following DI rule: dependencies injected from environment
+            self.viewModel = ForYouViewModel(
+                networking: deps.networking,
+                analytics: deps.analytics
+            )
+            self.coordinator = ForYouCoordinator(analytics: deps.analytics)
+        }
     }
 }
 
@@ -89,7 +111,7 @@ struct PostCardView: View {
                             .font(TypographyScale.caption1)
                             .foregroundColor(ColorTokens.tertiaryText)
                         
-                        Text(RelativeTimeFormatter.format(post.timestamp))
+                        Text(RelativeTimeFormatter.format(post.createdAt))
                             .font(TypographyScale.caption1)
                             .foregroundColor(ColorTokens.tertiaryText)
                     }
@@ -139,7 +161,7 @@ struct PostCardView: View {
             isPressed = pressing
         }, perform: {})
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Post by \(post.author)")
+        .accessibilityLabel("Post by \(post.authorDisplayHandle)")
         .accessibilityHint("Double tap to view post details")
     }
 }

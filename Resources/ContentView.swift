@@ -15,6 +15,7 @@ import DesignSystem
 import AppFoundation
 
 struct ContentView: View {
+    @Environment(\.deps) private var deps
     @State private var selectedTab = 0
     
     var body: some View {
@@ -67,15 +68,12 @@ struct ContentView: View {
         .onAppear {
             // Configure dark mode as default using design system
             DesignSystem.configureDarkModeAsDefault()
-            
-            // Quick test - verify environment configuration
-            print("🌍 Environment: \(EnvironmentConfig.environmentName)")
-            print("🔗 API URL: \(AppConfig.apiBaseURL)")
-            print("📝 Logging: \(EnvironmentConfig.isLoggingEnabled)")
         }
     }
 }
 
-#Preview {
+#Preview("Default Tab (Home)") {
     ContentView()
+        .environment(\.deps, .preview)
+        .preferredColorScheme(.dark)
 }

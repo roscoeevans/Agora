@@ -48,9 +48,19 @@ public final class OpenAPIAgoraClient: AgoraAPIClient {
         case .ok(let ok):
             let generatedResponse = try ok.body.json
             // Convert from generated Components.Schemas.FeedResponse to manual FeedResponse
-            // EnhancedPost uses allOf, so properties are in value1 (the base Post)
+            // EnhancedPost uses allOf, so value1 has base Post, value2 has enhanced metadata
             let posts = generatedResponse.posts.map { enhancedPost in
                 let post = enhancedPost.value1
+                let enhanced = enhancedPost.value2
+                
+                // Map recommendation reasons from generated types to protocol types
+                let reasons = enhanced.reasons?.map { reason in
+                    RecommendationReason(
+                        signal: reason.signal,
+                        weight: Double(reason.weight)
+                    )
+                }
+                
                 return Post(
                     id: post.id,
                     authorId: post.authorId,
@@ -64,7 +74,10 @@ public final class OpenAPIAgoraClient: AgoraAPIClient {
                     repostCount: post.repostCount ?? 0,
                     replyCount: post.replyCount ?? 0,
                     visibility: post.visibility.flatMap { PostVisibility(rawValue: $0.rawValue) } ?? .public,
-                    createdAt: post.createdAt
+                    createdAt: post.createdAt,
+                    score: enhanced.score.map(Double.init),
+                    reasons: reasons,
+                    explore: enhanced.explore
                 )
             }
             return FeedResponse(posts: posts, nextCursor: generatedResponse.nextCursor)
@@ -109,14 +122,17 @@ public final class OpenAPIAgoraClient: AgoraAPIClient {
     
     // MARK: - User Profile Operations
     
-    public func createProfile(request: Components.Schemas.CreateProfileRequest) async throws -> Components.Schemas.User {
+    public func createProfile(request: CreateProfileRequest) async throws -> User {
+        // Convert AppFoundation request to Components.Schemas request
+        let componentsRequest = request.toComponentsSchemas()
         let response = try await client.post_sol_create_hyphen_profile(
-            .init(body: .json(request))
+            .init(body: .json(componentsRequest))
         )
         
         switch response {
         case .created(let created):
-            return try created.body.json
+            let generatedUser = try created.body.json
+            return generatedUser.toAppFoundation()
         case .badRequest(let error):
             let errorBody = try? error.body.json
             throw NetworkError.serverError(message: errorBody?.message ?? "Bad request")
@@ -133,14 +149,15 @@ public final class OpenAPIAgoraClient: AgoraAPIClient {
         }
     }
     
-    public func checkHandle(handle: String) async throws -> Components.Schemas.CheckHandleResponse {
+    public func checkHandle(handle: String) async throws -> CheckHandleResponse {
         let response = try await client.get_sol_check_hyphen_handle(
             query: .init(handle: handle)
         )
         
         switch response {
         case .ok(let ok):
-            return try ok.body.json
+            let generatedResponse = try ok.body.json
+            return generatedResponse.toAppFoundation()
         case .badRequest(let error):
             let errorBody = try? error.body.json
             throw NetworkError.serverError(message: errorBody?.message ?? "Invalid handle format")
@@ -152,12 +169,13 @@ public final class OpenAPIAgoraClient: AgoraAPIClient {
         }
     }
     
-    public func getCurrentUserProfile() async throws -> Components.Schemas.User {
+    public func getCurrentUserProfile() async throws -> User {
         let response = try await client.get_sol_get_hyphen_current_hyphen_profile(.init())
         
         switch response {
         case .ok(let ok):
-            return try ok.body.json
+            let generatedUser = try ok.body.json
+            return generatedUser.toAppFoundation()
         case .unauthorized:
             throw NetworkError.authenticationRequired
         case .notFound(let error):
@@ -171,16 +189,27 @@ public final class OpenAPIAgoraClient: AgoraAPIClient {
         }
     }
     
-    public func updateProfile(request: Components.Schemas.UpdateProfileRequest) async throws -> Components.Schemas.User {
-        // TODO: Replace with generated API call once available
-        // Example (after generation):
-        // let response = try await client.patch_slash_users_slash_me(
-        //     body: .json(request)
-        // )
-        // return try response.ok.body.json
+    public func updateProfile(request: UpdateProfileRequest) async throws -> User {
+        let componentsRequest = request.toComponentsSchemas()
+        let response = try await client.patch_sol_update_hyphen_profile(
+            body: .json(componentsRequest)
+        )
         
-        print("[OpenAPIAgoraClient] updateProfile not yet wired to generated client")
-        throw NetworkError.serverError(message: "Not yet implemented")
+        switch response {
+        case .ok(let ok):
+            let generatedUser = try ok.body.json
+            return generatedUser.toAppFoundation()
+        case .badRequest(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Bad request")
+        case .unauthorized:
+            throw NetworkError.authenticationRequired
+        case .internalServerError(let error):
+            let errorBody = try? error.body.json
+            throw NetworkError.serverError(message: errorBody?.message ?? "Internal server error")
+        case .undocumented(let statusCode, _):
+            throw NetworkError.httpError(statusCode: statusCode, data: nil)
+        }
     }
 }
 

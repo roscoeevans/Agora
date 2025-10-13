@@ -86,13 +86,14 @@ public struct CollectedSignal {
 }
 
 /// Signal collector for user interaction tracking
+/// 
+/// Follows DI rule: explicit dependency injection, no singletons
 public final class SignalCollector: Sendable {
-    public static let shared = SignalCollector()
-    
     private let eventTracker: EventTracker
     private let sessionId: String
     
-    private init(eventTracker: EventTracker = .shared) {
+    /// Initialize with explicit event tracker dependency
+    public init(eventTracker: EventTracker) {
         self.eventTracker = eventTracker
         self.sessionId = UUID().uuidString
     }
@@ -176,60 +177,62 @@ public final class SignalCollector: Sendable {
     // MARK: - Private Methods
     
     private func trackAnalyticsEvent(for collectedSignal: CollectedSignal) {
-        switch collectedSignal.signal {
-        case .view(let postId, let dwellTime):
-            eventTracker.track(.postViewed(postId: postId, dwellTime: dwellTime))
-            
-        case .like(let postId):
-            eventTracker.track(.postLiked(postId: postId))
-            
-        case .unlike(let postId):
-            eventTracker.track(.postUnliked(postId: postId))
-            
-        case .repost(let postId):
-            eventTracker.track(.postReposted(postId: postId))
-            
-        case .skip(let postId, let reason):
-            eventTracker.track(event: "post_skipped", properties: [
-                "post_id": postId,
-                "reason": reason.rawValue,
-                "feed_position": collectedSignal.metadata.feedPosition ?? -1
-            ])
-            
-        case .share(let postId, let method):
-            eventTracker.track(event: "post_shared", properties: [
-                "post_id": postId,
-                "method": method,
-                "feed_position": collectedSignal.metadata.feedPosition ?? -1
-            ])
-            
-        case .profileView(let userId, let dwellTime):
-            eventTracker.track(event: "profile_viewed", properties: [
-                "user_id": userId,
-                "dwell_time": dwellTime
-            ])
-            
-        case .follow(let userId):
-            eventTracker.track(event: "user_followed", properties: [
-                "user_id": userId
-            ])
-            
-        case .unfollow(let userId):
-            eventTracker.track(event: "user_unfollowed", properties: [
-                "user_id": userId
-            ])
-            
-        case .report(let postId, let reason):
-            eventTracker.track(event: "content_reported", properties: [
-                "post_id": postId,
-                "reason": reason
-            ])
-            
-        case .hide(let postId, let reason):
-            eventTracker.track(event: "content_hidden", properties: [
-                "post_id": postId,
-                "reason": reason
-            ])
+        Task { @MainActor in
+            switch collectedSignal.signal {
+            case .view(let postId, let dwellTime):
+                await eventTracker.track(.postViewed(postId: postId, dwellTime: dwellTime))
+                
+            case .like(let postId):
+                await eventTracker.track(.postLiked(postId: postId))
+                
+            case .unlike(let postId):
+                await eventTracker.track(.postUnliked(postId: postId))
+                
+            case .repost(let postId):
+                await eventTracker.track(.postReposted(postId: postId))
+                
+            case .skip(let postId, let reason):
+                await eventTracker.track(event: "post_skipped", properties: [
+                    "post_id": postId,
+                    "reason": reason.rawValue,
+                    "feed_position": collectedSignal.metadata.feedPosition ?? -1
+                ])
+                
+            case .share(let postId, let method):
+                await eventTracker.track(event: "post_shared", properties: [
+                    "post_id": postId,
+                    "method": method,
+                    "feed_position": collectedSignal.metadata.feedPosition ?? -1
+                ])
+                
+            case .profileView(let userId, let dwellTime):
+                await eventTracker.track(event: "profile_viewed", properties: [
+                    "user_id": userId,
+                    "dwell_time": dwellTime
+                ])
+                
+            case .follow(let userId):
+                await eventTracker.track(event: "user_followed", properties: [
+                    "user_id": userId
+                ])
+                
+            case .unfollow(let userId):
+                await eventTracker.track(event: "user_unfollowed", properties: [
+                    "user_id": userId
+                ])
+                
+            case .report(let postId, let reason):
+                await eventTracker.track(event: "content_reported", properties: [
+                    "post_id": postId,
+                    "reason": reason
+                ])
+                
+            case .hide(let postId, let reason):
+                await eventTracker.track(event: "content_hidden", properties: [
+                    "post_id": postId,
+                    "reason": reason
+                ])
+            }
         }
     }
     

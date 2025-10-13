@@ -7,117 +7,140 @@
 
 import SwiftUI
 import DesignSystem
+import AppFoundation
+import Verification
 
 public struct ComposeView: View {
-    @State private var viewModel = ComposeViewModel()
+    @Environment(\.deps) private var deps
+    @State private var viewModel: ComposeViewModel?
     @Environment(\.dismiss) private var dismiss
     
     public init() {}
     
     public var body: some View {
-        NavigationStack {
-            VStack(spacing: SpacingTokens.md) {
-                // Text input area
-                TextEditor(text: $viewModel.text)
-                    .font(TypographyScale.body)
-                    .foregroundColor(ColorTokens.primaryText)
-                    .padding(SpacingTokens.md)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: BorderRadiusTokens.md)
-                            .stroke(
-                                viewModel.isOverLimit ? ColorTokens.error : ColorTokens.separator.opacity(0.3),
-                                lineWidth: viewModel.isOverLimit ? 2 : 1
-                            )
-                    )
-                    .frame(minHeight: 120)
-                    .accessibilityLabel("Compose post text")
-                    .accessibilityHint("Type your post content here")
-                
-                // Character count
-                HStack {
-                    Spacer()
-                    Text("\(viewModel.characterCount)/70")
-                        .font(TypographyScale.caption1)
-                        .foregroundColor(viewModel.isOverLimit ? ColorTokens.error : ColorTokens.tertiaryText)
-                }
-                
-                // Media selection area
-                if !viewModel.selectedMedia.isEmpty {
-                    MediaPreviewView(mediaItems: viewModel.selectedMedia) { item in
-                        viewModel.removeMedia(item)
-                    }
-                }
-                
-                // Media picker button
-                MediaPickerButton { item in
-                    viewModel.addMedia(item)
-                }
-                
-                Spacer()
+        content
+            .task {
+                // Initialize view model with dependencies from environment
+                // Following DI rule: dependencies injected from environment
+                self.viewModel = ComposeViewModel(
+                    networking: deps.networking,
+                    verificationManager: AppAttestManager.shared
+                )
             }
-            .padding(SpacingTokens.md)
-            .navigationTitle("New Post")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        // Add haptic feedback
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                        dismiss()
-                    }
-                    .foregroundColor(ColorTokens.primaryText)
-                    .accessibilityLabel("Cancel composing post")
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Post") {
-                        // Add haptic feedback
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                        impactFeedback.impactOccurred()
+    }
+    
+    @ViewBuilder
+    private var content: some View {
+        if let vm = viewModel {
+            NavigationStack {
+                    VStack(spacing: SpacingTokens.md) {
+                        // Text input area
+                        TextEditor(text: Binding(
+                            get: { vm.text },
+                            set: { vm.text = $0 }
+                        ))
+                            .font(TypographyScale.body)
+                            .foregroundColor(ColorTokens.primaryText)
+                            .padding(SpacingTokens.md)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: BorderRadiusTokens.md)
+                                    .stroke(
+                                        vm.isOverLimit ? ColorTokens.error : ColorTokens.separator.opacity(0.3),
+                                        lineWidth: vm.isOverLimit ? 2 : 1
+                                    )
+                            )
+                            .frame(minHeight: 120)
+                            .accessibilityLabel("Compose post text")
+                            .accessibilityHint("Type your post content here")
                         
-                        Task {
-                            await viewModel.post()
-                            if viewModel.error == nil {
-                                dismiss()
+                        // Character count
+                        HStack {
+                            Spacer()
+                            Text("\(vm.characterCount)/70")
+                                .font(TypographyScale.caption1)
+                                .foregroundColor(vm.isOverLimit ? ColorTokens.error : ColorTokens.tertiaryText)
+                        }
+                        
+                        // Media selection area
+                        if !vm.selectedMedia.isEmpty {
+                            MediaPreviewView(mediaItems: vm.selectedMedia) { item in
+                                vm.removeMedia(item)
                             }
                         }
+                        
+                        // Media picker button
+                        MediaPickerButton { item in
+                            vm.addMedia(item)
+                        }
+                        
+                        Spacer()
                     }
-                    .disabled(!viewModel.canPost)
-                    .foregroundColor(viewModel.canPost ? ColorTokens.agoraBrand : ColorTokens.quaternaryText)
-                    .font(TypographyScale.calloutEmphasized)
-                    .accessibilityLabel("Post content")
-                    .accessibilityHint(viewModel.canPost ? "Double tap to publish your post" : "Cannot post - content is empty or over character limit")
-                }
-            }
-            .overlay {
-                if viewModel.isPosting {
-                    PostingOverlay()
-                }
-            }
-            .alert("Couldn't Post", isPresented: .constant(viewModel.error != nil)) {
-                Button("Try Again") {
-                    viewModel.error = nil
-                    Task {
-                        await viewModel.post()
+                    .padding(SpacingTokens.md)
+                    .navigationTitle("New Post")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Cancel") {
+                                // Add haptic feedback
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                impactFeedback.impactOccurred()
+                                dismiss()
+                            }
+                            .foregroundColor(ColorTokens.primaryText)
+                            .accessibilityLabel("Cancel composing post")
+                        }
+                        
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Post") {
+                                // Add haptic feedback
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                impactFeedback.impactOccurred()
+                                
+                                Task {
+                                    await vm.post()
+                                    if vm.error == nil {
+                                        dismiss()
+                                    }
+                                }
+                            }
+                            .disabled(!vm.canPost)
+                            .foregroundColor(vm.canPost ? ColorTokens.agoraBrand : ColorTokens.quaternaryText)
+                            .font(TypographyScale.calloutEmphasized)
+                            .accessibilityLabel("Post content")
+                            .accessibilityHint(vm.canPost ? "Double tap to publish your post" : "Cannot post - content is empty or over character limit")
+                        }
+                    }
+                    .overlay {
+                        if vm.isPosting {
+                            PostingOverlay()
+                        }
+                    }
+                    .alert("Couldn't Post", isPresented: .constant(vm.error != nil)) {
+                        Button("Try Again") {
+                            vm.error = nil
+                            Task {
+                                await vm.post()
+                            }
+                        }
+                        Button("Cancel", role: .cancel) {
+                            vm.error = nil
+                        }
+                    } message: {
+                        Text("Please check your connection and try again.")
+                    }
+                    .onAppear {
+                        vm.loadDraft()
+                    }
+                    .onDisappear {
+                        if !vm.text.isEmpty {
+                            vm.saveDraft()
+                        }
                     }
                 }
-                Button("Cancel", role: .cancel) {
-                    viewModel.error = nil
-                }
-            } message: {
-                Text("Please check your connection and try again.")
-            }
-        }
-        .onAppear {
-            viewModel.loadDraft()
-        }
-        .onDisappear {
-            if !viewModel.text.isEmpty {
-                viewModel.saveDraft()
-            }
+        } else {
+            PostingOverlay()
         }
     }
 }

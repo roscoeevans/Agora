@@ -18,9 +18,11 @@ public class PostDetailViewModel {
     public var error: Error?
     
     private let postId: String
-    private let networking: APIClient
+    private let networking: any AgoraAPIClient
     
-    public init(postId: String, networking: APIClient = APIClient.shared) {
+    /// Initialize PostDetailViewModel with explicit dependencies
+    /// Following the DI rule pattern
+    public init(postId: String, networking: any AgoraAPIClient) {
         self.postId = postId
         self.networking = networking
     }

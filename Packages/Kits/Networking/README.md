@@ -245,19 +245,34 @@ Networking/
 
 ### From Old APIClient
 
-If you were using the old `APIClient.performRequest()` pattern:
+If you were using the old `APIClient.performRequest()` pattern, migrate to the DI pattern:
 
-**Before:**
+**Before (deprecated):**
 ```swift
 let data = try await APIClient.shared.performRequest(path: "/feed/for-you")
 let feed = try JSONDecoder().decode(FeedResponse.self, from: data)
 ```
 
-**After:**
+**After (with Dependency Injection):**
 ```swift
-let client = ServiceProvider.shared.apiClient()
-let feed = try await client.fetchForYouFeed(cursor: nil, limit: 20)
+// In ViewModel:
+public init(networking: any AgoraAPIClient) {
+    self.networking = networking
+}
+
+// In View:
+@Environment(\.deps) private var deps
+let viewModel = ForYouViewModel(networking: deps.networking)
+
+// In ViewModel method:
+let feed = try await networking.fetchForYouFeed(cursor: nil, limit: 20)
 ```
+
+**Key Changes:**
+- ❌ No more `APIClient.shared` singleton
+- ✅ Inject `any AgoraAPIClient` via initializer
+- ✅ Use protocol, not concrete class
+- ✅ Get from `@Environment(\.deps)` in Views
 
 ### Adding New Endpoints
 
