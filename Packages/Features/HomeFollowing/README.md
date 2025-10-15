@@ -8,7 +8,7 @@ This module implements the traditional social media timeline where users see pos
 
 ## Key Components
 
-- **FollowingView**: Main SwiftUI view displaying the chronological feed
+- **HomeFollowingView**: Main SwiftUI view displaying the chronological feed
 - **FollowingViewModel**: Observable view model managing feed state and refresh logic
 
 ## Dependencies
@@ -25,7 +25,7 @@ import HomeFollowing
 struct MainTabView: View {
     var body: some View {
         TabView {
-            FollowingView()
+            HomeFollowingView()
                 .tabItem {
                     Label("Following", systemImage: "person.2")
                 }

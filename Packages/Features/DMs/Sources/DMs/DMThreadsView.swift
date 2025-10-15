@@ -24,7 +24,7 @@ public struct DMThreadsView: View {
                             EmptyStateView()
                         } else {
                             ForEach(viewModel.threads, id: \.id) { thread in
-                                DMThreadRow(thread: thread) {
+                                DMThreadRowView(thread: thread) {
                                     // TODO: Navigate to chat view
                                 }
                             }
@@ -67,7 +67,7 @@ public struct DMThreadsView: View {
     }
 }
 
-struct DMThreadRow: View {
+struct DMThreadRowView: View {
     let thread: DMThread
     let onTap: () -> Void
     

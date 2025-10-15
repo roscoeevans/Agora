@@ -24,7 +24,7 @@ public struct NotificationsView: View {
                             EmptyStateView()
                         } else {
                             ForEach(viewModel.notifications, id: \.id) { notification in
-                                NotificationRow(notification: notification)
+                                NotificationRowView(notification: notification)
                             }
                         }
                     }
@@ -55,7 +55,7 @@ public struct NotificationsView: View {
     }
 }
 
-struct NotificationRow: View {
+struct NotificationRowView: View {
     let notification: NotificationItem
     @State private var isPressed = false
     @Environment(\.navigateToPost) private var navigateToPost

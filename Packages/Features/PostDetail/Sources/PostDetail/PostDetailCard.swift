@@ -52,25 +52,25 @@ struct PostDetailCard: View {
             }
             
             HStack(spacing: SpacingTokens.xl) {
-                InteractionButton(
+                InteractionButtonView(
                     icon: "heart",
                     count: post.likeCount,
                     action: { /* TODO: Implement like */ }
                 )
                 
-                InteractionButton(
+                InteractionButtonView(
                     icon: "arrow.2.squarepath",
                     count: post.repostCount,
                     action: { /* TODO: Implement repost */ }
                 )
                 
-                InteractionButton(
+                InteractionButtonView(
                     icon: "bubble.right",
                     count: post.replyCount,
                     action: { /* TODO: Implement reply */ }
                 )
                 
-                InteractionButton(
+                InteractionButtonView(
                     icon: "square.and.arrow.up",
                     count: 0,
                     action: { /* TODO: Implement share */ }

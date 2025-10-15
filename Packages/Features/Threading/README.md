@@ -8,7 +8,7 @@ This module implements the conversation threading system that allows users to fo
 
 ## Key Components
 
-- **ThreadView**: SwiftUI view for displaying reply chains
+- **PostThreadView**: SwiftUI view for displaying reply chains
 - **ThreadViewModel**: Observable view model managing thread state and navigation
 
 ## Dependencies
@@ -27,7 +27,7 @@ struct PostDetailView: View {
     var body: some View {
         VStack {
             // Main post content
-            ThreadView(rootPostId: postId)
+            PostThreadView(rootPostId: postId)
         }
     }
 }

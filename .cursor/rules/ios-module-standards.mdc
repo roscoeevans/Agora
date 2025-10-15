@@ -220,50 +220,24 @@ PackageName/
 
 #### Test Naming Conventions
 
-**Test classes:**
+Follow standard Swift test naming patterns:
+
+**Test classes:** `{Feature}Tests` or `{Feature}{Component}Tests`
 ```swift
 final class ComposeViewModelTests: XCTestCase { }
 final class NetworkingClientTests: XCTestCase { }
 ```
 
-**Test methods:**
+**Test methods:** `test{MethodName}_{scenario}_{expectedBehavior}`
 ```swift
 func testFetchPosts_whenSuccessful_returnsPostArray() async throws
 func testCreatePost_withInvalidData_throwsValidationError() async throws
-func testRefreshToken_whenExpired_requestsNewToken() async throws
 ```
 
-**Naming pattern:** `test{MethodName}_{scenario}_{expectedBehavior}`
-
-#### Test Doubles
-
-**Naming conventions:**
-- `Mock{Service}` - For services with behavior verification
-- `{Service}Fake` - For services with realistic test implementations
-- `Stub{Service}` - For services returning canned responses
-
-**Example:**
-```swift
-// Mock with verification
-final class MockAnalyticsClient: AnalyticsClient {
-    var trackEventCalled = false
-    var lastTrackedEvent: String?
-    
-    func track(event: String) {
-        trackEventCalled = true
-        lastTrackedEvent = event
-    }
-}
-
-// Fake with realistic behavior
-final class FakeNetworkingClient: NetworkingClient {
-    var responses: [String: Any] = [:]
-    
-    func fetch<T>(_ endpoint: String) async throws -> T {
-        // Return pre-configured response for testing
-    }
-}
-```
+**Test doubles:** See **ios-naming.mdc** for complete naming conventions:
+- `Mock{Service}` - Behavior verification
+- `{Service}Fake` - Realistic test implementations
+- `Stub{Service}` - Canned responses
 
 #### Shared Test Utilities
 
@@ -627,17 +601,11 @@ final class ComposeViewModel {
 
 #### Naming Issues
 
-❌ **Avoid generic names:**
-- `Utils.swift`
-- `Helpers.swift`
-- `Common.swift`
-- `Manager.swift` (alone, without context)
+❌ **Avoid generic names:** `Utils.swift`, `Helpers.swift`, `Common.swift`, `Manager.swift` (without context)
 
-✅ **Use specific, descriptive names:**
-- `StringValidation.swift`
-- `DateFormatting.swift`
-- `SessionManager.swift`
-- `UploadCoordinator.swift`
+✅ **Use specific, descriptive names:** `StringValidation.swift`, `DateFormatting.swift`, `SessionManager.swift`
+
+See **ios-naming.mdc** for comprehensive naming conventions including when to use Service vs Repository vs Manager vs Helper.
 
 #### Dependency Issues
 
@@ -789,6 +757,7 @@ let client: NetworkingClient  // Protocol  ← GOOD!
 ### Related Rules
 
 For detailed information on related topics:
+- **Naming Conventions:** `ios-naming.mdc` - Comprehensive naming guidelines for types, variables, functions, and choosing between Service/Repository/Manager/Helper
 - **Project Structure:** `project-structure.mdc` - Where files go
 - **Configuration:** `ios-configuration.mdc` - Build configs and environments
 - **Navigation:** `ios-navigation.mdc` - Navigation patterns

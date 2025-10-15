@@ -70,7 +70,7 @@ public struct ComposeView: View {
                         }
                         
                         // Media picker button
-                        MediaPickerButton { item in
+                        MediaPickerButtonView { item in
                             vm.addMedia(item)
                         }
                         
@@ -204,7 +204,7 @@ struct MediaPreviewCard: View {
     }
 }
 
-struct MediaPickerButton: View {
+struct MediaPickerButtonView: View {
     let onMediaSelected: (MediaItem) -> Void
     @State private var isPressed = false
     

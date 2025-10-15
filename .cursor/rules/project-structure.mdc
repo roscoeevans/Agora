@@ -270,6 +270,7 @@ Resources/
 ### Related Rules
 
 For detailed information on specific topics:
+- **Naming Conventions:** `ios-naming.mdc` - Comprehensive naming guidelines for types, variables, functions, and component types
 - **Module standards:** `ios-module-standards.mdc` - How to create quality packages
 - **Configuration:** `ios-configuration.mdc` - Build configs, environments, OpenAPI
 - **Navigation:** `ios-navigation.mdc` - Navigation patterns and deep links

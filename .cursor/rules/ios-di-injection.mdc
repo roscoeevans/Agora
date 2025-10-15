@@ -63,6 +63,8 @@ Create a protocol + injectable type when the code:
 **Environment keys (SwiftUI):** in `Shared/AppFoundation`.
 - `Dependencies.swift` (container), `Dependencies+Environment.swift` (keys).
 
+**Note:** See **ios-naming.mdc** for comprehensive naming conventions including Service vs Repository vs Manager distinctions.
+
 ### Minimal Patterns
 
 #### 1) Protocol + Live Impl (Kits)
@@ -362,3 +364,10 @@ Benefits:
 - [ ] Add fake to testing support.
 - [ ] Wire in Composition Root; expose via `Environment(\.deps)` only if broadly used.
 - [ ] Add a thin coordinator/service in `Features/*` if it composes multiple dependencies.
+
+### Related Rules
+
+For detailed information on related topics:
+- **Naming Conventions:** `ios-naming.mdc` - Comprehensive naming for protocols, implementations, services, and choosing Service vs Repository vs Manager
+- **Module Standards:** `ios-module-standards.mdc` - Package structure and module organization
+- **Concurrency:** `swift-concurrency.mdc` - Actor patterns and Sendable requirements

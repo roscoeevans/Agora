@@ -1,0 +1,751 @@
+---
+description: When naming types, variables, functions, protocols, services, repositories, or any code entity in Swift. Use this for guidance on UpperCamelCase vs lowerCamelCase, choosing between Service/Repository/Manager/Helper, naming booleans, avoiding generic names, and ensuring clarity and consistency across the codebase.
+---
+
+## Agora iOS Naming Conventions (Swift 6.2 • iOS 26)
+
+### Core Principles
+
+**Clarity Over Brevity**
+- Prioritize descriptive names over short or clever ones
+- Names must make code intent obvious at a glance
+- Include all needed words, omit needless words
+- Example: `fetchUserProfile()` not `fetchData()` or `getUP()`
+
+**Consistency and Simplicity**
+- Use uniform naming patterns across all modules
+- Follow a single style guide throughout the codebase
+- Predictable patterns aid navigation and comprehension
+- All view models end in `ViewModel`, all services in `Service`, etc.
+
+**Follow Swift Conventions**
+- Write names in natural, fluent English
+- Use descriptive words, not acronyms (unless very well-known)
+- Avoid "cute" or unconventional names
+- Stick to standard terminology (industry terms of art)
+
+**Role-Based, Not Type-Based**
+- Name entities by what they do, not what type they are
+- Example: `url: URL` (role: address) not `string: String`
+- Every name answers "What is this used for?" not "What type is this?"
+
+### Case Conventions
+
+#### UpperCamelCase (PascalCase)
+
+**Use for:** Types (classes, structs, enums, protocols, typealiases)
+
+```swift
+// ✅ Good
+struct UserProfile { }
+class NetworkClient { }
+enum UserRole { }
+protocol AuthenticationService { }
+
+// ❌ Bad
+struct user_profile { }        // Wrong case
+class networkClient { }         // Wrong case
+enum USERROLE { }              // All caps not used in Swift
+```
+
+#### lowerCamelCase
+
+**Use for:** Variables, properties, functions, methods, enum cases
+
+```swift
+// ✅ Good
+let userName: String
+var isUserLoggedIn: Bool
+func fetchUserData() { }
+enum UserRole {
+    case admin
+    case member
+}
+
+// ❌ Bad
+let UserName: String           // Should be lowerCamelCase
+let user_name: String          // No underscores
+func FetchUserData() { }       // Should be lowerCamelCase
+```
+
+#### No Prefixes for Namespacing
+
+Swift modules automatically namespace types. Do not use project/module prefixes.
+
+```swift
+// ✅ Good
+class UserManager { }
+struct SessionStore { }
+
+// ❌ Bad
+class AGUserManager { }        // No "AG" for Agora
+class AgoraUserManager { }     // Module already namespaces
+class MyAppSessionStore { }    // Redundant prefix
+```
+
+#### Acronyms and Abbreviations
+
+Treat acronyms as words in CamelCase. Keep consistency.
+
+```swift
+// ✅ Good
+class URLSession { }           // URL all uppercase (well-known)
+let utf8Bytes: [UInt8]        // utf8 all lowercase in larger name
+let userID: UUID              // ID uppercase (very common)
+
+// ❌ Bad
+class UrlSession { }           // Mixed case in acronym
+class URLparser { }            // Inconsistent casing
+let msgCnt: Int               // Unclear abbreviation
+
+// Avoid obscure abbreviations
+let messageCount: Int         // ✅ Clear
+let msgCnt: Int              // ❌ Unclear
+```
+
+#### Constants
+
+Use lowerCamelCase even for constants (no ALL_CAPS).
+
+```swift
+// ✅ Good
+let maxRetries = 3
+static let defaultTimeout = 30.0
+
+// ❌ Bad
+let MAX_RETRIES = 3           // Not Swift style
+let DEFAULT_TIMEOUT = 30.0    // Use lowerCamelCase
+```
+
+### Type Naming (Classes, Structs, Enums, Protocols)
+
+#### Use Nouns or Noun Phrases
+
+Types represent entities or concepts, so use descriptive nouns.
+
+```swift
+// ✅ Good
+struct ProfileView { }
+class AccountService { }
+struct Transaction { }
+enum NetworkState { }
+
+// ❌ Bad
+struct FetchData { }          // Verb, not noun
+class DoStuff { }             // Too vague
+```
+
+#### Common Type Suffixes
+
+**Views (SwiftUI)**
+```swift
+// ✅ Recommended for app-specific views
+struct LoginView: View { }
+struct ProfileHeaderView: View { }
+
+// ✅ Also acceptable for component clarity
+struct SettingsScreen: View { }      // Root screen
+struct SettingsRowView: View { }     // Component within screen
+```
+
+**ViewModels (MVVM pattern)**
+```swift
+// ✅ Always include ViewModel suffix
+@Observable
+final class LoginViewModel { }
+
+@Observable
+final class ProfileViewModel { }
+
+// ❌ Bad - creates ambiguity
+class Login { }                // Is this a view, model, or VM?
+```
+
+**Services (business logic, external interactions)**
+```swift
+// ✅ Good - clear capability indication
+protocol AuthenticationService { }
+class LocationService { }
+struct AnalyticsService { }
+
+// See "Choosing Component Types" section for Service vs Repository
+```
+
+**Repositories (data access layer)**
+```swift
+// ✅ Good - clearly data-focused
+protocol UserRepository { }
+class CoreDataUserRepository: UserRepository { }
+struct RemoteProfileRepository { }
+```
+
+**Protocols**
+- Describe capability: use nouns or `-able`/`-ible` suffixes
+- Never prefix with "I" (not Swift style)
+
+```swift
+// ✅ Good
+protocol Drawable { }              // Capability
+protocol AuthenticationService { } // Service capability
+protocol Equatable { }            // Standard library pattern
+protocol ProgressReporting { }    // Behavior description
+
+// ❌ Bad
+protocol IUserService { }         // No "I" prefix
+protocol UserServiceProtocol { }  // Redundant "Protocol"
+```
+
+**Enums**
+```swift
+// ✅ Singular noun for the type
+enum UserRole {
+    case admin
+    case member
+    case guest
+}
+
+enum ColorPalette {
+    static let primary = Color.blue
+    static let secondary = Color.gray
+}
+```
+
+#### Avoid Generic Names
+
+Never use overly generic names that could apply to anything.
+
+```swift
+// ❌ Bad - too generic
+class Manager { }
+class Helper { }
+class Utility { }
+class DataManager { }            // What data?
+class StuffController { }
+class MiscHelpers { }
+
+// ✅ Good - specific and clear
+class FileCache { }
+class ImageLoader { }
+class SessionManager { }
+class DateFormatter { }
+class HashingUtility { }
+```
+
+**Rule:** If a name is so generic it could fit any class, refine it to communicate actual purpose.
+
+### Variable and Property Naming
+
+#### Descriptive, Intent-Revealing Names
+
+Variables should answer "What is this representing?" immediately.
+
+```swift
+// ✅ Good
+let userName: String
+let currentIndex: Int
+let connectionTimeout: TimeInterval
+
+// ❌ Bad
+let usrNm: String               // Abbreviated
+let currIdx: Int                // Abbreviated
+let x: Int                      // Too vague (except in tight loops)
+```
+
+#### Boolean Naming
+
+Prefix with `is`, `has`, `can`, `should` to read like an affirmative statement.
+
+```swift
+// ✅ Good
+var isLoading: Bool
+var hasFinishedLoading: Bool
+var canEditProfile: Bool
+var shouldShowWelcome: Bool
+
+// Usage reads naturally
+if isLoading { ... }
+guard canSendEmail else { ... }
+
+// ❌ Bad
+var loading: Bool               // Ambiguous
+var notDone: Bool              // Negative phrasing
+var enabled: Bool              // Could be clearer as isEnabled
+```
+
+#### Collections: Use Plural Forms
+
+Plural names immediately signal "multiple items."
+
+```swift
+// ✅ Good
+let users: [User]
+let selectedIDs: Set<UUID>
+let profilesByID: [UUID: Profile]
+
+// ❌ Bad
+let userList: [User]           // Type already known
+let userArray: [User]          // Redundant
+let user: [User]               // Singular is confusing
+```
+
+#### No Hungarian Notation or Type Tags
+
+Do not encode type information in names.
+
+```swift
+// ✅ Good
+let name: String
+let count: Int
+let users: [User]
+
+// ❌ Bad
+let strName: String            // Type prefix
+let intCount: Int             // Type prefix
+let arrUsers: [User]          // Type prefix
+let m_internalCount: Int      // Hungarian notation
+```
+
+**Exception:** Units or formats may be included for clarity.
+
+```swift
+// ✅ Acceptable when units matter
+let timeoutSeconds: TimeInterval
+let distanceMeters: Double
+```
+
+#### Avoid Unnecessary Words
+
+Don't include type names or redundant context.
+
+```swift
+// ✅ Good
+let users: [User]              // Type is clear
+var isAuthenticated: Bool      // Boolean is clear
+
+// ❌ Bad
+let usersArray: [User]         // Redundant
+var isAuthenticatedBool: Bool  // Redundant
+```
+
+#### Consistency in Related Variables
+
+Group related variables with consistent prefixes when helpful.
+
+```swift
+// ✅ Good - clear grouping
+let userFirstName: String
+let userLastName: String
+let userEmail: String
+
+// But within a User struct, don't be redundant
+struct User {
+    let firstName: String      // ✅ Context is already "User"
+    let lastName: String
+    let email: String
+}
+```
+
+### Function and Method Naming
+
+#### Use Verb Phrases for Actions
+
+Functions perform actions, so start with verbs.
+
+```swift
+// ✅ Good - clear action verbs
+func loadUserProfile() { }
+func sendMessage(to recipient: User) { }
+func updateUI() { }
+func calculateDistance() -> Double { }
+
+// ❌ Bad
+func data() { }                // What about data?
+func user() { }                // Is this getting or setting?
+```
+
+#### Swift's ed/ing Convention
+
+- **Mutating methods:** Use verb (command form)
+- **Non-mutating methods:** Use past tense or -ing form
+
+```swift
+// ✅ Standard library pattern
+array.sort()                   // Mutates in place
+let sorted = array.sorted()    // Returns new array
+
+array.append(item)             // Mutates
+let appended = array.appending(item)  // Returns new
+
+// Apply same pattern in your code
+extension Profile {
+    mutating func normalize() { }           // Mutates
+    func normalized() -> Profile { }        // Returns new
+}
+```
+
+#### Clear Intent at Call Site
+
+Method signatures should read like sentences.
+
+```swift
+// ✅ Good - reads naturally
+userRepository.save(user, to: .localStore)
+imageLoader.load(from: url, completion: { ... })
+
+// ❌ Bad - ambiguous
+userRepository.save(user, .localStore)     // What's the second param?
+imageLoader.load(url, { ... })             // from? with? using?
+```
+
+#### Boolean Methods
+
+Boolean-returning functions should read as questions.
+
+```swift
+// ✅ Good
+func userExists(id: UUID) -> Bool { }
+func isValid(password: String) -> Bool { }
+func hasPermission(for action: Action) -> Bool { }
+
+// Usage is clear
+if account.hasPermission(for: .delete) { ... }
+
+// ❌ Bad
+func checkUser(id: UUID) -> Bool { }       // Vague - checking what?
+func validatePassword() -> Bool { }        // Not a question
+```
+
+#### Avoid Ambiguity About Side Effects
+
+Names should hint at side effects or their absence.
+
+```swift
+// ✅ Good - implies action/side effect
+func performBackup() { }
+func sendAnalyticsEvent() { }
+func saveToDatabase() { }
+
+// ✅ Good - implies pure calculation
+func distance(from: Point, to: Point) -> Double { }
+func calculateTax(on amount: Decimal) -> Decimal { }
+
+// ❌ Bad - unclear if side effects occur
+func processData() { }         // What does "process" mean?
+func handleUser() { }          // Too vague
+```
+
+#### Factory Methods
+
+Use `make` prefix for static factory methods.
+
+```swift
+// ✅ Good
+static func makeGuestUser() -> User { }
+static func makeISO8601Formatter() -> DateFormatter { }
+
+// ✅ Also good for clarity
+static func defaultConfiguration() -> Config { }
+```
+
+### Choosing Component Types
+
+Critical distinction for architecture clarity.
+
+#### Service
+
+**When to use:** Business logic, external interactions, use-case orchestration.
+
+**Characteristics:**
+- Orchestrates operations (may call multiple repositories/APIs)
+- Represents a capability or subsystem
+- Doesn't primarily own data storage
+- Often interacts with external systems (network, sensors, etc.)
+
+```swift
+// ✅ Good Service examples
+protocol AuthenticationService {
+    func signIn(credentials: Credentials) async throws
+    func signOut() async throws
+}
+
+class LocationService {
+    func startMonitoring() { }
+    func getCurrentLocation() async -> Location { }
+}
+
+struct AnalyticsService {
+    func track(event: Event) { }
+}
+```
+
+**When to use Service naming:** Long-lived processes, external system interactions, cross-cutting concerns (auth, logging, networking).
+
+#### Repository
+
+**When to use:** Data access layer, persistence abstraction.
+
+**Characteristics:**
+- Handles fetching, storing, retrieving data
+- Abstracts data source (database, file, network, cache)
+- Minimal business logic (mostly data transformation)
+- Provides clean API hiding storage implementation details
+
+```swift
+// ✅ Good Repository examples
+protocol UserRepository {
+    func fetchUser(id: UUID) async throws -> User
+    func saveUser(_ user: User) async throws
+    func deleteUser(id: UUID) async throws
+}
+
+class CoreDataUserRepository: UserRepository {
+    // Implementation uses Core Data internally
+}
+
+protocol SettingsRepository {
+    func loadSettings() -> Settings
+    func saveSettings(_ settings: Settings)
+}
+```
+
+**When to use Repository naming:** Any data source abstraction, CRUD operations, caching layers.
+
+#### Manager
+
+**Use sparingly.** Manager is often too generic.
+
+**When acceptable:**
+- Coordinates complex processes or resources
+- Manages lifecycle or state of a subsystem
+- Has multi-faceted coordinating role
+
+```swift
+// ✅ Acceptable Manager usage
+class DownloadManager {
+    // Coordinates multiple concurrent downloads
+    // Manages queue, retry logic, bandwidth
+}
+
+class SessionManager {
+    // Manages user session lifecycle
+    // Handles token refresh, expiration, state
+}
+
+// ❌ Better alternatives exist
+class DataManager { }          // → Use Repository or Service
+class NetworkManager { }       // → Use NetworkClient or NetworkService
+```
+
+**Rule:** If "Manager" could be replaced with more specific term (Service, Repository, Coordinator, Client), use the specific term.
+
+#### Helper / Utility
+
+**Avoid as primary name.** These become dumping grounds.
+
+**Better alternatives:**
+- Extension on the type being helped
+- Namespace via enum with static methods
+- Specific utility name reflecting domain
+
+```swift
+// ❌ Bad - generic helpers
+class StringHelper { }
+class DateHelper { }
+class NetworkHelper { }
+
+// ✅ Good - use extensions
+extension String {
+    func validateEmail() -> Bool { }
+}
+
+extension Date {
+    func isWithinLastWeek() -> Bool { }
+}
+
+// ✅ Good - specific utility namespaces
+enum DateFormatting {
+    static func iso8601String(from date: Date) -> String { }
+}
+
+struct HashingUtility {
+    static func sha256(_ input: String) -> String { }
+}
+
+// ✅ Good - or promote to proper service
+class NetworkService { }       // Better than NetworkHelper
+```
+
+**Rule:** If a "Helper" does significant work, it's probably a Service. If it's simple utilities, use extensions or specific namespace.
+
+#### Client
+
+**When to use:** Low-level communication with external systems.
+
+```swift
+// ✅ Good Client examples
+protocol NetworkingClient {
+    func send<T: Decodable>(_ request: HTTPRequest) async throws -> T
+}
+
+class HTTPClient { }
+class WebSocketClient { }
+class APIClient { }
+```
+
+**Client vs Service:** Client is lower-level (handles protocol/transport), Service is higher-level (business logic using clients).
+
+#### Controller / Coordinator
+
+**When to use:** Flow control, navigation, lifecycle management.
+
+```swift
+// ✅ Good Controller/Coordinator examples
+class NavigationCoordinator {
+    func navigateTo(route: Route) { }
+}
+
+class OnboardingCoordinator {
+    func start() { }
+    func showNextStep() { }
+}
+
+// Not for UI (SwiftUI uses Views + ViewModels, not ViewControllers)
+```
+
+### Protocol vs Implementation Naming
+
+For dependency injection, you'll have protocols and concrete implementations.
+
+#### Protocol Naming
+
+Name protocols by the capability they represent (no "Protocol" suffix).
+
+```swift
+// ✅ Good
+protocol UserService { }
+protocol NetworkingClient { }
+protocol AuthenticationService { }
+
+// ❌ Bad
+protocol UserServiceProtocol { }   // Redundant suffix
+protocol IUserService { }          // Wrong prefix (not Swift style)
+```
+
+#### Implementation Naming
+
+Add descriptive suffix or prefix indicating implementation type.
+
+```swift
+// ✅ Good - indicates implementation strategy
+class DefaultUserService: UserService { }
+class FirebaseAuthService: AuthenticationService { }
+class CoreDataUserRepository: UserRepository { }
+class MockNetworkingClient: NetworkingClient { }    // For testing
+
+// ✅ Also acceptable
+class UserServiceImpl: UserService { }              // Generic implementation
+class RemoteUserService: UserService { }            // Remote vs local
+
+// Multiple implementations show their difference
+class FirebaseUserRepository: UserRepository { }
+class LocalUserRepository: UserRepository { }
+```
+
+**Pattern:** Protocol is clean domain name, implementation includes distinguishing detail.
+
+### SwiftUI-Specific Naming
+
+#### State Properties
+
+Follow standard variable conventions with `@State`, `@Published`, `@Observable`.
+
+```swift
+// ✅ Good
+struct LoginView: View {
+    @State private var isLoading: Bool = false
+    @State private var username: String = ""
+    @State private var selectedTab: Tab = .home
+}
+
+@Observable
+final class ProfileViewModel {
+    var isEditing: Bool = false           // Boolean prefix
+    var errorMessage: String?
+}
+
+// ❌ Bad
+@State private var loadingState: Bool    // Redundant "state"
+@State private var editing: Bool         // Missing "is" prefix
+```
+
+#### Environment Dependencies
+
+Name injected properties by their role.
+
+```swift
+// ✅ Good
+struct ProfileView: View {
+    @Environment(\.deps) private var deps
+    
+    // Or more specific
+    @EnvironmentObject var authService: AuthenticationService
+}
+
+// In initializers
+init(authService: AuthenticationService) {
+    self.authService = authService
+}
+```
+
+#### Preview and Test Data
+
+Use `.sample`, `.preview`, `.mock`, `.fixture` for test/preview data.
+
+```swift
+// ✅ Good
+extension User {
+    static let sample = User(name: "Test User", age: 42)
+    static let preview = User(name: "Preview User", age: 30)
+}
+
+// Usage
+struct ProfileView_Previews: PreviewProvider {
+    static var previews: some View {
+        ProfileView(user: .sample)
+    }
+}
+```
+
+### Quick Reference
+
+#### Type Naming
+- **Classes, Structs, Enums:** UpperCamelCase, descriptive nouns
+- **Protocols:** Capability name (no "Protocol" suffix, no "I" prefix)
+- **Implementations:** `{Protocol}Live`, `{Protocol}Impl`, `{Strategy}{Protocol}`
+
+#### Variable/Property Naming
+- **Variables:** lowerCamelCase, descriptive
+- **Booleans:** `is`, `has`, `can`, `should` prefix
+- **Collections:** Plural names
+- **Constants:** lowerCamelCase (no ALL_CAPS)
+
+#### Function Naming
+- **Actions:** Start with verb
+- **Mutating:** Verb (`sort()`, `append()`)
+- **Non-mutating:** Past tense (`sorted()`, `appending()`)
+- **Boolean returns:** Question form (`isValid()`, `hasPermission()`)
+
+#### Component Types
+- **Service:** Business logic, external interactions
+- **Repository:** Data access, persistence
+- **Manager:** Use sparingly (complex coordination only)
+- **Helper/Utility:** Avoid; use extensions or specific names
+- **Client:** Low-level communication
+- **Coordinator:** Flow/navigation control
+
+### Related Rules
+
+- **ios-di-injection.mdc**: DI-specific naming (protocols, factories, Live suffix)
+- **ios-module-standards.mdc**: Package/module naming, test naming
+- **project-structure.mdc**: File organization and placement
+- **swift-concurrency.mdc**: Actor and async naming patterns
