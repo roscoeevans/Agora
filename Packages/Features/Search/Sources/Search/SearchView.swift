@@ -19,7 +19,7 @@ public struct SearchView: View {
     public var body: some View {
         Group {
             if let viewModel = viewModel {
-                NavigationStack {
+                ScrollView {
                     VStack(spacing: 0) {
                         // Search results
                         if searchText.isEmpty {
@@ -32,14 +32,14 @@ public struct SearchView: View {
                             SearchResultsList(results: viewModel.searchResults)
                         }
                     }
-                    .navigationTitle("Search")
-                    .navigationBarTitleDisplayMode(.large)
-                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-                    .searchable(text: $searchText, prompt: "Search users and posts")
-                    .onChange(of: searchText) { _, newValue in
-                        Task {
-                            await viewModel.search(query: newValue)
-                        }
+                    .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
+                }
+                .navigationTitle("Search")
+                .navigationBarTitleDisplayMode(.large)
+                .searchable(text: $searchText, prompt: "Search users and posts")
+                .onChange(of: searchText) { _, newValue in
+                    Task {
+                        await viewModel.search(query: newValue)
                     }
                 }
             } else {
@@ -119,20 +119,19 @@ struct SearchResultsList: View {
     let results: [SearchResult]
     
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: SpacingTokens.md) {
-                ForEach(results, id: \.id) { result in
-                    SearchResultCard(result: result)
-                }
+        LazyVStack(spacing: SpacingTokens.md) {
+            ForEach(results, id: \.id) { result in
+                SearchResultCard(result: result)
             }
-            .padding(SpacingTokens.md)
         }
+        .padding(SpacingTokens.md)
     }
 }
 
 struct SearchResultCard: View {
     let result: SearchResult
     @State private var isPressed = false
+    @Environment(\.navigateToSearchResult) private var navigateToSearchResult
     
     var body: some View {
         VStack(alignment: .leading, spacing: SpacingTokens.sm) {
@@ -186,7 +185,10 @@ struct SearchResultCard: View {
             // Add haptic feedback
             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
             impactFeedback.impactOccurred()
-            // TODO: Navigate to result
+            // Navigate to search result
+            if let navigate = navigateToSearchResult, let uuid = UUID(uuidString: result.id) {
+                navigate.action(uuid)
+            }
         }
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isPressed = pressing

@@ -16,6 +16,7 @@ public typealias HomeFollowingView = FollowingView
 
 public struct FollowingView: View {
     @Environment(\.deps) private var deps
+    @Environment(\.navigateToPost) private var navigateToPost
     @State private var viewModel: FollowingViewModel?
     
     public init() {}
@@ -23,39 +24,36 @@ public struct FollowingView: View {
     public var body: some View {
         Group {
             if let viewModel = viewModel {
-                NavigationStack {
-                    ScrollView {
-                        LazyVStack(spacing: SpacingTokens.md) {
-                            if viewModel.posts.isEmpty && !viewModel.isLoading {
-                                EmptyStateView()
-                            } else {
-                                ForEach(viewModel.posts, id: \.id) { post in
-                                    PostCardView(post: post) {
-                                        // TODO: Navigate to post detail
+                ScrollView {
+                    LazyVStack(spacing: SpacingTokens.md) {
+                        if viewModel.posts.isEmpty && !viewModel.isLoading {
+                            EmptyStateView()
+                        } else {
+                            ForEach(viewModel.posts, id: \.id) { post in
+                                PostCardView(post: post) {
+                                    if let navigate = navigateToPost, let uuid = UUID(uuidString: post.id) {
+                                        navigate.action(uuid)
                                     }
                                 }
                             }
                         }
-                        .padding(.horizontal, SpacingTokens.md)
                     }
-                    .navigationTitle("Following")
-                    .navigationBarTitleDisplayMode(.large)
-                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-                    .refreshable {
-                        await viewModel.refresh()
+                    .padding(.horizontal, SpacingTokens.md)
+                }
+                .refreshable {
+                    await viewModel.refresh()
+                }
+                .overlay {
+                    if viewModel.isLoading && viewModel.posts.isEmpty {
+                        LoadingView()
                     }
-                    .overlay {
-                        if viewModel.isLoading && viewModel.posts.isEmpty {
-                            LoadingView()
-                        }
+                }
+                .alert("Error", isPresented: .constant(viewModel.error != nil)) {
+                    Button("OK") {
+                        viewModel.error = nil
                     }
-                    .alert("Error", isPresented: .constant(viewModel.error != nil)) {
-                        Button("OK") {
-                            viewModel.error = nil
-                        }
-                    } message: {
-                        Text(viewModel.error?.localizedDescription ?? "An unknown error occurred")
-                    }
+                } message: {
+                    Text(viewModel.error?.localizedDescription ?? "An unknown error occurred")
                 }
             } else {
                 LoadingView()

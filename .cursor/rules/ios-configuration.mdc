@@ -1,0 +1,564 @@
+---
+description: When setting up build configurations, managing Xcode schemes (Debug/Staging/Production), configuring environment-specific settings, working with OpenAPI code generation, managing xcconfig files, setting up API endpoints, or handling app secrets and configuration plists.
+alwaysApply: false
+---
+## Agora iOS Build Configuration
+
+### Overview
+
+This rule covers all aspects of configuring and building the Agora iOS app across different environments (Staging and Production), including Xcode schemes, xcconfig files, environment plists, OpenAPI integration, and resource management.
+
+### Xcode Schemes
+
+The project includes two environment-specific schemes:
+
+#### Agora Staging
+- **Purpose:** Pre-production testing with real or mock services
+- **Bundle ID:** `Ergo-Sum.Agora.stg`
+- **Display Name:** "Agora Staging"
+- **Build Configuration:** Debug-Staging (debug) or Release-Staging (TestFlight)
+- **Compilation Conditions:** `DEBUG`, `STAGING` (debug) or `STAGING` (release)
+- **Use Cases:**
+  - Local development with mock services
+  - QA testing with real backend
+  - Beta testing via TestFlight
+  - Integration testing
+
+#### Agora Production
+- **Purpose:** App Store releases
+- **Bundle ID:** `Ergo-Sum.Agora`
+- **Display Name:** "Agora"
+- **Build Configuration:** Release-Production
+- **Compilation Conditions:** None (production is default)
+- **Use Cases:**
+  - App Store distribution
+  - Production builds
+
+**Scheme Selection:** Always verify you've selected the correct scheme in Xcode before building or running.
+
+### xcconfig File Hierarchy
+
+The project uses hierarchical xcconfig files for environment-specific builds:
+
+```
+Resources/Configs/
+├── Base.xcconfig                 # Shared settings across all environments
+├── Debug.xcconfig                # Base debug settings (extends Base)
+├── Release.xcconfig              # Base release settings (extends Base)
+├── Debug-Staging.xcconfig        # Staging environment debug builds
+├── Release-Staging.xcconfig      # Staging environment release builds
+└── Release-Production.xcconfig   # Production release builds
+```
+
+#### Configuration Hierarchy
+
+```
+Base.xcconfig (Swift version, deployment target, etc.)
+    ↓
+Debug.xcconfig / Release.xcconfig (build-type settings)
+    ↓
+Debug-Staging / Release-Staging / Release-Production (environment-specific)
+```
+
+#### Key Settings in Environment Configs
+
+**Must be defined in each environment-specific xcconfig:**
+
+```xcconfig
+// Debug-Staging.xcconfig
+PRODUCT_BUNDLE_IDENTIFIER = Ergo-Sum.Agora.stg
+INFOPLIST_KEY_CFBundleDisplayName = Agora Staging
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEBUG STAGING
+AGORA_ENV = staging
+
+// Release-Production.xcconfig
+PRODUCT_BUNDLE_IDENTIFIER = Ergo-Sum.Agora
+INFOPLIST_KEY_CFBundleDisplayName = Agora
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited)
+AGORA_ENV = production
+```
+
+### Environment Configuration Files
+
+Environment-specific secrets and configuration are stored in separate plist files:
+
+```
+Resources/Configs/
+├── Staging.plist              # Staging client secrets (gitignored)
+├── Production.plist           # Production client secrets (gitignored)
+├── Staging.plist.example      # Staging template with fake values
+├── Production.plist.example   # Production template with fake values
+├── .secrets                   # Operational secrets (gitignored)
+└── README.md                  # Setup instructions
+```
+
+#### Client Secrets vs Operational Secrets
+
+**Client Secrets (in `.plist` files):**
+- Used by the iOS app at runtime
+- Loaded via `AppConfig.swift`
+- Safe to include in client applications (protected by service-level security)
+- **Examples:** anon keys, public API endpoints, SDK keys
+- **Committed:** Never (use `.plist.example` templates instead)
+
+**Operational Secrets (in `.secrets` file):**
+- Used by developers for server-side operations only
+- **NEVER** included in the iOS app bundle
+- For database administration, migrations, CI/CD pipelines
+- **Examples:** service role keys, database passwords, admin tokens
+- **Format:** Plain text documentation file for developer reference
+- **Committed:** Never (gitignored)
+
+#### Required Keys in Environment Plists
+
+All environment plist files must include these keys:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Backend Configuration -->
+    <key>apiBaseURL</key>
+    <string>https://api.example.com</string>
+    
+    <key>webShareBaseURL</key>
+    <string>https://share.example.com</string>
+    
+    <!-- Supabase Configuration -->
+    <key>supabaseURL</key>
+    <string>https://xxxxx.supabase.co</string>
+    
+    <key>supabaseAnonKey</key>
+    <string>eyJhbGci...</string>
+    
+    <!-- Third-Party Services -->
+    <key>posthogKey</key>
+    <string>phc_xxxxx</string>
+    
+    <key>sentryDSN</key>
+    <string>https://xxxxx@sentry.io/xxxxx</string>
+    
+    <key>twilioVerifyServiceSid</key>
+    <string>VAxxxxx</string>
+    
+    <key>oneSignalAppId</key>
+    <string>xxxxx-xxxxx-xxxxx</string>
+    
+    <!-- Development Settings -->
+    <key>mockExternalServices</key>
+    <true/> <!-- or <false/> for production -->
+</dict>
+</plist>
+```
+
+#### Loading Configuration in Code
+
+Configuration is loaded via `AppConfig.swift` in AppFoundation:
+
+```swift
+// In Packages/Shared/AppFoundation/Sources/AppFoundation/AppConfig.swift
+public struct AppConfig: Sendable {
+    public let apiBaseURL: URL
+    public let supabaseURL: URL
+    public let supabaseAnonKey: String
+    public let posthogKey: String
+    public let mockExternalServices: Bool
+    // ... other properties
+    
+    public static func load() -> AppConfig {
+        #if STAGING
+        let plistName = "Staging"
+        #else
+        let plistName = "Production"
+        #endif
+        
+        guard let path = Bundle.main.path(forResource: plistName, ofType: "plist"),
+              let dict = NSDictionary(contentsOfFile: path) else {
+            fatalError("Could not load \(plistName).plist")
+        }
+        
+        // Parse and return configuration
+    }
+}
+```
+
+### OpenAPI Integration
+
+**Purpose:** Type-safe API client generation from OpenAPI specifications
+
+#### Directory Structure
+
+```
+OpenAPI/
+├── agora.yaml              # OpenAPI 3.0 spec (source of truth for API)
+├── openapi-config.yaml     # Generator configuration
+├── VERSION.lock            # Generator version (auto-created, committed)
+└── README.md               # OpenAPI documentation and workflow
+```
+
+#### Generated Code Location
+
+```
+Packages/Kits/Networking/Sources/Networking/Generated/
+└── *.swift                 # Generated types, client, and operations (committed)
+```
+
+#### Pre-Generation Approach
+
+**Key Concept:** Code is generated **before** compilation (not during build)
+
+**Workflow:**
+
+1. Edit OpenAPI spec:
+   ```bash
+   vim OpenAPI/agora.yaml
+   ```
+
+2. Generate Swift client code:
+   ```bash
+   make api-gen
+   ```
+
+3. Review and commit changes:
+   ```bash
+   git diff Packages/Kits/Networking/Sources/Networking/Generated/
+   git add OpenAPI/ Packages/Kits/Networking/Sources/Networking/Generated/
+   git commit -m "Update API endpoints"
+   ```
+
+**Why commit generated code:**
+- Fast builds (no generation during compilation)
+- Predictable code and diffs
+- Version control visibility
+- CI/CD can verify sync between spec and generated code
+
+#### Generator Installation
+
+**Option 1 - Mint (Recommended):**
+```bash
+mint install apple/swift-openapi-generator
+```
+
+**Option 2 - Homebrew:**
+```bash
+brew install swift-openapi-generator
+```
+
+**Option 3 - Manual (fallback in script):**
+```bash
+# See Scripts/generate-openapi.sh for multiple installation methods
+```
+
+#### Generator Configuration
+
+**File:** `OpenAPI/openapi-config.yaml`
+
+```yaml
+generation:
+  accessModifier: public              # Public for use in features
+  addSendableConformance: true        # Swift 6.2 concurrency
+  asyncClient: true                   # Async/await support
+  concurrency:
+    useActors: true                   # Actor-based thread safety
+
+output:
+  paths:
+    sources: "../Packages/Kits/Networking/Sources/Networking/Generated"
+
+options:
+  stableFileNames: true               # Consistent naming for git
+  datesAsISO8601: true                # ISO 8601 date format
+```
+
+#### Networking Kit Integration
+
+The Networking Kit wraps generated code with app-specific abstractions:
+
+```swift
+// In Packages/Kits/Networking/
+
+// High-level protocol
+public protocol AgoraAPIClient {
+    func fetchPosts() async throws -> [Post]
+    func createPost(_ post: NewPost) async throws -> Post
+}
+
+// Production implementation using generated code
+public final class OpenAPIAgoraClient: AgoraAPIClient {
+    // Uses generated Client and Operations
+}
+
+// Mock implementation for staging
+public final class StubAgoraClient: AgoraAPIClient {
+    // Returns mock data
+}
+
+// Factory selects appropriate client
+public enum NetworkingServiceFactory {
+    public static func createClient(config: AppConfig) -> AgoraAPIClient {
+        if config.mockExternalServices {
+            return StubAgoraClient()
+        } else {
+            return OpenAPIAgoraClient(config: config)
+        }
+    }
+}
+```
+
+#### Version Control
+
+**Commit these files:**
+- ✅ `OpenAPI/agora.yaml` (spec)
+- ✅ `OpenAPI/openapi-config.yaml` (config)
+- ✅ `OpenAPI/VERSION.lock` (generator version)
+- ✅ `Packages/Kits/Networking/Sources/Networking/Generated/*.swift` (generated code)
+
+**Ignore these:**
+- ❌ `OpenAPI/.tools/` (local generator builds)
+
+#### CI Integration
+
+Ensure generated code stays in sync with spec:
+
+```bash
+# In CI pipeline
+make api-gen
+git diff --exit-code Packages/Kits/Networking/Sources/Networking/Generated
+```
+
+If diff is not empty, CI fails with message: "Generated code out of sync. Run `make api-gen` and commit."
+
+#### Package.swift Dependencies
+
+The Networking Kit requires these dependencies:
+
+```swift
+// In Packages/Kits/Networking/Package.swift
+dependencies: [
+    .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.0.0"),
+    .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
+    .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0")
+]
+```
+
+### Resource Management
+
+#### App-Level Resources (`Resources/`)
+
+```
+Resources/
+├── AgoraApp.swift              # Main app entry point (@main)
+├── ContentView.swift           # Root SwiftUI view
+├── RootView.swift              # Root TabView container
+├── LoadingView.swift           # App loading state view
+├── Assets.xcassets/            # App-level assets
+│   ├── AppIcon.appiconset/
+│   ├── AppIcon-Staging.appiconset/
+│   ├── AppIcon-Dev.appiconset/
+│   └── AccentColor.colorset/
+├── Info.plist                  # App configuration and capabilities
+├── Agora.entitlements          # App entitlements (Sign in with Apple, etc.)
+└── Localizable.strings         # App-level localized strings
+```
+
+#### Package-Level Resources
+
+Each package can include its own resources:
+
+```
+PackageName/
+├── Sources/
+│   └── PackageName/
+│       └── Resources/              # Package-specific resources
+│           ├── Assets.xcassets/
+│           ├── Localizable.strings
+│           └── [other resources]
+└── Package.swift                   # Must declare resources in manifest
+```
+
+**In Package.swift:**
+
+```swift
+.target(
+    name: "PackageName",
+    dependencies: ["DesignSystem"],
+    resources: [
+        .process("Resources")
+    ]
+)
+```
+
+#### Asset Naming Conventions
+
+- **App Icons:** `AppIcon` (production), `AppIcon-Staging`, `AppIcon-Dev`
+- **Colors:** Use semantic names (e.g., `AccentColor`, `PrimaryBackground`)
+- **Images:** Use descriptive names (e.g., `onboarding-welcome`, `icon-checkmark`)
+
+### Build Scripts
+
+Scripts are located in `Scripts/` directory:
+
+```
+Scripts/
+├── prebuild.sh                # Pre-build validation and setup
+├── generate-openapi.sh        # OpenAPI code generation
+├── ci-postbuild.sh            # CI post-build tasks
+└── run-ui-tests.sh            # UI test runner
+```
+
+#### Script Requirements
+
+1. **Shebang:** Start with `#!/bin/bash` or `#!/bin/zsh`
+2. **Error Handling:** Use `set -e` to exit on errors
+3. **Logging:** Use `echo` for progress updates
+4. **Executable:** Make executable with `chmod +x`
+5. **Documentation:** Include header comment explaining purpose
+
+**Example:**
+
+```bash
+#!/bin/bash
+# Generates Swift client code from OpenAPI specification
+# Usage: ./generate-openapi.sh
+
+set -e
+
+echo "🔧 Generating OpenAPI client..."
+cd OpenAPI/
+swift-openapi-generator generate agora.yaml --config openapi-config.yaml
+echo "✅ OpenAPI client generated successfully"
+```
+
+### Makefile Commands
+
+The root `Makefile` provides convenient build commands:
+
+```makefile
+# OpenAPI commands
+api-gen:          # Generate API client from OpenAPI spec
+	@./Scripts/generate-openapi.sh
+
+api-clean:        # Remove generated API files
+	@rm -rf Packages/Kits/Networking/Sources/Networking/Generated
+
+# Build commands
+build-staging:    # Build for staging environment
+	xcodebuild -scheme "Agora Staging" -configuration Debug-Staging
+
+build-production: # Build for production
+	xcodebuild -scheme "Agora Production" -configuration Release-Production
+
+# Test commands
+test:             # Run unit tests
+	swift test
+
+ui-test:          # Run UI tests
+	./Scripts/run-ui-tests.sh
+```
+
+**Usage:**
+
+```bash
+make api-gen              # Generate OpenAPI client
+make build-staging        # Build staging
+make test                 # Run tests
+```
+
+### Common Configuration Tasks
+
+#### Adding a New Environment Variable
+
+1. **Add to both environment plists** (`Staging.plist`, `Production.plist`):
+   ```xml
+   <key>newConfigKey</key>
+   <string>value</string>
+   ```
+
+2. **Add to example files** with fake values:
+   ```xml
+   <!-- Staging.plist.example -->
+   <key>newConfigKey</key>
+   <string>fake-value-for-testing</string>
+   ```
+
+3. **Update AppConfig struct:**
+   ```swift
+   public struct AppConfig: Sendable {
+       // ... existing properties
+       public let newConfigKey: String
+   }
+   ```
+
+4. **Update AppConfig.load():**
+   ```swift
+   guard let newConfigKey = dict["newConfigKey"] as? String else {
+       fatalError("Missing newConfigKey in plist")
+   }
+   ```
+
+#### Adding a New API Endpoint
+
+1. **Edit OpenAPI spec:**
+   ```bash
+   vim OpenAPI/agora.yaml
+   ```
+
+2. **Add endpoint definition:**
+   ```yaml
+   paths:
+     /api/v1/new-endpoint:
+       get:
+         operationId: getNewData
+         responses:
+           '200':
+             description: Success
+   ```
+
+3. **Generate code:**
+   ```bash
+   make api-gen
+   ```
+
+4. **Add high-level method to AgoraAPIClient:**
+   ```swift
+   func fetchNewData() async throws -> NewData
+   ```
+
+5. **Implement in OpenAPIAgoraClient and StubAgoraClient**
+
+6. **Commit changes:**
+   ```bash
+   git add OpenAPI/ Packages/Kits/Networking/Sources/Networking/Generated/
+   git commit -m "Add new-endpoint API"
+   ```
+
+### Environment Setup for New Developers
+
+1. **Clone repository**
+
+2. **Copy example plists:**
+   ```bash
+   cp Resources/Configs/Staging.plist.example Resources/Configs/Staging.plist
+   cp Resources/Configs/Production.plist.example Resources/Configs/Production.plist
+   ```
+
+3. **Fill in real values** (ask team for credentials)
+
+4. **Install OpenAPI generator:**
+   ```bash
+   mint install apple/swift-openapi-generator
+   ```
+
+5. **Verify setup:**
+   ```bash
+   make api-gen       # Should succeed
+   make build-staging # Should build successfully
+   ```
+
+### Related Documentation
+
+- **Project Structure:** `project-structure.mdc` - Where files go
+- **Module Standards:** `ios-module-standards.mdc` - How to create packages
+- **Environment Strategy:** See `STAGING_ENVIRONMENT_STATUS.md` for environment details
+- **OpenAPI Integration:** See `OpenAPI/README.md` for spec editing workflow

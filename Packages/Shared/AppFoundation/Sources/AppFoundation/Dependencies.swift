@@ -288,18 +288,23 @@ public struct Dependencies: Sendable {
     /// Environment configuration (build settings, feature flags)
     public let environment: any EnvironmentConfig
     
+    /// Appearance preference (light/dark mode)
+    public let appearance: AppearancePreference
+    
     // MARK: - Initialization
     
     public init(
         networking: any AgoraAPIClient,
         auth: AuthServiceProtocol,
         analytics: any AnalyticsClient = NoOpAnalyticsClient(),
-        environment: any EnvironmentConfig
+        environment: any EnvironmentConfig,
+        appearance: AppearancePreference
     ) {
         self.networking = networking
         self.auth = auth
         self.analytics = analytics
         self.environment = environment
+        self.appearance = appearance
     }
 }
 
@@ -336,7 +341,8 @@ extension Dependencies {
             networking: networking,
             auth: auth,
             analytics: NoOpAnalyticsClient(),
-            environment: EnvironmentConfigLive()
+            environment: EnvironmentConfigLive(),
+            appearance: AppearancePreferenceLive()
         )
     }
     
@@ -347,18 +353,21 @@ extension Dependencies {
     ///   - auth: Optional custom auth service (defaults to mock)
     ///   - analytics: Optional custom analytics client (defaults to no-op)
     ///   - environment: Optional custom environment config (defaults to test config)
+    ///   - appearance: Optional custom appearance preference (defaults to live with light mode)
     /// - Returns: Dependencies configured for testing
     public static func test(
         networking: (any AgoraAPIClient)? = nil,
         auth: AuthServiceProtocol? = nil,
         analytics: (any AnalyticsClient)? = nil,
-        environment: (any EnvironmentConfig)? = nil
+        environment: (any EnvironmentConfig)? = nil,
+        appearance: AppearancePreference? = nil
     ) -> Dependencies {
         return Dependencies(
             networking: networking ?? PreviewStubClient(),
             auth: auth ?? MockAuthService(),
             analytics: analytics ?? NoOpAnalyticsClient(),
-            environment: environment ?? EnvironmentConfigFake()
+            environment: environment ?? EnvironmentConfigFake(),
+            appearance: appearance ?? AppearancePreferenceLive()
         )
     }
     #endif
@@ -374,7 +383,8 @@ extension Dependencies {
             networking: self.networking,
             auth: self.auth,
             analytics: analytics,
-            environment: self.environment
+            environment: self.environment,
+            appearance: self.appearance
         )
     }
 }

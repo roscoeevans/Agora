@@ -18,43 +18,42 @@ public struct DMThreadsView: View {
     public var body: some View {
         Group {
             if let viewModel = viewModel {
-                NavigationStack {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            if viewModel.threads.isEmpty && !viewModel.isLoading {
-                                EmptyStateView()
-                            } else {
-                                ForEach(viewModel.threads, id: \.id) { thread in
-                                    DMThreadRow(thread: thread) {
-                                        // TODO: Navigate to chat view
-                                    }
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        if viewModel.threads.isEmpty && !viewModel.isLoading {
+                            EmptyStateView()
+                        } else {
+                            ForEach(viewModel.threads, id: \.id) { thread in
+                                DMThreadRow(thread: thread) {
+                                    // TODO: Navigate to chat view
                                 }
                             }
                         }
                     }
-                    .navigationTitle("Messages")
-                    .navigationBarTitleDisplayMode(.large)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(action: {
-                                // TODO: Start new conversation
-                            }) {
-                                Image(systemName: "square.and.pencil")
-                                    .foregroundColor(ColorTokens.agoraBrand)
-                            }
+                    .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
+                }
+                .navigationTitle("Messages")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            // TODO: Start new conversation
+                        }) {
+                            Image(systemName: "square.and.pencil")
+                                .foregroundColor(ColorTokens.agoraBrand)
                         }
                     }
-                    .refreshable {
-                        await viewModel.refresh()
+                }
+                .refreshable {
+                    await viewModel.refresh()
+                }
+                .overlay {
+                    if viewModel.isLoading && viewModel.threads.isEmpty {
+                        LoadingView()
                     }
-                    .overlay {
-                        if viewModel.isLoading && viewModel.threads.isEmpty {
-                            LoadingView()
-                        }
-                    }
-                    .task {
-                        await viewModel.loadThreads()
-                    }
+                }
+                .task {
+                    await viewModel.loadThreads()
                 }
             } else {
                 LoadingView()

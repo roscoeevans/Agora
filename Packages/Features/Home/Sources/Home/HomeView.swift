@@ -8,37 +8,48 @@
 import SwiftUI
 import HomeForYou
 import HomeFollowing
+import Compose
 
 public struct HomeView: View {
     @State private var selectedFeed: FeedType = .forYou
+    @State private var showingCompose = false
     
     public init() {}
     
     public var body: some View {
-        NavigationStack {
-            Group {
-                switch selectedFeed {
-                case .forYou:
-                    HomeForYouView()
-                case .following:
-                    HomeFollowingView()
-                }
+        Group {
+            switch selectedFeed {
+            case .forYou:
+                HomeForYouView(onComposeAction: { showingCompose = true })
+            case .following:
+                HomeFollowingView()
             }
-            .navigationTitle(selectedFeed.title)
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Picker("Feed Type", selection: $selectedFeed) {
-                        ForEach(FeedType.allCases, id: \.self) { feedType in
-                            Text(feedType.title)
-                                .tag(feedType)
-                        }
+        }
+        .navigationTitle(selectedFeed.title)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    showingCompose = true
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                }
+                .accessibilityLabel("Create a post")
+            }
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Picker("Feed Type", selection: $selectedFeed) {
+                    ForEach(FeedType.allCases, id: \.self) { feedType in
+                        Text(feedType.title)
+                            .tag(feedType)
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .frame(width: 200)
                 }
+                .pickerStyle(SegmentedPickerStyle())
+                .frame(width: 200)
             }
+        }
+        .sheet(isPresented: $showingCompose) {
+            ComposeView()
         }
     }
 }

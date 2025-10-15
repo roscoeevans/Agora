@@ -183,15 +183,13 @@ public struct AgoraEmptyStateView: View {
 @available(iOS 26.0, *)
 public extension AgoraEmptyStateView {
     /// Creates an empty state for an empty feed
-    static func emptyFeed() -> AgoraEmptyStateView {
+    static func emptyFeed(action: @escaping () -> Void) -> AgoraEmptyStateView {
         AgoraEmptyStateView(
-            icon: "sparkles",
-            title: "Welcome to For You",
-            message: "Your personalized feed will appear here. Follow some people to get started!",
-            actionTitle: "Find People to Follow",
-            action: {
-                // TODO: Navigate to search or suggestions
-            }
+            icon: "checkmark.circle",
+            title: "You're All Caught Up",
+            message: "You've seen all the latest posts. Why not share something with the community?",
+            actionTitle: "Create a Post",
+            action: action
         )
     }
     

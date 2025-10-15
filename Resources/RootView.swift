@@ -44,7 +44,6 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: authManager.state)
-        .preferredColorScheme(.dark)
     }
 }
 

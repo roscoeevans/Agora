@@ -18,32 +18,30 @@ public struct NotificationsView: View {
     public var body: some View {
         Group {
             if let viewModel = viewModel {
-                NavigationStack {
-                    ScrollView {
-                        LazyVStack(spacing: SpacingTokens.xs) {
-                            if viewModel.notifications.isEmpty && !viewModel.isLoading {
-                                EmptyStateView()
-                            } else {
-                                ForEach(viewModel.notifications, id: \.id) { notification in
-                                    NotificationRow(notification: notification)
-                                }
+                ScrollView {
+                    LazyVStack(spacing: SpacingTokens.xs) {
+                        if viewModel.notifications.isEmpty && !viewModel.isLoading {
+                            EmptyStateView()
+                        } else {
+                            ForEach(viewModel.notifications, id: \.id) { notification in
+                                NotificationRow(notification: notification)
                             }
                         }
                     }
-                    .navigationTitle("Notifications")
-                    .navigationBarTitleDisplayMode(.large)
-                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-                    .refreshable {
-                        await viewModel.refresh()
+                    .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
+                }
+                .navigationTitle("Notifications")
+                .navigationBarTitleDisplayMode(.large)
+                .refreshable {
+                    await viewModel.refresh()
+                }
+                .overlay {
+                    if viewModel.isLoading && viewModel.notifications.isEmpty {
+                        LoadingView()
                     }
-                    .overlay {
-                        if viewModel.isLoading && viewModel.notifications.isEmpty {
-                            LoadingView()
-                        }
-                    }
-                    .task {
-                        await viewModel.loadNotifications()
-                    }
+                }
+                .task {
+                    await viewModel.loadNotifications()
                 }
             } else {
                 LoadingView()
@@ -60,6 +58,7 @@ public struct NotificationsView: View {
 struct NotificationRow: View {
     let notification: NotificationItem
     @State private var isPressed = false
+    @Environment(\.navigateToPost) private var navigateToPost
     
     var body: some View {
         HStack(alignment: .top, spacing: SpacingTokens.sm) {
@@ -139,7 +138,10 @@ struct NotificationRow: View {
             // Add haptic feedback
             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
             impactFeedback.impactOccurred()
-            // TODO: Handle notification tap
+            // Navigate to related post (using notification id as a placeholder)
+            if let navigate = navigateToPost, let uuid = UUID(uuidString: notification.id) {
+                navigate.action(uuid)
+            }
         }
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isPressed = pressing

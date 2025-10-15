@@ -1,0 +1,797 @@
+---
+description: When creating a new Swift Package, writing Package.swift manifests, setting up module dependencies, establishing testing structure, documenting packages, following module design best practices, or understanding module architecture decisions (why Auth is in AppFoundation, etc.).
+alwaysApply: false
+---
+## Agora iOS Module Development Standards
+
+### Overview
+
+This rule defines standards for creating and maintaining Swift Package modules in the Agora iOS app, including Package.swift conventions, module design principles, testing structure, documentation requirements, and architectural rationales.
+
+### Package.swift Standards
+
+#### Required Elements
+
+Every `Package.swift` file must include:
+
+1. **Swift Tools Version:** Always `6.2`
+2. **Platform:** Always `.iOS(.v18)` (iOS 18+)
+3. **Product Name:** Must match package directory name exactly
+4. **Target Name:** Must match package directory name exactly
+5. **Test Target:** Must be named `{PackageName}Tests`
+
+#### Template
+
+```swift
+// swift-tools-version: 6.2
+import PackageDescription
+
+let package = Package(
+    name: "PackageName",  // Match directory name exactly
+    platforms: [.iOS(.v18)],
+    products: [
+        .library(
+            name: "PackageName",  // Match directory name exactly
+            targets: ["PackageName"]
+        )
+    ],
+    dependencies: [
+        // Use relative paths for local dependencies
+        .package(path: "../../Kits/DesignSystem"),
+        .package(path: "../../Shared/AppFoundation"),
+        
+        // External dependencies with version
+        .package(url: "https://github.com/supabase/supabase-swift", from: "2.0.0")
+    ],
+    targets: [
+        .target(
+            name: "PackageName",  // Match directory name exactly
+            dependencies: [
+                "DesignSystem",
+                "AppFoundation",
+                .product(name: "Supabase", package: "supabase-swift")
+            ],
+            resources: [
+                .process("Resources")  // If package has resources
+            ]
+        ),
+        .testTarget(
+            name: "PackageNameTests",
+            dependencies: ["PackageName"]
+        )
+    ]
+)
+```
+
+#### Dependency Guidelines
+
+**Allowed dependency directions:**
+- ✅ Features → Kits, Shared
+- ✅ Kits → Other Kits, Shared
+- ✅ Shared → External packages only
+- ❌ Never create circular dependencies
+
+**Use relative paths for local dependencies:**
+```swift
+// From Features/Compose to Kits/Media
+.package(path: "../../Kits/Media")
+
+// From Kits/Networking to Shared/AppFoundation
+.package(path: "../../Shared/AppFoundation")
+
+// From Features to Shared
+.package(path: "../../Shared/TestSupport")
+```
+
+**External dependencies:**
+- Pin to specific version ranges: `.upToNextMajor(from: "2.0.0")`
+- Document why each external dependency is needed
+- Prefer Swift Package Manager compatible packages
+- Minimize external dependencies to reduce build time and bundle size
+
+### Module Architecture Decisions
+
+#### Why Auth is in AppFoundation (Not a Kit)
+
+Authentication services live in `Shared/AppFoundation` rather than a separate `AuthKit` or `Features/Auth` because:
+
+1. **Foundation-Level Concern:** Authentication is used by nearly every feature and kit
+   - Profile feature needs auth session
+   - Networking kit needs auth tokens
+   - Compose feature needs user identity
+   - Every authenticated API call requires tokens
+
+2. **Tight Integration:** Auth services integrate deeply with:
+   - Environment configuration (AppConfig)
+   - App lifecycle (token refresh, session monitoring)
+   - Keychain storage
+   - Networking layer (token provider)
+
+3. **Avoid Circular Dependencies:**
+   - Many kits need auth services
+   - If AuthKit existed, it would need to be at the same level as AppFoundation
+   - This would create complexity with no benefit
+
+4. **Protocol First:** Service protocols and implementations belong together
+   - Having protocols in Shared and implementations in a Kit splits related code
+   - Keeping them together improves maintainability
+
+5. **Simplicity:** One place for all auth code is clearer
+   - Developers know where to find auth logic
+   - No confusion about "UI Auth" vs "Service Auth"
+
+**Auth Architecture:**
+
+```
+Features/Auth/
+├── WelcomeView.swift              # UI: Sign in with Apple screen
+├── OnboardingView.swift           # UI: Profile creation flow
+├── AuthStateManager.swift         # App-level state coordination
+└── HandleValidator.swift          # Handle validation logic
+
+Shared/AppFoundation/
+├── ServiceProtocols.swift         # Protocols: AuthServiceProtocol, PhoneVerifierProtocol
+├── SupabaseAuthService.swift     # Implementation: Production auth
+├── TwilioPhoneVerifier.swift     # Implementation: Phone verification
+├── SessionStore.swift             # Actor: Session and token management
+├── KeychainHelper.swift           # Utility: Secure credential storage
+├── SessionLifecycleManager.swift # Manager: Auto token refresh
+├── MockServices.swift             # Mocks: For testing/staging
+└── ServiceFactory.swift           # Factory: Environment selection
+```
+
+**Dependency flow:**
+```
+Auth Feature (UI)
+    ↓ depends on
+AppFoundation (Service Protocols + Implementations)
+    ↓ provides tokens to
+Networking Kit (API Client with AuthTokenProvider)
+    ↓ used by
+All Features (authenticated API access)
+```
+
+#### Why Navigation is in AppFoundation (Not a Kit)
+
+Navigation infrastructure lives in `Shared/AppFoundation` because:
+
+1. **Ubiquitous Dependency:** Every feature tab needs route definitions
+2. **Deep Link Coordination:** Centralized URL parsing and route construction
+3. **Tab Coordination:** Selection state and cross-tab navigation logic
+4. **Type Safety:** Shared route types ensure consistent navigation patterns
+5. **Composition Root Proximity:** Navigation wiring happens at app root level
+
+**Navigation Files (in AppFoundation):**
+- `Routes.swift` - App-wide route enum definitions (one per tab flow)
+- `DeepLinkRouter.swift` - URL parsing and route construction
+- `NavigationEnvironment.swift` - SwiftUI environment for coordination
+
+See `ios-navigation.mdc` for complete navigation patterns.
+
+### Module Dependency Hierarchy
+
+```
+┌─────────────────────────────────────┐
+│          Features (Top)             │
+│  User-facing screens and flows      │
+│  - Auth, Compose, Profile, etc.     │
+└──────────────┬──────────────────────┘
+               │ depends on
+┌──────────────▼──────────────────────┐
+│           Kits (Middle)             │
+│  Reusable capabilities and services │
+│  - DesignSystem, Networking, etc.   │
+└──────────────┬──────────────────────┘
+               │ depends on
+┌──────────────▼──────────────────────┐
+│        Shared (Foundation)          │
+│  Cross-cutting concerns and config  │
+│  - AppFoundation, TestSupport       │
+└──────────────┬──────────────────────┘
+               │ depends on
+┌──────────────▼──────────────────────┐
+│       External Packages             │
+│  Third-party dependencies via SPM   │
+└─────────────────────────────────────┘
+
+        ThirdParty (Isolated)
+   Custom wrappers for SDKs that
+   don't support SPM or need custom
+   integration (no internal deps)
+```
+
+### Testing Structure
+
+#### Test Organization
+
+Each package must include tests in this structure:
+
+```
+PackageName/
+└── Tests/
+    └── PackageNameTests/
+        ├── PackageNameTests.swift          # Main test file
+        ├── {Feature}ViewModelTests.swift   # ViewModel tests
+        ├── {Feature}ServiceTests.swift     # Service tests
+        └── Mocks/                          # Test doubles
+            ├── MockNetworkingClient.swift
+            └── MockAuthService.swift
+```
+
+#### Test Naming Conventions
+
+**Test classes:**
+```swift
+final class ComposeViewModelTests: XCTestCase { }
+final class NetworkingClientTests: XCTestCase { }
+```
+
+**Test methods:**
+```swift
+func testFetchPosts_whenSuccessful_returnsPostArray() async throws
+func testCreatePost_withInvalidData_throwsValidationError() async throws
+func testRefreshToken_whenExpired_requestsNewToken() async throws
+```
+
+**Naming pattern:** `test{MethodName}_{scenario}_{expectedBehavior}`
+
+#### Test Doubles
+
+**Naming conventions:**
+- `Mock{Service}` - For services with behavior verification
+- `{Service}Fake` - For services with realistic test implementations
+- `Stub{Service}` - For services returning canned responses
+
+**Example:**
+```swift
+// Mock with verification
+final class MockAnalyticsClient: AnalyticsClient {
+    var trackEventCalled = false
+    var lastTrackedEvent: String?
+    
+    func track(event: String) {
+        trackEventCalled = true
+        lastTrackedEvent = event
+    }
+}
+
+// Fake with realistic behavior
+final class FakeNetworkingClient: NetworkingClient {
+    var responses: [String: Any] = [:]
+    
+    func fetch<T>(_ endpoint: String) async throws -> T {
+        // Return pre-configured response for testing
+    }
+}
+```
+
+#### Shared Test Utilities
+
+Place reusable test utilities in `Shared/TestSupport`:
+
+```
+Shared/TestSupport/Sources/TestSupport/
+├── TestSupport.swift              # Main public interface
+├── Fixtures/                      # Test data
+│   ├── PostFixtures.swift
+│   └── UserFixtures.swift
+├── Mocks/                         # Shared mocks
+│   ├── MockNetworkingClient.swift
+│   └── MockAnalyticsClient.swift
+└── Builders/                      # Test data builders
+    ├── PostBuilder.swift
+    └── UserBuilder.swift
+```
+
+**Usage in tests:**
+```swift
+import TestSupport
+
+final class ComposeTests: XCTestCase {
+    func testCreatePost() async throws {
+        let post = PostBuilder()
+            .withAuthor(UserFixtures.johnDoe)
+            .withContent("Test post")
+            .build()
+        
+        // Test with fixture data
+    }
+}
+```
+
+#### Snapshot Tests
+
+For UI snapshot tests, use root-level `Tests/SnapshotTests/`:
+
+```
+Tests/SnapshotTests/
+├── HomeForYouSnapshots.swift
+├── ProfileSnapshots.swift
+└── __Snapshots__/              # Generated by snapshot library
+```
+
+#### UI Tests
+
+For end-to-end UI tests, use root-level `Tests/UITests/` or `AgoraUITests/`:
+
+```
+AgoraUITests/
+├── ComposeUITests.swift
+├── ForYouUITests.swift
+└── AccessibilityUITests.swift
+```
+
+### Documentation Standards
+
+#### README.md Requirements
+
+Every package must include a `README.md` with these sections:
+
+```markdown
+# PackageName
+
+Brief one-sentence description of the package's purpose.
+
+## Purpose
+
+Detailed explanation of what this package does and why it exists.
+
+## Features
+
+- Feature 1: Description
+- Feature 2: Description
+- Feature 3: Description
+
+## Usage
+
+Basic usage example:
+
+\`\`\`swift
+import PackageName
+
+// Example code showing typical usage
+let service = PackageNameService()
+await service.performAction()
+\`\`\`
+
+## Architecture
+
+High-level architecture overview (if complex).
+
+## Dependencies
+
+- **DesignSystem**: UI components and styling
+- **AppFoundation**: Configuration and DI
+- **Supabase**: External dependency for X
+
+## Testing
+
+How to run tests for this package:
+
+\`\`\`bash
+swift test --package-path Packages/Features/PackageName
+\`\`\`
+
+## Notes
+
+Any important notes, caveats, or future considerations.
+```
+
+#### Code Documentation
+
+**Public APIs must be documented:**
+
+```swift
+/// Fetches the current user's posts from the API.
+///
+/// This method retrieves all posts authored by the authenticated user,
+/// sorted by creation date (newest first).
+///
+/// - Returns: Array of `Post` objects
+/// - Throws: `NetworkError.unauthorized` if user is not authenticated
+///          `NetworkError.serverError` if the request fails
+public func fetchUserPosts() async throws -> [Post]
+```
+
+**Use Swift documentation comments:**
+- `///` for documentation comments
+- `/** ... */` for multi-line documentation
+- Include parameter descriptions for complex functions
+- Document thrown errors
+- Provide usage examples for complex APIs
+
+**Document complex logic:**
+```swift
+// Apply exponential backoff before retry
+// Wait time doubles with each attempt: 1s, 2s, 4s, 8s
+let waitTime = pow(2.0, Double(retryCount))
+try await Task.sleep(nanoseconds: UInt64(waitTime * 1_000_000_000))
+```
+
+### Module Design Best Practices
+
+#### Single Responsibility Principle
+
+Each module should have **one clear purpose**:
+
+✅ **Good:**
+- `Media` - Image/video capture, processing, and upload
+- `Analytics` - Event tracking and analytics
+- `DesignSystem` - UI components and styling
+
+❌ **Bad:**
+- `Utilities` - Too vague, unclear purpose
+- `Helpers` - Catch-all for unrelated code
+- `Common` - No clear responsibility
+
+#### Loose Coupling
+
+Minimize dependencies between modules:
+
+✅ **Good:**
+```swift
+// Feature depends on protocol, not concrete implementation
+import AppFoundation
+
+struct ComposeView: View {
+    @Environment(\.dependencies) var deps
+    
+    func submit() async {
+        try await deps.networking.createPost(content)
+    }
+}
+```
+
+❌ **Bad:**
+```swift
+// Direct dependency on implementation
+import Networking
+import SupabaseKit
+
+struct ComposeView: View {
+    let client = URLSession.shared  // Tight coupling
+}
+```
+
+#### High Cohesion
+
+Related functionality should be grouped together:
+
+✅ **Good structure:**
+```
+Media/
+├── Capture/
+│   ├── CameraCapture.swift
+│   └── PhotoPicker.swift
+├── Processing/
+│   ├── ImageResizer.swift
+│   └── VideoCompressor.swift
+└── Upload/
+    ├── MediaUploader.swift
+    └── UploadProgress.swift
+```
+
+❌ **Bad structure:**
+```
+Media/
+├── MediaStuff.swift        # Everything in one file
+└── Helpers.swift           # Unrelated utilities
+```
+
+#### Clear Public Interfaces
+
+Expose only what's necessary:
+
+✅ **Good:**
+```swift
+// In Package main file (Media.swift)
+@_exported import MediaCapture   // Re-export for convenience
+@_exported import MediaUpload
+
+// Keep processing internal
+// import MediaProcessing  // Not exported
+```
+
+❌ **Bad:**
+```swift
+// Expose everything as public
+public struct InternalProcessingDetail { }  // Should be internal
+public func helperFunction() { }            // Should be internal
+```
+
+### Code Organization
+
+#### File Size Guidelines
+
+- **Target:** < 300 lines per file
+- **Maximum:** < 500 lines (consider splitting)
+- **Views:** Keep view files focused on presentation
+- **Services:** Keep service files focused on one capability
+
+**When to split a file:**
+- Multiple unrelated types in one file
+- File becomes hard to navigate (> 500 lines)
+- Clear logical boundaries exist (e.g., separate protocols from implementations)
+
+#### Import Organization
+
+Order imports alphabetically and group by type:
+
+```swift
+// Standard library (if needed explicitly)
+import Foundation
+
+// Apple frameworks
+import SwiftUI
+import Combine
+
+// Internal dependencies (alphabetical)
+import Analytics
+import AppFoundation
+import DesignSystem
+import Networking
+
+// External dependencies (alphabetical)
+import Supabase
+import PostHog
+```
+
+#### Type Organization Within Files
+
+Organize code in this order:
+
+```swift
+// 1. Imports
+import SwiftUI
+import AppFoundation
+
+// 2. Main type
+public struct ComposeView: View {
+    // 3. Properties (public, then private)
+    public let onComplete: () -> Void
+    @State private var content: String = ""
+    
+    // 4. Initializer
+    public init(onComplete: @escaping () -> Void) {
+        self.onComplete = onComplete
+    }
+    
+    // 5. Body/main functionality
+    public var body: some View {
+        // View code
+    }
+    
+    // 6. Private methods
+    private func submit() async {
+        // Implementation
+    }
+}
+
+// 7. Extensions
+extension ComposeView {
+    // Extension methods
+}
+
+// 8. Supporting types
+private struct ComposeToolbar: View {
+    // Implementation
+}
+```
+
+### Common Mistakes to Avoid
+
+#### Structural Issues
+
+❌ **Don't create circular dependencies:**
+```swift
+// Kit A depends on Kit B
+// Kit B depends on Kit A  ← CIRCULAR!
+```
+
+✅ **Extract shared code to lower level:**
+```swift
+// Kit A depends on Shared
+// Kit B depends on Shared  ← No circular dependency
+```
+
+❌ **Don't put business logic in views:**
+```swift
+struct ComposeView: View {
+    func submit() {
+        // Direct API call in view  ← BAD!
+        URLSession.shared.dataTask(...)
+    }
+}
+```
+
+✅ **Use view models or services:**
+```swift
+@Observable
+final class ComposeViewModel {
+    func submit() async throws {
+        try await networkingClient.createPost(...)
+    }
+}
+```
+
+❌ **Don't mix UI and data concerns:**
+```swift
+// Networking/PostView.swift  ← UI in data layer package!
+```
+
+✅ **Keep UI in Features, data in Kits:**
+```swift
+// Features/Compose/ComposeView.swift  ← UI in feature
+// Kits/Networking/NetworkingClient.swift  ← Data in kit
+```
+
+#### Naming Issues
+
+❌ **Avoid generic names:**
+- `Utils.swift`
+- `Helpers.swift`
+- `Common.swift`
+- `Manager.swift` (alone, without context)
+
+✅ **Use specific, descriptive names:**
+- `StringValidation.swift`
+- `DateFormatting.swift`
+- `SessionManager.swift`
+- `UploadCoordinator.swift`
+
+#### Dependency Issues
+
+❌ **Don't create unnecessary dependencies:**
+```swift
+// Feature depends on 10 different kits  ← Too many!
+```
+
+✅ **Depend on what you actually need:**
+```swift
+// Feature depends on 2-3 essential kits  ← Reasonable
+```
+
+❌ **Don't depend on implementation details:**
+```swift
+import Networking
+let client = NetworkingClientLive()  // Concrete type  ← BAD!
+```
+
+✅ **Depend on protocols:**
+```swift
+import Networking
+let client: NetworkingClient  // Protocol  ← GOOD!
+```
+
+### Migration Guidelines
+
+#### When Adding a New Module
+
+**Checklist:**
+
+1. **Identify clear module boundaries**
+   - What is the single responsibility?
+   - What dependencies are needed?
+   - Is this Feature, Kit, Shared, or ThirdParty?
+
+2. **Create package structure:**
+   ```bash
+   mkdir -p Packages/Features/NewFeature
+   cd Packages/Features/NewFeature
+   mkdir -p Sources/NewFeature Tests/NewFeatureTests
+   ```
+
+3. **Create Package.swift:**
+   - Use template from this rule
+   - Add necessary dependencies
+   - Ensure target name matches directory name
+
+4. **Create README.md:**
+   - Follow documentation standards
+   - Explain purpose and usage
+
+5. **Add to root Package.swift:**
+   ```swift
+   targets: [
+       .target(name: "NewFeature", path: "Packages/Features/NewFeature")
+   ]
+   ```
+
+6. **Write tests first** (TDD approach recommended)
+
+7. **Implement functionality**
+
+8. **Update main app** to use new module
+
+#### When Refactoring Existing Code
+
+**Checklist:**
+
+1. **Identify refactoring boundaries**
+   - What code should move together?
+   - What are the new dependencies?
+
+2. **Create new module** (if needed)
+
+3. **Move code incrementally:**
+   - Move one file at a time
+   - Update imports
+   - Ensure tests pass after each move
+
+4. **Update dependencies:**
+   - Remove old dependencies
+   - Add new dependencies
+   - Update Package.swift files
+
+5. **Clean up:**
+   - Remove old files
+   - Remove unused dependencies
+   - Update documentation
+
+#### When Removing a Module
+
+**Checklist:**
+
+1. **Find all references:**
+   ```bash
+   grep -r "import ModuleName" Packages/
+   ```
+
+2. **Remove imports** from dependent modules
+
+3. **Remove Package.swift dependency entries:**
+   ```swift
+   // Remove from dependencies array
+   .package(path: "../../Features/OldFeature")
+   ```
+
+4. **Delete package directory:**
+   ```bash
+   rm -rf Packages/Features/OldFeature
+   ```
+
+5. **Update documentation** mentioning the module
+
+6. **Verify build:**
+   ```bash
+   swift build
+   ```
+
+### Performance Considerations
+
+#### Build Time Optimization
+
+**Minimize dependencies:**
+- Each dependency increases build time
+- Only depend on what you actually use
+- Consider splitting large modules
+
+**Use `@_exported` carefully:**
+- Re-exporting adds to compile time
+- Only re-export commonly used dependencies
+
+**Keep modules focused:**
+- Smaller modules compile faster
+- Focused modules enable better incremental builds
+
+#### Bundle Size Optimization
+
+**Minimize external dependencies:**
+- Each dependency increases app size
+- Evaluate if dependency is truly needed
+- Consider implementing simple functionality yourself
+
+**Use resources efficiently:**
+- Compress images in `.xcassets`
+- Remove unused assets
+- Use vector graphics (PDF) when possible
+
+### Related Rules
+
+For detailed information on related topics:
+- **Project Structure:** `project-structure.mdc` - Where files go
+- **Configuration:** `ios-configuration.mdc` - Build configs and environments
+- **Navigation:** `ios-navigation.mdc` - Navigation patterns
+- **Dependency Injection:** `ios-di-injection.mdc` - DI patterns and scopes
+- **Concurrency:** `swift-concurrency.mdc` - Async/await and actors
+- **Previews:** `swiftui-previews.mdc` - SwiftUI preview best practices

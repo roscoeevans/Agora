@@ -13,70 +13,67 @@ import Networking
 
 public struct HomeForYouView: View {
     @Environment(\.deps) private var deps
+    @Environment(\.navigateToPost) private var navigateToPost
     @State private var viewModel: ForYouViewModel?
-    @State private var coordinator: ForYouCoordinator?
     
-    public init() {}
+    let onComposeAction: () -> Void
+    
+    public init(onComposeAction: @escaping () -> Void = {}) {
+        self.onComposeAction = onComposeAction
+    }
     
     public var body: some View {
         Group {
-            if let viewModel = viewModel, coordinator != nil {
-                NavigationStack(path: Binding(
-                    get: { coordinator?.navigationPath ?? NavigationPath() },
-                    set: { coordinator?.navigationPath = $0 }
-                )) {
-                    ScrollView {
-                        LazyVStack(spacing: SpacingTokens.md) {
-                            if viewModel.posts.isEmpty && !viewModel.isLoading {
-                                AgoraEmptyStateView.emptyFeed()
-                            } else {
-                                ForEach(viewModel.posts, id: \.id) { post in
-                                    PostCardView(post: post) {
-                                        coordinator?.navigateToPost(post)
+            if let viewModel = viewModel {
+                ScrollView {
+                    LazyVStack(spacing: SpacingTokens.md) {
+                        if viewModel.posts.isEmpty && !viewModel.isLoading {
+                            AgoraEmptyStateView.emptyFeed(action: onComposeAction)
+                        } else {
+                            ForEach(viewModel.posts, id: \.id) { post in
+                                PostCardView(post: post) {
+                                    if let navigate = navigateToPost, let uuid = UUID(uuidString: post.id) {
+                                        navigate.action(uuid)
                                     }
                                 }
                             }
                         }
-                        .padding(.horizontal, SpacingTokens.md)
                     }
-                    .navigationTitle("For You")
-                    .navigationBarTitleDisplayMode(.large)
-                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-                    .refreshable {
-                        await viewModel.refresh()
-                    }
-                    .overlay {
-                        if viewModel.isLoading && viewModel.posts.isEmpty {
-                            AgoraLoadingView.feedLoading()
-                        }
-                    }
-                    .alert("Couldn't Load Feed", isPresented: .constant(viewModel.error != nil)) {
-                        Button("Try Again") {
-                            viewModel.error = nil
-                            Task {
-                                await viewModel.refresh()
-                            }
-                        }
-                        Button("OK", role: .cancel) {
-                            viewModel.error = nil
-                        }
-                    } message: {
-                        Text("We couldn't load your feed. Please check your connection and try again.")
+                    .padding(.horizontal, SpacingTokens.md)
+                    .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
+                }
+                .refreshable {
+                    await viewModel.refresh()
+                }
+                .overlay {
+                    if viewModel.isLoading && viewModel.posts.isEmpty {
+                        AgoraLoadingView.feedLoading()
                     }
                 }
-                .environment(coordinator)
+                .alert("Couldn't Load Feed", isPresented: .constant(viewModel.error != nil)) {
+                    Button("Try Again") {
+                        viewModel.error = nil
+                        Task {
+                            await viewModel.refresh()
+                        }
+                    }
+                    Button("OK", role: .cancel) {
+                        viewModel.error = nil
+                    }
+                } message: {
+                    Text("We couldn't load your feed. Please check your connection and try again.")
+                }
             } else {
                 AgoraLoadingView.feedLoading()
             }
         }
         .task {
-            // Initialize view model and coordinator with dependencies from environment
+            // Initialize view model with dependencies from environment
             // Following DI rule: dependencies injected from environment
             self.viewModel = ForYouViewModel(
                 networking: deps.networking,
                 analytics: deps.analytics
             )
-            self.coordinator = ForYouCoordinator(analytics: deps.analytics)
         }
     }
 }

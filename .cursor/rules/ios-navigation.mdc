@@ -1,0 +1,667 @@
+---
+description: "When implementing navigation in iOS 26, setting up TabView with NavigationStack, creating deep links, implementing state restoration, migrating from NavigationView, or designing app navigation architecture. Use this for value-driven navigation patterns, route modeling, programmatic navigation, and search integration."
+---
+
+## iOS 26 Navigation Architecture
+
+### Overview
+
+Apple's 2025 guidance emphasizes value-driven navigation, routes as data, and making state restoration & deep links first-class citizens. This rule provides a complete playbook for implementing robust, testable navigation in iOS 26 using NavigationStack, NavigationSplitView, and TabView patterns.
+
+### Core Navigation Components
+
+#### What to Use
+
+1. **NavigationStack** for single-column push navigation
+   - Primary choice for iPhone and most flows
+   - Define destinations with `navigationDestination(for:)`
+   - Drive pushes by appending values to a path
+   - [Apple Developer Documentation](https://developer.apple.com/documentation/swiftui/navigationstack)
+
+2. **NavigationSplitView** for multi-column layouts
+   - Use for iPad/Mac multi-column layouts
+   - Detail column is typically a NavigationStack
+   - [Apple Developer Documentation](https://developer.apple.com/documentation/swiftui/navigationsplitview)
+
+3. **searchable** modifier
+   - Belongs on NavigationStack/NavigationSplitView or views inside them
+   - Control focus/activation with `isPresented:` binding when needed
+   - [Apple Developer Documentation](https://developer.apple.com/documentation/swiftui/view/searchable(text:placement:))
+
+### Best Practice Patterns
+
+#### 1. Route as Data (Type-Safe)
+
+Use an enum or Hashable model as your route element. Prefer value-based links and typed destinations.
+
+```swift
+enum Route: Hashable {
+  case profile(id: UUID)
+  case post(id: UUID)
+}
+
+@State private var path: [Route] = []
+
+var body: some View {
+  NavigationStack(path: $path) {
+    List(posts) { post in
+      NavigationLink(value: Route.post(id: post.id)) { 
+        Text(post.title) 
+      }
+    }
+    .navigationDestination(for: Route.self) { route in
+      switch route {
+      case .profile(let id): ProfileView(id: id)
+      case .post(let id):    PostView(id: id)
+      }
+    }
+  }
+}
+```
+
+**Why:** SwiftUI matches the value's type to the registered destination; it's predictable, testable, and deep-link friendly.
+
+#### 2. Programmatic Navigation via Path
+
+Manipulate the navigation stack programmatically:
+- **Push:** `path.append(route)`
+- **Pop:** `path.removeLast()`
+- **Pop to root:** `path = []`
+
+```swift
+@State private var path: [Route] = []
+
+// Push to post detail
+Button("View Post") {
+  path.append(.post(id: postID))
+}
+
+// Pop back
+Button("Back") {
+  path.removeLast()
+}
+
+// Return to root
+Button("Home") {
+  path = []
+}
+```
+
+**Best Practice:** Keep path in the view that owns the flow (often the tab root). Use a homogeneous `[Route]` when possible; use `NavigationPath` only if you truly need multiple types.
+
+#### 3. Keep Destinations Near the Stack
+
+Attach all `navigationDestination` modifiers inside the stack's hierarchy, ideally at the root of that flow.
+
+```swift
+NavigationStack(path: $path) {
+  HomeView()
+    .navigationDestination(for: PostRoute.self) { route in
+      // All post-related destinations in one place
+      switch route {
+      case .detail(let id): PostDetailView(id: id)
+      case .edit(let id):   PostEditView(id: id)
+      }
+    }
+    .navigationDestination(for: ProfileRoute.self) { route in
+      // All profile-related destinations in one place
+      switch route {
+      case .user(let id): ProfileView(id: id)
+      case .settings:     SettingsView()
+      }
+    }
+}
+```
+
+**Why:** Keeps the mapping of Route → View obvious and prevents duplicate registrations.
+
+#### 4. Deep Links & State Restoration
+
+Treat the navigation stack as serializable state.
+
+```swift
+// Make routes Codable for easy persistence
+enum Route: Hashable, Codable {
+  case profile(id: UUID)
+  case post(id: UUID)
+}
+
+// Deep link handling
+.onOpenURL { url in
+  if let routes = decodeDeepLink(url) {
+    path = routes
+  }
+}
+
+// State restoration with SceneStorage
+@SceneStorage("navigation.path") private var pathData: Data?
+
+.task {
+  if let data = pathData,
+     let restored = try? JSONDecoder().decode([Route].self, from: data) {
+    path = restored
+  }
+}
+.onChange(of: path) { newPath in
+  pathData = try? JSONEncoder().encode(newPath)
+}
+```
+
+**Apple's Guidance:** Restore the navigation state, not view instances.
+
+#### 5. One Stack Per Independent Flow
+
+In a TabView, give each tab its own `@State var path` so navigation in one tab doesn't stomp another.
+
+```swift
+struct RootView: View {
+  @State private var feedPath: [FeedRoute] = []
+  @State private var searchPath: [SearchRoute] = []
+  @State private var profilePath: [ProfileRoute] = []
+  
+  var body: some View {
+    TabView {
+      FeedFlow(path: $feedPath)
+        .tabItem { Label("Feed", systemImage: "sparkles") }
+      
+      SearchFlow(path: $searchPath)
+        .tabItem { Label("Search", systemImage: "magnifyingglass") }
+      
+      ProfileFlow(path: $profilePath)
+        .tabItem { Label("Profile", systemImage: "person") }
+    }
+  }
+}
+```
+
+#### 6. Prefer Value-Based APIs
+
+`navigationDestination(isPresented:)` works for simple toggles, but the value-driven approach scales better for deep links and restoration.
+
+```swift
+// ❌ Harder to scale
+@State private var showDetail = false
+NavigationLink(isPresented: $showDetail) { DetailView() }
+
+// ✅ Better for deep links & restoration
+@State private var path: [Route] = []
+NavigationLink(value: Route.detail(id: id)) { Text("View") }
+```
+
+#### 7. Search That Navigates
+
+When search results lead to detail views, push by value:
+
+```swift
+NavigationStack(path: $path) {
+  SearchResultsList(results: results)
+    .searchable(text: $query)
+    .onSubmit(of: .search) { 
+      performSearch() 
+    }
+    .navigationDestination(for: Route.self) { route in
+      switch route {
+      case .post(let id): PostView(id: id)
+      case .profile(let id): ProfileView(id: id)
+      }
+    }
+}
+
+// In SearchResultsList
+NavigationLink(value: Route.post(id: result.id)) { 
+  ResultRow(result) 
+}
+```
+
+#### 8. Migrate Off NavigationView
+
+Replace `NavigationView` with `NavigationStack` or `NavigationSplitView`, and switch old binding-driven links to value-driven + destinations.
+
+```swift
+// ❌ Old NavigationView pattern
+NavigationView {
+  List {
+    NavigationLink(destination: DetailView()) {
+      Text("Item")
+    }
+  }
+}
+
+// ✅ New NavigationStack pattern
+@State private var path: [Route] = []
+
+NavigationStack(path: $path) {
+  List {
+    NavigationLink(value: Route.detail(id: id)) {
+      Text("Item")
+    }
+  }
+  .navigationDestination(for: Route.self) { route in
+    DetailView(route: route)
+  }
+}
+```
+
+### Master TabView Pattern
+
+#### Complete Implementation
+
+For apps with a master TabView, use this structure:
+
+```swift
+import SwiftUI
+
+// 1) Define tabs
+enum Tab: Hashable {
+  case feed, search, compose, inbox, profile
+}
+
+// 2) Tab-scoped routes (keeps each flow independent & type-safe)
+enum FeedRoute: Hashable, Codable { 
+  case post(id: UUID)
+  case author(id: UUID) 
+}
+enum SearchRoute: Hashable, Codable { 
+  case result(id: UUID) 
+}
+enum InboxRoute: Hashable, Codable { 
+  case thread(id: UUID) 
+}
+enum ProfileRoute: Hashable, Codable { 
+  case settings
+  case followers 
+}
+
+// 3) Master container
+struct RootTabContainerView: View {
+  // Single source of truth for selected tab
+  @SceneStorage("tab.selection") private var selectionRaw: String = "feed"
+  private var selection: Binding<Tab> {
+    Binding(
+      get: { Tab(rawValue: selectionRaw) ?? .feed },
+      set: { selectionRaw = $0.rawValue }
+    )
+  }
+
+  // Each tab's navigation path (survives tab switches)
+  @SceneStorage("tab.feed.path")   private var feedPathData: Data?
+  @SceneStorage("tab.search.path") private var searchPathData: Data?
+  @SceneStorage("tab.inbox.path")  private var inboxPathData: Data?
+  @SceneStorage("tab.profile.path")private var profilePathData: Data?
+
+  // In-memory mirrors
+  @State private var feedPath:   [FeedRoute]   = []
+  @State private var searchPath: [SearchRoute] = []
+  @State private var inboxPath:  [InboxRoute]  = []
+  @State private var profilePath:[ProfileRoute]= []
+
+  var body: some View {
+    TabView(selection: selection) {
+      FeedFlow(path: $feedPath)
+        .tabItem { Label("For You", systemImage: "sparkles") }
+        .tag(Tab.feed)
+
+      SearchFlow(path: $searchPath)
+        .tabItem { Label("Search", systemImage: "magnifyingglass") }
+        .tag(Tab.search)
+
+      ComposeFlow()
+        .tabItem { Label("Compose", systemImage: "plus.bubble") }
+        .tag(Tab.compose)
+
+      InboxFlow(path: $inboxPath)
+        .tabItem { Label("Inbox", systemImage: "tray") }
+        .tag(Tab.inbox)
+
+      ProfileFlow(path: $profilePath)
+        .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+        .tag(Tab.profile)
+    }
+    .onTabItemReselected(selection: selection) { tab in
+      // Tap active tab to pop to root
+      switch tab {
+      case .feed:    feedPath = []
+      case .search:  searchPath = []
+      case .compose: break
+      case .inbox:   inboxPath = []
+      case .profile: profilePath = []
+      }
+    }
+    .task {
+      // Restore from SceneStorage
+      feedPath    = decode(feedPathData)   ?? []
+      searchPath  = decode(searchPathData) ?? []
+      inboxPath   = decode(inboxPathData)  ?? []
+      profilePath = decode(profilePathData) ?? []
+    }
+    .onChange(of: feedPath)    { feedPathData   = encode($0) }
+    .onChange(of: searchPath)  { searchPathData = encode($0) }
+    .onChange(of: inboxPath)   { inboxPathData  = encode($0) }
+    .onChange(of: profilePath) { profilePathData = encode($0) }
+  }
+}
+
+// 4) Each tab owns its NavigationStack + destinations
+private struct FeedFlow: View {
+  @Binding var path: [FeedRoute]
+  @Environment(\.deps) private var deps
+  @Environment(\.appEnvironment) private var appEnv
+
+  var body: some View {
+    NavigationStack(path: $path) {
+      FeedView()
+        .navigationTitle("For You")
+        .navigationDestination(for: FeedRoute.self) { route in
+          switch route {
+          case .post(let id):   PostView(id: id)
+          case .author(let id): ProfileView(id: id)
+          }
+        }
+    }
+  }
+}
+
+private struct SearchFlow: View {
+  @Binding var path: [SearchRoute]
+  
+  var body: some View {
+    NavigationStack(path: $path) {
+      SearchView()
+        .navigationTitle("Search")
+        .searchable(text: .constant(""))
+        .navigationDestination(for: SearchRoute.self) { route in
+          switch route {
+          case .result(let id): ResultDetailView(id: id)
+          }
+        }
+    }
+  }
+}
+
+private struct InboxFlow: View {
+  @Binding var path: [InboxRoute]
+  
+  var body: some View {
+    NavigationStack(path: $path) {
+      InboxView()
+        .navigationTitle("Inbox")
+        .navigationDestination(for: InboxRoute.self) { route in
+          switch route {
+          case .thread(let id): ThreadView(id: id)
+          }
+        }
+    }
+  }
+}
+
+private struct ProfileFlow: View {
+  @Binding var path: [ProfileRoute]
+  
+  var body: some View {
+    NavigationStack(path: $path) {
+      ProfileView()
+        .navigationTitle("Profile")
+        .navigationDestination(for: ProfileRoute.self) { route in
+          switch route {
+          case .settings:  SettingsView()
+          case .followers: FollowersView()
+          }
+        }
+    }
+  }
+}
+
+// 5) Helpers
+private func encode<T: Codable>(_ value: T) -> Data? { 
+  try? JSONEncoder().encode(value) 
+}
+
+private func decode<T: Codable>(_ data: Data?) -> T? {
+  guard let data else { return nil }
+  return try? JSONDecoder().decode(T.self, from: data)
+}
+```
+
+### Agora-Specific Pro Tips
+
+#### 1. Route Factories
+Centralize construction of common navigation stacks:
+
+```swift
+enum RouteFactory {
+  static func authFlow() -> [AuthRoute] {
+    [.welcome]
+  }
+  
+  static func onboardingFlow() -> [OnboardingRoute] {
+    [.interests, .handleSelection, .profileSetup]
+  }
+  
+  static func postDetail(id: UUID, commentID: UUID? = nil) -> [FeedRoute] {
+    if let commentID {
+      return [.post(id: id), .comment(id: commentID)]
+    }
+    return [.post(id: id)]
+  }
+}
+
+// Use in previews, deep links, and tests
+#Preview {
+  NavigationStack(path: .constant(RouteFactory.postDetail(id: samplePostID))) {
+    FeedView()
+      .navigationDestination(for: FeedRoute.self) { /* ... */ }
+  }
+  .previewEnv(.dev)
+}
+```
+
+#### 2. Codable Routes for Deep Links
+
+Make all routes Codable for easy persistence and URL parsing:
+
+```swift
+enum FeedRoute: Hashable, Codable {
+  case post(id: UUID)
+  case author(id: UUID)
+  
+  init?(url: URL) {
+    guard url.scheme == "agora" else { return nil }
+    
+    switch url.host {
+    case "post":
+      if let id = url.pathComponents.last.flatMap(UUID.init) {
+        self = .post(id: id)
+      } else { return nil }
+    case "author":
+      if let id = url.pathComponents.last.flatMap(UUID.init) {
+        self = .author(id: id)
+      } else { return nil }
+    default: return nil
+    }
+  }
+  
+  var url: URL {
+    switch self {
+    case .post(let id):   URL(string: "agora://post/\(id.uuidString)")!
+    case .author(let id): URL(string: "agora://author/\(id.uuidString)")!
+    }
+  }
+}
+```
+
+#### 3. Testing & Snapshots
+
+Drive flows by mutating path in tests. Your SnapshotTesting can render any deep link state instantly:
+
+```swift
+@Test
+func testPostDetailNavigation() async throws {
+  var path: [FeedRoute] = []
+  
+  let view = FeedFlow(path: .constant(path))
+    .environment(\.deps, .preview)
+  
+  // Test root state
+  assertSnapshot(of: view, as: .image)
+  
+  // Test detail state
+  path.append(.post(id: samplePostID))
+  assertSnapshot(of: view, as: .image)
+  
+  // Test deep nested state
+  path.append(.author(id: sampleAuthorID))
+  assertSnapshot(of: view, as: .image)
+}
+```
+
+#### 4. DI Integration
+
+Use `@Environment(\.deps)` for navigation events:
+
+```swift
+extension Dependencies {
+  var navigationBus: NavigationBus { /* ... */ }
+}
+
+struct FeedFlow: View {
+  @Binding var path: [FeedRoute]
+  @Environment(\.deps) private var deps
+  
+  var body: some View {
+    NavigationStack(path: $path) {
+      FeedView()
+        .navigationDestination(for: FeedRoute.self) { /* ... */ }
+        .onReceive(deps.navigationBus.feedPublisher) { route in
+          path.append(route)
+        }
+    }
+  }
+}
+```
+
+### Common Pitfalls to Avoid
+
+#### 1. Don't Register Duplicate Destinations
+**Problem:** Registering `navigationDestination(for:)` for the same type in multiple places in the same stack hierarchy causes ambiguous behavior.
+
+```swift
+// ❌ Ambiguous - which one wins?
+NavigationStack(path: $path) {
+  VStack {
+    SubView()
+  }
+  .navigationDestination(for: Route.self) { /* ... */ }
+}
+
+struct SubView: View {
+  var body: some View {
+    Text("Hello")
+      .navigationDestination(for: Route.self) { /* ... */ }  // Duplicate!
+  }
+}
+
+// ✅ Register once at the stack root
+NavigationStack(path: $path) {
+  VStack {
+    SubView()
+  }
+  .navigationDestination(for: Route.self) { /* ... */ }
+}
+```
+
+#### 2. Don't Use Global State Across Tabs
+**Problem:** Sharing a single navigation path across tabs causes conflicts.
+
+```swift
+// ❌ Bad - tabs stomp each other
+@State private var globalPath: [Route] = []
+
+TabView {
+  Tab1(path: $globalPath)
+  Tab2(path: $globalPath)  // Conflict!
+}
+
+// ✅ Good - independent paths
+@State private var tab1Path: [Route] = []
+@State private var tab2Path: [Route] = []
+
+TabView {
+  Tab1(path: $tab1Path)
+  Tab2(path: $tab2Path)
+}
+```
+
+#### 3. Don't Stack Stacks Unintentionally
+**Problem:** Creating a NavigationStack inside a pushed detail that already lives in a stack.
+
+```swift
+// ❌ Nested stacks create confusion
+NavigationStack(path: $path) {
+  HomeView()
+    .navigationDestination(for: Route.self) { route in
+      NavigationStack {  // Don't nest!
+        DetailView()
+      }
+    }
+}
+
+// ✅ One stack per flow
+NavigationStack(path: $path) {
+  HomeView()
+    .navigationDestination(for: Route.self) { route in
+      DetailView()  // Just the view
+    }
+}
+```
+
+#### 4. Modals vs. Pushes
+**Problem:** Confusing when to push vs. present modally.
+
+**Rule of Thumb:**
+- **Push:** Related content in the same flow (post → author → post)
+- **Modal:** Separate flow or task (compose, login, settings)
+
+```swift
+// ✅ Push for related navigation
+NavigationLink(value: Route.author(id: authorID)) { /* ... */ }
+
+// ✅ Modal for separate task
+.sheet(isPresented: $showCompose) {
+  ComposeView()
+}
+```
+
+### Why This Structure Works
+
+1. **Isolation:** Each tab has its own NavigationStack + path. Switching tabs preserves state; reselection can cleanly pop-to-root.
+
+2. **Typed routes:** Tab-specific route enums make deep links and tests predictable.
+
+3. **Destination locality:** Destinations live inside each flow's stack, so mapping Route → View stays obvious.
+
+4. **Deep links:** Set `selection` then assign that tab's path: `selection = .feed; feedPath = [.post(id: id)]`
+
+5. **Restoration:** Persist selection and each tab's path, so the app reopens where the user left off.
+
+6. **Testing/Snapshots:** Instantiate any flow with any route stack to snapshot any deep state immediately.
+
+### Quick Reference
+
+| Task | Pattern |
+|------|---------|
+| Push | `path.append(route)` |
+| Pop | `path.removeLast()` |
+| Pop to root | `path = []` |
+| Deep link | `path = [.a, .b, .c]` |
+| Define route | `enum Route: Hashable, Codable { ... }` |
+| Register destination | `.navigationDestination(for: Route.self) { ... }` |
+| Create link | `NavigationLink(value: route) { ... }` |
+| Persist path | `@SceneStorage` + Codable |
+| Search + navigate | `.searchable` + `NavigationLink(value:)` |
+
+### Additional Resources
+
+- [NavigationStack Documentation](https://developer.apple.com/documentation/swiftui/navigationstack)
+- [NavigationSplitView Documentation](https://developer.apple.com/documentation/swiftui/navigationsplitview)
+- [NavigationPath Documentation](https://developer.apple.com/documentation/swiftui/navigationpath)
+- [Migrating to New Navigation Types (WWDC)](https://developer.apple.com/videos/play/wwdc2022/10054/)

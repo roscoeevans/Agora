@@ -65,56 +65,15 @@ struct AgoraApp: App {
     }
     
     private func setupAppearance() {
-        // Configure global app appearance with dark mode as default
-        DesignSystem.configureDarkModeAsDefault()
-        
-        // Configure additional appearance settings
-        configureNavigationBarAppearance()
-        configureTabBarAppearance()
-    }
-    
-    private func configureNavigationBarAppearance() {
-        // Configure navigation bar for dark mode
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.systemBackground
-        appearance.titleTextAttributes = [
-            .foregroundColor: UIColor.label
-        ]
-        appearance.largeTitleTextAttributes = [
-            .foregroundColor: UIColor.label
-        ]
-        
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        UINavigationBar.appearance().compactAppearance = appearance
-    }
-    
-    private func configureTabBarAppearance() {
-        // Configure tab bar with brand colors
-        let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithDefaultBackground()
-        
-        // AccentColor is our PRIMARY brand color #FF3466
-        // This is the same as AgoraBrand in DesignSystem, but AccentColor is the
-        // global iOS accent color that's accessible from UIKit
-        let accentColor: UIColor
-        if let loadedColor = UIColor(named: "AccentColor") {
-            accentColor = loadedColor
-        } else {
-            // Fallback to PRIMARY brand color #FF3466
-            accentColor = UIColor(red: 1.0, green: 0.204, blue: 0.4, alpha: 1.0)
-        }
-        
-        // Set selected tab items to use AccentColor (PRIMARY brand color #FF3466)
-        UITabBar.appearance().tintColor = accentColor
-        
-        // Set unselected items to secondary text color
-        UITabBar.appearance().unselectedItemTintColor = UIColor.secondaryLabel
-        
-        UITabBar.appearance().standardAppearance = tabBarAppearance
-        if #available(iOS 15.0, *) {
-            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+        // Apply saved appearance preference on launch
+        Task { @MainActor in
+            let mode = deps.appearance.currentMode
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                for window in windowScene.windows {
+                    window.overrideUserInterfaceStyle = mode == .dark ? .dark : .light
+                }
+            }
         }
     }
+    
 }
