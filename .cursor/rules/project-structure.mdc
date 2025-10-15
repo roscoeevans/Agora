@@ -20,10 +20,10 @@ Agora/
 ├── OpenAPI/                   # API specifications (see ios-configuration.mdc)
 ├── Packages/                  # Swift Package modules (see below)
 ├── Resources/                 # App resources and main app files
-├── Scripts/                   # Build and utility scripts
+├── Scripts/                   # Legacy CI/test scripts (most replaced by agctl)
 ├── supabase/                  # Supabase Edge Functions
 ├── Tests/                     # Cross-module snapshot/UI tests
-├── Makefile                   # Build commands
+├── Tools/                     # Development tools (agctl CLI)
 └── Package.swift              # Root package manifest
 ```
 
@@ -234,6 +234,29 @@ Navigation infrastructure lives in `Shared/AppFoundation` because:
 - `DeepLinkRouter.swift` - URL parsing and route construction
 - `NavigationEnvironment.swift` - SwiftUI environment for navigation coordination
 
+### Tools Directory
+
+Development tools and automation:
+
+```
+Tools/
+└── agctl/                     # Agora CLI tool (Swift-based)
+    ├── Package.swift          # Tool package manifest
+    ├── Sources/               # CLI implementation
+    ├── install.sh             # Installation script
+    ├── README.md              # Tool documentation
+    └── QUICKSTART.md          # Quick reference
+```
+
+**agctl** is the primary tool for:
+- Building individual modules: `agctl build {ModuleName}`
+- Testing modules: `agctl test {ModuleName}`
+- Generating OpenAPI client: `agctl generate openapi`
+- Validating project structure: `agctl validate modules`
+- Installing git hooks: `agctl install-hooks`
+
+See `Tools/agctl/README.md` or `docs/AGCTL_GUIDE.md` for complete documentation.
+
 ### Resources Directory
 
 Main app resources and entry point (not packages):
@@ -253,19 +276,19 @@ Resources/
 
 ### Quick Reference: Common Tasks
 
-| Task | Location |
-|------|----------|
-| New user-facing feature | `Packages/Features/{FeatureName}/` |
-| New reusable UI component | `Packages/Kits/DesignSystem/` |
-| New API endpoint | `OpenAPI/agora.yaml` + `make api-gen` |
-| New service/client | `Packages/Kits/{ServiceName}/` |
-| Auth-related service | `Packages/Shared/AppFoundation/` |
-| App-wide utility | `Packages/Shared/AppFoundation/` |
-| Test helper | `Packages/Shared/TestSupport/` |
-| Navigation route | `Packages/Shared/AppFoundation/Routes.swift` |
-| Environment config | `Resources/Configs/{Environment}.plist` |
-| Build script | `Scripts/{script-name}.sh` |
-| Database migration | `database/migrations/{number}_{name}.sql` |
+| Task | Location | Command |
+|------|----------|---------|
+| New user-facing feature | `Packages/Features/{FeatureName}/` | `agctl build {FeatureName}` |
+| New reusable UI component | `Packages/Kits/DesignSystem/` | `agctl build DesignSystem` |
+| New API endpoint | `OpenAPI/agora.yaml` | `agctl generate openapi` |
+| New service/client | `Packages/Kits/{ServiceName}/` | `agctl build {ServiceName}` |
+| Auth-related service | `Packages/Shared/AppFoundation/` | `agctl build AppFoundation` |
+| App-wide utility | `Packages/Shared/AppFoundation/` | `agctl build AppFoundation` |
+| Test helper | `Packages/Shared/TestSupport/` | `agctl test TestSupport` |
+| Navigation route | `Packages/Shared/AppFoundation/Routes.swift` | - |
+| Environment config | `Resources/Configs/{Environment}.plist` | - |
+| Build automation tool | `Tools/agctl/` | `agctl --help` |
+| Database migration | `database/migrations/{number}_{name}.sql` | - |
 
 ### Related Rules
 

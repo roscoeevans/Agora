@@ -217,7 +217,7 @@ Packages/Kits/Networking/Sources/Networking/Generated/
 
 2. Generate Swift client code:
    ```bash
-   make api-gen
+   agctl generate openapi
    ```
 
 3. Review and commit changes:
@@ -245,9 +245,10 @@ mint install apple/swift-openapi-generator
 brew install swift-openapi-generator
 ```
 
-**Option 3 - Manual (fallback in script):**
+**Option 3 - agctl (handles installation detection):**
 ```bash
-# See Scripts/generate-openapi.sh for multiple installation methods
+# agctl automatically tries multiple methods: Mint → Homebrew → SPM → Docker
+agctl generate openapi
 ```
 
 #### Generator Configuration
@@ -323,11 +324,11 @@ Ensure generated code stays in sync with spec:
 
 ```bash
 # In CI pipeline
-make api-gen
+agctl generate openapi
 git diff --exit-code Packages/Kits/Networking/Sources/Networking/Generated
 ```
 
-If diff is not empty, CI fails with message: "Generated code out of sync. Run `make api-gen` and commit."
+If diff is not empty, CI fails with message: "Generated code out of sync. Run `agctl generate openapi` and commit."
 
 #### Package.swift Dependencies
 
@@ -395,74 +396,91 @@ PackageName/
 - **Colors:** Use semantic names (e.g., `AccentColor`, `PrimaryBackground`)
 - **Images:** Use descriptive names (e.g., `onboarding-welcome`, `icon-checkmark`)
 
-### Build Scripts
+### Build Automation with agctl
 
-Scripts are located in `Scripts/` directory:
+**Primary Tool:** Use `agctl` for all module-level operations and code generation.
+
+#### agctl - Agora Command Line Tool
+
+`agctl` is a Swift-based CLI tool that replaces shell scripts with a unified interface.
+
+**Installation:**
+```bash
+cd Tools/agctl
+./install.sh
+```
+
+**Common Commands:**
+```bash
+# Generate OpenAPI client (REPLACES Scripts/generate-openapi.sh)
+agctl generate openapi
+
+# Build specific modules
+agctl build AuthFeature
+agctl build DesignSystem
+
+# Test specific modules
+agctl test Networking
+agctl test Compose
+
+# Validate project structure
+agctl validate modules
+agctl validate dependencies
+
+# Install git hooks for automatic validation
+agctl install-hooks
+```
+
+**Documentation:**
+- Quick Start: `Tools/agctl/QUICKSTART.md`
+- Full Guide: `docs/AGCTL_GUIDE.md`
+- Command Reference: `Tools/agctl/README.md`
+- Built-in Help: `agctl --help`
+
+#### Legacy Scripts (Still in use)
 
 ```
 Scripts/
-├── prebuild.sh                # Pre-build validation and setup
-├── generate-openapi.sh        # OpenAPI code generation
 ├── ci-postbuild.sh            # CI post-build tasks
 └── run-ui-tests.sh            # UI test runner
 ```
 
-#### Script Requirements
+**Note:** `generate-openapi.sh` and `prebuild.sh` have been replaced by `agctl` commands.
 
-1. **Shebang:** Start with `#!/bin/bash` or `#!/bin/zsh`
-2. **Error Handling:** Use `set -e` to exit on errors
-3. **Logging:** Use `echo` for progress updates
-4. **Executable:** Make executable with `chmod +x`
-5. **Documentation:** Include header comment explaining purpose
+### Common Build Commands
 
-**Example:**
+**Using agctl (Recommended):**
 
 ```bash
-#!/bin/bash
-# Generates Swift client code from OpenAPI specification
-# Usage: ./generate-openapi.sh
+# OpenAPI generation
+agctl generate openapi              # Generate API client from OpenAPI spec
 
-set -e
+# Module builds
+agctl build                         # Build all modules
+agctl build Networking              # Build specific module
+agctl build --release               # Release build
 
-echo "🔧 Generating OpenAPI client..."
-cd OpenAPI/
-swift-openapi-generator generate agora.yaml --config openapi-config.yaml
-echo "✅ OpenAPI client generated successfully"
+# Module tests
+agctl test                          # Test all modules
+agctl test Networking               # Test specific module
+agctl test --parallel               # Parallel testing
+
+# Validation
+agctl validate modules              # Check module structure
+agctl validate dependencies         # Check for circular deps
 ```
 
-### Makefile Commands
-
-The root `Makefile` provides convenient build commands:
-
-```makefile
-# OpenAPI commands
-api-gen:          # Generate API client from OpenAPI spec
-	@./Scripts/generate-openapi.sh
-
-api-clean:        # Remove generated API files
-	@rm -rf Packages/Kits/Networking/Sources/Networking/Generated
-
-# Build commands
-build-staging:    # Build for staging environment
-	xcodebuild -scheme "Agora Staging" -configuration Debug-Staging
-
-build-production: # Build for production
-	xcodebuild -scheme "Agora Production" -configuration Release-Production
-
-# Test commands
-test:             # Run unit tests
-	swift test
-
-ui-test:          # Run UI tests
-	./Scripts/run-ui-tests.sh
-```
-
-**Usage:**
+**Using xcodebuild (For main app):**
 
 ```bash
-make api-gen              # Generate OpenAPI client
-make build-staging        # Build staging
-make test                 # Run tests
+# Build staging
+xcodebuild -scheme "Agora Staging" -configuration Debug-Staging
+
+# Build production
+xcodebuild -scheme "Agora Production" -configuration Release-Production
+
+# Run UI tests
+./Scripts/run-ui-tests.sh
 ```
 
 ### Common Configuration Tasks
@@ -517,7 +535,7 @@ make test                 # Run tests
 
 3. **Generate code:**
    ```bash
-   make api-gen
+   agctl generate openapi
    ```
 
 4. **Add high-level method to AgoraAPIClient:**
@@ -537,23 +555,31 @@ make test                 # Run tests
 
 1. **Clone repository**
 
-2. **Copy example plists:**
+2. **Install agctl:**
+   ```bash
+   cd Tools/agctl
+   ./install.sh
+   agctl install-hooks  # Install git hooks for automatic validation
+   ```
+
+3. **Copy example plists:**
    ```bash
    cp Resources/Configs/Staging.plist.example Resources/Configs/Staging.plist
    cp Resources/Configs/Production.plist.example Resources/Configs/Production.plist
    ```
 
-3. **Fill in real values** (ask team for credentials)
+4. **Fill in real values** (ask team for credentials)
 
-4. **Install OpenAPI generator:**
+5. **Install OpenAPI generator (if not using agctl):**
    ```bash
    mint install apple/swift-openapi-generator
    ```
 
-5. **Verify setup:**
+6. **Verify setup:**
    ```bash
-   make api-gen       # Should succeed
-   make build-staging # Should build successfully
+   agctl generate openapi    # Should succeed
+   agctl validate modules    # Should pass
+   agctl build              # Should build successfully
    ```
 
 ### Related Documentation

@@ -14,18 +14,23 @@ public struct ComposeView: View {
     @Environment(\.deps) private var deps
     @State private var viewModel: ComposeViewModel?
     @Environment(\.dismiss) private var dismiss
+    let quotePostId: String?
     
-    public init() {}
+    public init(quotePostId: String? = nil) {
+        self.quotePostId = quotePostId
+    }
     
     public var body: some View {
         content
             .task {
                 // Initialize view model with dependencies from environment
                 // Following DI rule: dependencies injected from environment
-                self.viewModel = ComposeViewModel(
+                var vm = ComposeViewModel(
                     networking: deps.networking,
                     verificationManager: AppAttestManager.shared
                 )
+                vm.quotePostId = quotePostId
+                self.viewModel = vm
             }
     }
     
@@ -57,9 +62,16 @@ public struct ComposeView: View {
                         // Character count
                         HStack {
                             Spacer()
-                            Text("\(vm.characterCount)/70")
+                            Text("\(vm.characterCount)/280")
                                 .font(TypographyScale.caption1)
                                 .foregroundColor(vm.isOverLimit ? ColorTokens.error : ColorTokens.tertiaryText)
+                        }
+                        
+                        // Link preview
+                        if let linkPreview = vm.linkPreview {
+                            LinkPreviewCard(preview: linkPreview) {
+                                vm.linkPreview = nil
+                            }
                         }
                         
                         // Media selection area
@@ -73,6 +85,12 @@ public struct ComposeView: View {
                         MediaPickerButtonView { item in
                             vm.addMedia(item)
                         }
+                        
+                        // Self-destruct picker
+                        SelfDestructPicker(selectedDuration: Binding(
+                            get: { vm.selfDestructDuration },
+                            set: { vm.selfDestructDuration = $0 }
+                        ))
                         
                         Spacer()
                     }
@@ -136,6 +154,13 @@ public struct ComposeView: View {
                     .onDisappear {
                         if !vm.text.isEmpty {
                             vm.saveDraft()
+                        }
+                    }
+                    .onChange(of: vm.text) { newValue in
+                        // Debounce link preview fetch
+                        Task {
+                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second debounce
+                            await vm.detectAndFetchLinkPreview()
                         }
                     }
                 }

@@ -34,13 +34,9 @@ public enum DeepLinkRouter {
             }
             return (.search, [])
             
-        case "messages":
-            if url.pathComponents.contains("thread"),
-               let idString = url.pathComponents.last,
-               let id = UUID(uuidString: idString) {
-                return (.messages, [MessagesRoute.thread(id: id)])
-            }
-            return (.messages, [])
+        case "compose":
+            // Compose tab opens sheet, no path needed
+            return (.compose, [])
             
         case "notifications":
             if url.pathComponents.contains("detail"),

@@ -279,7 +279,7 @@ struct AgoraEmptyStateView_Previews: PreviewProvider {
             )
             
             // Convenience initializers
-            AgoraEmptyStateView.emptyFeed()
+            AgoraEmptyStateView.emptyFeed(action: { print("Create post tapped!") })
             AgoraEmptyStateView.noSearchResults()
         }
         .padding(SpacingTokens.md)
@@ -313,7 +313,7 @@ struct AgoraEmptyStateView_Previews: PreviewProvider {
             )
             
             // Convenience initializers
-            AgoraEmptyStateView.emptyFeed()
+            AgoraEmptyStateView.emptyFeed(action: { print("Create post tapped!") })
             AgoraEmptyStateView.noSearchResults()
         }
         .padding(SpacingTokens.md)

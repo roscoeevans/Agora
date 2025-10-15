@@ -1,0 +1,415 @@
+---
+description: When writing user-facing copy, UI labels, marketing messages, feature descriptions, onboarding flows, empty states, error messages, or any text that users will read in the Agora app. Use this rule to match Apple's confident, friendly, and aspirational tone of voice.
+---
+
+## Apple Tone of Voice for Agora
+
+### Overview
+
+This rule defines how to write user-facing copy in Agora that matches Apple's distinctive marketing voice. Apple's tone is confident and enthusiastic yet friendly and approachable—it focuses on highlighting innovative design and functionality in a clear, simple way, positioning the brand as an ally that empowers customers to be creative.
+
+Apply this guidance to all user-facing text including:
+- Feature descriptions and UI labels
+- Onboarding flows and welcome screens
+- Empty states and placeholder text
+- Error messages and system alerts
+- Settings descriptions and help text
+- Marketing copy and App Store descriptions
+
+### Core Characteristics
+
+#### 1. Confident and Aspirational
+- Make bold claims about being "the most" or "best"
+- Position features as top-of-the-line
+- Appeal to users who want cutting-edge experiences
+- Use superlatives thoughtfully: "most advanced," "fastest," "best"
+
+#### 2. Enthusiastic yet Respectful
+- Convey genuine excitement about features
+- Never use slang, sarcasm, or irreverence
+- Use positive adjectives: "blazing-fast," "stunning," "breakthrough"
+- Keep energy high but delivery sincere and matter-of-fact
+
+#### 3. Friendly and Inclusive
+- Speak directly using "you" and "your"
+- Create a one-on-one conversational feel
+- Position Agora as an earnest ally and helpful partner
+- Make it personal: "So you can explore..." not "Users can explore..."
+
+#### 4. Matter-of-Fact and Simple
+- Use clear, straightforward language
+- Avoid jargon and complex vocabulary
+- Prefer short sentences and even fragments
+- Keep paragraphs brief
+
+#### 5. Polished and Stylish
+- Choose every word intentionally
+- Say more with less
+- Convey ideas quickly and memorably
+- Maintain a sleek voice that reinforces quality
+
+#### 6. Innovative and Visionary
+- Frame features as transformative
+- Position Agora as opening new possibilities
+- Suggest the app helps users be part of something big
+- Hint at changing how people connect and share
+
+### Sentence Structure Guidelines
+
+#### Short, Punchy Sentences
+```swift
+// ✅ Good - Apple style
+"Titanium. So strong. So light. So Pro."
+"Your feed. Personalized. Always fresh."
+
+// ❌ Avoid - Too wordy
+"The feed uses advanced algorithms to personalize content and keep it fresh."
+```
+
+Use sentence fragments for emphasis. Each fragment should carry meaning on its own.
+
+#### One Idea per Sentence
+```swift
+// ✅ Good
+"Light. Years ahead."
+"Connect instantly. Share fearlessly."
+
+// ❌ Avoid
+"Agora is light and fast, and it's also years ahead of other social platforms in terms of features and performance."
+```
+
+#### Conversational Grammar
+Feel free to start sentences with "And," "But," or "So" for conversational flow:
+
+```swift
+// ✅ Good
+"Share your thoughts with the world. And watch the conversation unfold."
+"It seems impossible. But it's not."
+
+// ❌ Avoid
+"Share your thoughts with the world while watching the conversation unfold."
+```
+
+#### Parallel Structure and Repetition
+```swift
+// ✅ Good
+"All your moments. All your connections. All in one place."
+"So fast. So fluid. So Agora."
+
+// ❌ Avoid
+"You can share moments, connect with others, and everything's in one place."
+```
+
+#### Use "You" Extensively
+```swift
+// ✅ Good
+"With instant notifications, you never miss a moment that matters."
+"So you can focus on what's important."
+
+// ❌ Avoid
+"Instant notifications ensure users don't miss important moments."
+"Allows focusing on important things."
+```
+
+### User-Focused Messaging
+
+#### Frame Features as Solutions
+```swift
+// ✅ Good - Problem → Solution
+"Want to build meaningful connections? Agora helps you do it, effortlessly."
+"Trying to find your community? Your people are already here."
+
+// ❌ Avoid - Just stating features
+"Agora has connection features."
+"The app includes community discovery."
+```
+
+#### Highlight Experiences, Not Specs
+```swift
+// ✅ Good - Experiential
+"From late-night thoughts to morning inspiration, share it all."
+"Capture the moment. Start the conversation. Watch it grow."
+
+// ❌ Avoid - Technical only
+"Posts support text up to 280 characters with image attachments."
+"Real-time feed updates via WebSocket connection."
+```
+
+#### Benefit First, Then Detail
+```swift
+// ✅ Good
+"Lightning-fast feed that loads instantly — powered by intelligent caching and predictive loading."
+
+// ❌ Avoid
+"Our intelligent caching system with predictive loading technology updates the feed."
+```
+
+### Templates and Sentence Starters
+
+#### Introducing Features
+```
+"Introducing [Feature Name], [intriguing claim]."
+
+Examples:
+- "Introducing For You, curated just for your interests."
+- "Introducing Threading, conversations that flow naturally."
+```
+
+#### Elevating Beyond the Obvious
+```
+"[Product/Feature] is more than just [category]. It's [broader purpose]."
+
+Examples:
+- "Agora is more than just a social app. It's where ideas come to life."
+- "Your profile is more than a page. It's your voice in the digital town square."
+```
+
+#### Feature-Benefit Pairs
+```
+"[Feature] that [benefit]."
+"[Feature] for [benefit]."
+
+Examples:
+- "Real-time updates that keep you in the moment."
+- "Smart recommendations for discovering voices you'll love."
+```
+
+#### Quantified Improvements
+```
+"Up to [X] [improvement] — so you can [user benefit]."
+
+Examples:
+- "Up to 1000 posts in your feed — so you never run out of great content."
+- "Instant sync across devices — so you can pick up right where you left off."
+```
+
+#### Scenario Coverage
+```
+"From [scenario A] to [scenario B], [Feature] [excels]."
+
+Examples:
+- "From morning coffee to late-night musings, your thoughts find their moment."
+- "From casual scrolling to deep discussions, Agora adapts to you."
+```
+
+#### Metaphorical Simplification
+```
+"It's like having [metaphor] [location]."
+
+Examples:
+- "It's like having a thoughtful conversation with the world, right in your pocket."
+- "Like having a front-row seat to the ideas shaping culture."
+```
+
+#### Playful Exaggeration
+```
+"Any more [quality] and it would [humorous consequence]."
+
+Examples:
+- "Any more personalized and it would read your mind."
+- "Any faster and you'd see posts before they're written."
+```
+
+#### Emphasis Through Repetition
+```
+"All [X]. All [Y]. All on/in [Product]."
+
+Examples:
+- "All your interests. All your people. All in Agora."
+- "All the conversations. All the connections. All here."
+```
+
+#### Superlative Claims
+```
+"The most [adjective] [thing] we've ever made."
+"Our [superlative] [thing] yet."
+
+Examples:
+- "The most intuitive feed you've ever scrolled."
+- "Our fastest, most responsive app yet."
+```
+
+#### Friendly Introductions
+```
+"Meet [Feature]. [Identity/benefit]."
+
+Examples:
+- "Meet For You. Your feed, your way."
+- "Meet Threading. Conversations worth having."
+```
+
+### Practical Examples for Agora
+
+#### Empty States
+```swift
+// ✅ Good
+"Your feed is waiting for you.
+Follow people to see their posts here."
+
+"No notifications yet.
+When someone engages with you, you'll see it here."
+
+// ❌ Avoid
+"There are currently no items to display in your feed."
+"Your notification list is empty."
+```
+
+#### Onboarding
+```swift
+// ✅ Good
+"Welcome to Agora.
+Where every voice matters."
+
+"Find your people.
+Discover conversations that spark something."
+
+// ❌ Avoid
+"Please complete your profile setup."
+"Browse available content categories."
+```
+
+#### Error Messages
+```swift
+// ✅ Good
+"Couldn't connect.
+Check your connection and try again."
+
+"Something went wrong.
+We're looking into it."
+
+// ❌ Avoid
+"Network error: Connection timeout (error code: 500)"
+"An unexpected exception occurred during request processing."
+```
+
+#### Feature Descriptions
+```swift
+// ✅ Good
+"For You learns what you love.
+The more you explore, the better it gets."
+
+"Threading keeps conversations organized.
+No more lost replies."
+
+// ❌ Avoid
+"For You uses machine learning algorithms to rank content."
+"Threading implements a hierarchical comment structure."
+```
+
+#### Settings Descriptions
+```swift
+// ✅ Good
+"Push Notifications
+Stay in the loop with instant updates."
+
+"Privacy Controls
+Your content, your rules."
+
+// ❌ Avoid
+"Push Notifications
+Configure notification delivery preferences."
+
+"Privacy Settings
+Manage content visibility permissions."
+```
+
+#### Call-to-Action Buttons
+```swift
+// ✅ Good
+"Get Started"
+"Share Your Thought"
+"Join the Conversation"
+"Discover More"
+
+// ❌ Avoid
+"Submit"
+"Execute Action"
+"Proceed to Next Step"
+```
+
+### Writing Checklist
+
+Before finalizing any copy, verify:
+
+- [ ] Uses "you" and "your" to speak directly to users
+- [ ] Leads with benefits, not features
+- [ ] Uses short, punchy sentences (mix with occasional longer ones)
+- [ ] Feels confident but not arrogant
+- [ ] Sounds enthusiastic but not over-the-top
+- [ ] Includes at least one scenario or use case the user can relate to
+- [ ] Avoids jargon and technical terms (or explains them simply)
+- [ ] Could be read aloud naturally
+- [ ] Feels like it's from a helpful ally, not a corporate entity
+- [ ] Makes the user feel empowered or inspired
+
+### Do's and Don'ts
+
+#### ✅ Do
+- Make bold, confident claims (if true)
+- Use superlatives thoughtfully ("most," "best," "fastest")
+- Start sentences with "And," "But," "So" for flow
+- Use sentence fragments for emphasis
+- Speak directly with "you"
+- Paint pictures of use cases and scenarios
+- Include subtle wordplay or metaphors
+- Lead with benefits, follow with features
+- Keep it simple and scannable
+
+#### ❌ Don't
+- Use slang, jargon, or overly technical language
+- Be sarcastic, snarky, or irreverent
+- Write long, complex sentences
+- Use exclamation points excessively (one per screen max)
+- Make claims you can't back up
+- Focus only on technical specs
+- Use corporate-speak or passive voice
+- Overexplain—trust the user's intelligence
+- Use humor that could fall flat or feel forced
+
+### Voice Examples by Context
+
+#### Marketing/App Store
+```
+"Agora. Where ideas meet their moment.
+
+Share your thoughts. Discover perspectives. Join conversations that matter. 
+From casual observations to deep discussions, your voice finds its place.
+
+All your interests. All your people. All in one elegant feed.
+
+Welcome to the new town square."
+```
+
+#### Feature Launch
+```
+"Introducing Smart Replies.
+The perfect response, when you need it most.
+
+Powered by your conversation style, Smart Replies suggests authentic responses 
+that sound like you. So you can keep conversations flowing, even when 
+you're short on time.
+
+From quick reactions to thoughtful replies, it's always ready with the right words."
+```
+
+#### Error Recovery
+```
+"We hit a snag.
+
+Your post didn't go through, but we saved it. 
+When you're back online, just tap to try again.
+
+Don't worry—your thoughts aren't going anywhere."
+```
+
+### Final Notes
+
+The Apple tone is about making technology feel human, approachable, and aspirational. When writing for Agora, remember:
+
+1. **You're not selling features—you're enabling experiences**
+2. **The user is the hero—the app is their tool**
+3. **Simple doesn't mean simplistic—it means clear**
+4. **Confidence without arrogance—enthusiasm without hyperbole**
+5. **Every word should earn its place**
+
+When in doubt, read your copy aloud. If it sounds like something you'd hear in an Apple keynote or see on their website—confident, clear, and genuinely exciting—you've nailed it.

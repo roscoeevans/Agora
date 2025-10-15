@@ -9,20 +9,64 @@ alwaysApply: false
 
 This rule provides comprehensive guidance for building and testing the Agora iOS app, ensuring compilation success while enabling granular testing to identify exactly what breaks when changes are made. The app uses a modular Swift Package Manager architecture with Features, Kits, and Shared packages, requiring both individual module testing and integration testing.
 
+**Primary Tool**: Use `agctl` (Agora's CLI tool) for all module-level operations (build, test, validate). Use `xcodebuild` for main app target operations and UI tests.
+
+### agctl - Agora Command Line Tool
+
+`agctl` is the primary tool for module operations. It provides a unified interface for building, testing, and validating packages.
+
+#### Quick Reference
+
+```bash
+# Build specific module
+agctl build AuthFeature
+agctl build DesignSystem
+
+# Build all modules
+agctl build
+
+# Test specific module
+agctl test AuthFeature
+agctl test Networking
+
+# Test all modules
+agctl test
+
+# Validate project structure
+agctl validate modules
+agctl validate dependencies
+
+# Generate OpenAPI client
+agctl generate openapi
+```
+
+For full documentation, see:
+- `Tools/agctl/README.md` - Command reference
+- `docs/AGCTL_GUIDE.md` - Complete workflows
+- Run `agctl --help` for built-in help
+
 ### Build Verification Commands
 
 #### 1. **Quick Compilation Check**
 Use these commands to verify the app compiles without running tests:
 
 ```bash
-# Build main app target
+# Build main app target (use xcodebuild)
 xcodebuild build \
     -project Agora.xcodeproj \
     -scheme Agora \
     -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
     -quiet
 
-# Build all packages
+# Build all packages (PREFERRED: use agctl)
+agctl build
+
+# Build specific modules (PREFERRED: use agctl)
+agctl build Compose
+agctl build DesignSystem
+agctl build AppFoundation
+
+# Alternative: Direct swift commands
 swift build --package-path Packages/Features/Compose
 swift build --package-path Packages/Kits/DesignSystem
 swift build --package-path Packages/Shared/AppFoundation
@@ -53,17 +97,21 @@ xcodebuild build \
 Test specific modules when changes are made:
 
 ```bash
-# Test individual features
+# PREFERRED: Use agctl for module testing
+agctl test Compose
+agctl test HomeForYou
+agctl test Profile
+agctl test DesignSystem
+agctl test Networking
+agctl test AppFoundation
+agctl test TestSupport
+
+# Alternative: Direct swift commands
 swift test --package-path Packages/Features/Compose
 swift test --package-path Packages/Features/HomeForYou
 swift test --package-path Packages/Features/Profile
-
-# Test individual kits
 swift test --package-path Packages/Kits/DesignSystem
 swift test --package-path Packages/Kits/Networking
-swift test --package-path Packages/Kits/Auth
-
-# Test shared modules
 swift test --package-path Packages/Shared/AppFoundation
 swift test --package-path Packages/Shared/TestSupport
 ```
@@ -72,22 +120,30 @@ swift test --package-path Packages/Shared/TestSupport
 Test modules in dependency order to identify breaking changes:
 
 ```bash
+# PREFERRED: Use agctl (automatically tests in dependency order)
+agctl test
+
+# Or test specific modules in order:
 # Test foundation modules first
-swift test --package-path Packages/Shared/AppFoundation
-swift test --package-path Packages/Shared/TestSupport
+agctl test AppFoundation
+agctl test TestSupport
 
 # Test core kits
-swift test --package-path Packages/Kits/DesignSystem
-swift test --package-path Packages/Kits/Networking
-swift test --package-path Packages/Kits/Auth
+agctl test DesignSystem
+agctl test Networking
 
 # Test dependent kits
-swift test --package-path Packages/Kits/Analytics
-swift test --package-path Packages/Kits/Media
+agctl test Analytics
+agctl test Media
 
 # Test features last
+agctl test Compose
+agctl test HomeForYou
+
+# Alternative: Direct swift commands
+swift test --package-path Packages/Shared/AppFoundation
+swift test --package-path Packages/Kits/DesignSystem
 swift test --package-path Packages/Features/Compose
-swift test --package-path Packages/Features/HomeForYou
 ```
 
 ### Test Categories
@@ -192,11 +248,21 @@ xcodebuild test \
 
 #### 3. **Package Targets**
 ```bash
-# Build specific packages
+# PREFERRED: Use agctl for package operations
+agctl build Compose
+agctl build DesignSystem
+agctl test Compose
+agctl test DesignSystem
+
+# With additional flags
+agctl build --release              # Release build
+agctl build --verbose              # Verbose output
+agctl test --parallel              # Parallel testing
+agctl test --verbose               # Verbose test output
+
+# Alternative: Direct swift commands
 swift build --package-path Packages/Features/Compose
 swift build --package-path Packages/Kits/DesignSystem
-
-# Test specific packages
 swift test --package-path Packages/Features/Compose
 swift test --package-path Packages/Kits/DesignSystem
 ```
@@ -224,17 +290,17 @@ xcodebuild build \
 ```
 
 #### 2. **Dependency Resolution**
-Resolve package dependencies:
+Resolve package dependencies and validate structure:
 
 ```bash
-# Resolve all dependencies
-swift package resolve
+# PREFERRED: Validate dependencies with agctl
+agctl validate dependencies        # Check for circular deps, invalid paths
+agctl validate modules             # Check module structure and naming
 
-# Update dependencies
-swift package update
-
-# Check for dependency conflicts
-swift package show-dependencies
+# Standard dependency management
+swift package resolve              # Resolve all dependencies
+swift package update               # Update dependencies
+swift package show-dependencies    # Check for dependency conflicts
 ```
 
 #### 3. **SwiftLint Integration**
@@ -254,10 +320,13 @@ swiftlint --fix --config Configs/Lint/swiftlint.yml
 Test only changed modules:
 
 ```bash
-# Test specific changed package
-swift test --package-path Packages/Features/Compose
+# PREFERRED: Use agctl for module testing
+agctl test Compose                 # Test specific changed package
+agctl test DesignSystem            # Test dependent packages
+agctl test AppFoundation
 
-# Test dependent packages
+# Alternative: Direct swift commands
+swift test --package-path Packages/Features/Compose
 swift test --package-path Packages/Kits/DesignSystem
 swift test --package-path Packages/Shared/AppFoundation
 ```
@@ -306,15 +375,19 @@ xcodebuild test \
 
 ### CI/CD Integration
 
-#### 1. **Pre-build Scripts**
-Use existing automation:
+#### 1. **Pre-build Operations**
+Use agctl for build automation:
 
 ```bash
-# Run pre-build checks
-./Scripts/prebuild.sh
+# Validate project structure (runs automatically via git hooks)
+agctl validate modules
+agctl validate dependencies
 
-# Generate OpenAPI client
-./Scripts/generate-openapi.sh
+# Generate OpenAPI client (REPLACES ./Scripts/generate-openapi.sh)
+agctl generate openapi
+
+# Build all modules
+agctl build
 ```
 
 #### 2. **Post-build Scripts**
@@ -357,7 +430,13 @@ swift package show-dependencies
 
 #### 2. **Package Testing**
 ```bash
-# Test all packages
+# PREFERRED: Use agctl for package testing
+agctl test                         # Test all packages
+agctl test Compose                 # Test specific package
+agctl test --parallel              # Parallel testing
+agctl test --verbose               # Verbose output
+
+# Alternative: Direct swift commands
 swift test --package-path Packages/Features/Compose
 swift test --package-path Packages/Kits/DesignSystem
 swift test --package-path Packages/Shared/AppFoundation
@@ -368,10 +447,12 @@ swift test --package-path Packages/Features/Compose --enable-code-coverage
 
 #### 3. **Package Validation**
 ```bash
-# Validate package manifests
-swift package validate-package-manifest
+# PREFERRED: Use agctl for validation
+agctl validate modules             # Check structure and naming
+agctl validate dependencies        # Check circular deps and paths
 
-# Check package structure
+# Standard package validation
+swift package validate-package-manifest
 swift package describe --type json
 ```
 
@@ -460,19 +541,25 @@ xcodebuild test \
 - Clean build folder when encountering issues
 
 #### 2. **Testing Efficiency**
-- Test changed modules first
+- Use `agctl test [module]` for individual module testing
+- Test changed modules first with `agctl test ModuleName`
+- Use `agctl test --parallel` for faster testing
+- Run `agctl validate modules` before testing
 - Use incremental testing strategies
-- Run smoke tests before full test suites
-- Use parallel testing when possible
 
 #### 3. **Error Prevention**
+- Run `agctl validate modules` before making changes
+- Run `agctl validate dependencies` to catch circular deps
+- Use `agctl build` to verify module builds
 - Run SwiftLint before building
-- Check dependencies regularly
+- Check dependencies regularly with `agctl validate`
 - Use strict concurrency checking
-- Validate package manifests
 
 #### 4. **CI/CD Integration**
-- Use existing build scripts
+- Use `agctl` commands for all module operations
+- Run `agctl validate modules && agctl validate dependencies` first
+- Use `agctl generate openapi` for API client generation
+- Use `agctl build && agctl test` for module verification
 - Generate test coverage reports
 - Archive builds for distribution
 - Run UI tests on appropriate simulators
@@ -480,27 +567,48 @@ xcodebuild test \
 ### Implementation Checklist
 
 #### Before Making Changes
-- [ ] Run smoke test to verify current state
-- [ ] Check for any existing build issues
+- [ ] Run `agctl validate modules` to verify current state
+- [ ] Run `agctl validate dependencies` to check for issues
+- [ ] Run `agctl build` to verify everything compiles
 - [ ] Ensure simulator is available and booted
 - [ ] Run SwiftLint to check code quality
 
 #### During Development
-- [ ] Test changed modules individually
-- [ ] Run dependent module tests
+- [ ] Use `agctl build [module]` to test changed modules individually
+- [ ] Use `agctl test [module]` to run tests for changed modules
+- [ ] Run dependent module tests with `agctl test`
 - [ ] Check for Swift concurrency issues
 - [ ] Verify UI changes with snapshot tests
 
 #### After Changes
-- [ ] Run full test suite
-- [ ] Check build in both Debug and Release
-- [ ] Verify UI tests pass
+- [ ] Run `agctl validate modules` to verify structure
+- [ ] Run `agctl build` to verify all modules compile
+- [ ] Run `agctl test` to run full test suite
+- [ ] Check build in both Debug and Release with `agctl build --release`
+- [ ] Verify UI tests pass with xcodebuild
 - [ ] Generate test coverage report
 - [ ] Clean up any temporary files
 
 #### When Issues Arise
-- [ ] Check build logs for specific errors
-- [ ] Test modules in dependency order
+- [ ] Run `agctl validate modules --verbose` for detailed errors
+- [ ] Run `agctl validate dependencies` to find circular deps
+- [ ] Use `agctl build [module] --verbose` for detailed build output
+- [ ] Use `agctl test [module] --verbose` for test details
+- [ ] Test modules in dependency order with `agctl test`
 - [ ] Verify simulator is properly configured
-- [ ] Check for dependency conflicts
 - [ ] Run SwiftLint for code quality issues
+
+### Additional Resources
+
+#### agctl Documentation
+- **Quick Start**: `Tools/agctl/QUICKSTART.md`
+- **Full Guide**: `docs/AGCTL_GUIDE.md`
+- **Command Reference**: `Tools/agctl/README.md`
+- **Built-in Help**: Run `agctl --help` or `agctl [command] --help`
+
+#### Installation
+```bash
+cd Tools/agctl
+./install.sh
+agctl install-hooks  # Install git hooks for automatic validation
+```

@@ -9,12 +9,14 @@ import Foundation
 
 // Named AppTab to avoid conflict with SwiftUI.Tab
 public enum AppTab: String, Hashable, Codable {
-    case home, search, messages, notifications, profile
+    case home, search, compose, notifications, profile
 }
 
 public enum HomeRoute: Hashable, Codable {
     case post(id: UUID)
     case profile(id: UUID)
+    case compose(quotePostId: String? = nil)
+    case editHistory(postId: String, currentText: String)
 }
 
 public enum SearchRoute: Hashable, Codable {

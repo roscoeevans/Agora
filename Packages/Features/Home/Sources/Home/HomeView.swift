@@ -9,10 +9,13 @@ import SwiftUI
 import HomeForYou
 import HomeFollowing
 import Compose
+import DMs
 
 public struct HomeView: View {
     @State private var selectedFeed: FeedType = .forYou
     @State private var showingCompose = false
+    @State private var showingFeedSettings = false
+    @State private var showingMessages = false
     
     public init() {}
     
@@ -30,26 +33,32 @@ public struct HomeView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    showingCompose = true
+                    showingFeedSettings = true
                 } label: {
-                    Image(systemName: "square.and.pencil")
+                    Image(systemName: "slider.horizontal.3")
                 }
-                .accessibilityLabel("Create a post")
+                .accessibilityLabel("Feed settings")
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-                Picker("Feed Type", selection: $selectedFeed) {
-                    ForEach(FeedType.allCases, id: \.self) { feedType in
-                        Text(feedType.title)
-                            .tag(feedType)
-                    }
+                Button {
+                    showingMessages = true
+                } label: {
+                    Image(systemName: "message")
                 }
-                .pickerStyle(SegmentedPickerStyle())
-                .frame(width: 200)
+                .accessibilityLabel("Messages")
             }
         }
         .sheet(isPresented: $showingCompose) {
             ComposeView()
+        }
+        .sheet(isPresented: $showingFeedSettings) {
+            FeedSettingsView(selectedFeed: $selectedFeed)
+        }
+        .sheet(isPresented: $showingMessages) {
+            NavigationStack {
+                DMThreadsView()
+            }
         }
     }
 }
@@ -64,6 +73,64 @@ enum FeedType: String, CaseIterable {
             return "For You"
         case .following:
             return "Following"
+        }
+    }
+}
+
+struct FeedSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedFeed: FeedType
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(FeedType.allCases, id: \.self) { feedType in
+                        Button {
+                            selectedFeed = feedType
+                            dismiss()
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(feedType.title)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text(feedType == .forYou ? "Personalized recommendations" : "Posts from people you follow")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                if selectedFeed == feedType {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Feed Type")
+                }
+                
+                Section {
+                    Text("More feed settings coming soon...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } header: {
+                    Text("Additional Settings")
+                }
+            }
+            .navigationTitle("Feed Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }

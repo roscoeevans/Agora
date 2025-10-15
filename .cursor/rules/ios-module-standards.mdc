@@ -8,6 +8,13 @@ alwaysApply: false
 
 This rule defines standards for creating and maintaining Swift Package modules in the Agora iOS app, including Package.swift conventions, module design principles, testing structure, documentation requirements, and architectural rationales.
 
+**Build & Test Commands:** Use `agctl` for all module operations:
+- Build: `agctl build {ModuleName}`
+- Test: `agctl test {ModuleName}`
+- Validate: `agctl validate modules`
+
+See `Tools/agctl/README.md` for complete documentation.
+
 ### Package.swift Standards
 
 #### Required Elements
@@ -343,6 +350,10 @@ High-level architecture overview (if complex).
 How to run tests for this package:
 
 \`\`\`bash
+# Preferred: Use agctl
+agctl test PackageName
+
+# Alternative: Direct swift command
 swift test --package-path Packages/Features/PackageName
 \`\`\`
 
@@ -722,7 +733,8 @@ let client: NetworkingClient  // Protocol  ← GOOD!
 
 6. **Verify build:**
    ```bash
-   swift build
+   agctl build              # Build all modules
+   agctl validate modules   # Verify structure is valid
    ```
 
 ### Performance Considerations

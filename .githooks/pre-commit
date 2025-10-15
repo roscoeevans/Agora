@@ -1,0 +1,30 @@
+#!/bin/bash
+# Pre-commit hook for Agora
+# Validates module structure before allowing commit
+
+set -e
+
+echo "🔍 Running pre-commit validation..."
+
+# Validate module structure
+if command -v agctl &> /dev/null; then
+    agctl validate modules || {
+        echo "❌ Module validation failed!"
+        echo "Fix the issues above or use 'git commit --no-verify' to skip validation"
+        exit 1
+    }
+else
+    echo "⚠️  agctl not found, skipping validation"
+    echo "Install with: cd Tools/agctl && swift build -c release"
+fi
+
+# Run SwiftLint if available
+if command -v swiftlint &> /dev/null; then
+    echo "🔍 Running SwiftLint..."
+    swiftlint lint --quiet || {
+        echo "⚠️  SwiftLint found issues (not blocking commit)"
+    }
+fi
+
+echo "✅ Pre-commit checks passed!"
+

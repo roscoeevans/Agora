@@ -199,6 +199,184 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /posts/create:
+    post:
+      summary: Create a new post
+      tags: [Posts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /posts/{id}/edit:
+    patch:
+      summary: Edit an existing post (within 15 minutes)
+      tags: [Posts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditPostRequest'
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Edit window expired or not post owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /posts/{id}:
+    delete:
+      summary: Delete a post
+      tags: [Posts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      responses:
+        '200':
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not post owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /posts/{id}/edit-history:
+    get:
+      summary: Get edit history for a post
+      tags: [Posts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      responses:
+        '200':
+          description: Edit history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PostEdit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /link-preview:
+    post:
+      summary: Fetch link preview metadata
+      tags: [Posts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Link preview fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkPreview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -363,16 +541,21 @@ components:
           description: Author's unique handle with their preferred capitalization
         text:
           type: string
-          maxLength: 70
+          maxLength: 280
+          description: Post text content (1-280 characters)
         linkUrl:
           type: string
           format: uri
+          nullable: true
         mediaBundleId:
           type: string
+          nullable: true
         replyToPostId:
           type: string
+          nullable: true
         quotePostId:
           type: string
+          nullable: true
         likeCount:
           type: integer
           minimum: 0
@@ -388,6 +571,19 @@ components:
         createdAt:
           type: string
           format: date-time
+        editedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of last edit (null if never edited)
+        selfDestructAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Scheduled deletion time (null if not scheduled)
+        canEdit:
+          type: boolean
+          description: Whether post can still be edited (within 15 minutes of creation)
 
     EnhancedPost:
       allOf:
@@ -435,6 +631,135 @@ components:
         nextCursor:
           type: string
           nullable: true
+
+    CreatePostRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 280
+          description: Post text content
+        mediaBundleId:
+          type: string
+          nullable: true
+          description: ID of uploaded media bundle (if any)
+        linkUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Link URL to include in post
+        quotePostId:
+          type: string
+          nullable: true
+          description: ID of post being quoted
+        replyToPostId:
+          type: string
+          nullable: true
+          description: ID of post being replied to
+        selfDestructAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When post should auto-delete (24h, 3d, or 7d from now)
+
+    EditPostRequest:
+      type: object
+      required:
+        - newText
+      properties:
+        newText:
+          type: string
+          minLength: 1
+          maxLength: 280
+          description: Updated post text
+
+    PostEdit:
+      type: object
+      required:
+        - id
+        - postId
+        - previousText
+        - editedAt
+        - editedBy
+      properties:
+        id:
+          type: string
+          format: uuid
+        postId:
+          type: string
+          description: ID of the post that was edited
+        previousText:
+          type: string
+          description: Text content before the edit
+        editedAt:
+          type: string
+          format: date-time
+          description: When the edit occurred
+        editedBy:
+          type: string
+          description: User ID who made the edit
+
+    LinkPreview:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The URL that was previewed
+        title:
+          type: string
+          nullable: true
+          description: Page title (from og:title or <title>)
+        description:
+          type: string
+          nullable: true
+          description: Page description (from og:description or meta description)
+        imageUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Preview image URL (from og:image)
+        siteName:
+          type: string
+          nullable: true
+          description: Site name (from og:site_name or hostname)
+
+    MediaBundle:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          description: Media bundle ID
+        type:
+          type: string
+          enum: [image, video]
+          description: Type of media
+        urls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Array of media URLs (up to 4 for images, 1 for video)
+        width:
+          type: integer
+          nullable: true
+          description: Media width in pixels
+        height:
+          type: integer
+          nullable: true
+          description: Media height in pixels
+        durationSec:
+          type: integer
+          nullable: true
+          description: Video duration in seconds
 
     Error:
       type: object

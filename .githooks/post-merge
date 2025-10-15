@@ -1,0 +1,26 @@
+#!/bin/bash
+# Post-merge hook for Agora
+# Regenerates OpenAPI client if spec changed
+
+set -e
+
+# Check if OpenAPI spec changed
+if git diff HEAD@{1} --name-only 2>/dev/null | grep -q "OpenAPI/agora.yaml"; then
+    echo "📡 OpenAPI spec changed, regenerating client..."
+    
+    if command -v agctl &> /dev/null; then
+        agctl generate openapi || {
+            echo "⚠️  Failed to regenerate OpenAPI client"
+            echo "Run 'agctl generate openapi' manually"
+        }
+    else
+        echo "⚠️  agctl not found"
+        echo "Install with: cd Tools/agctl && swift build -c release"
+    fi
+fi
+
+# Check if Package.swift changed
+if git diff HEAD@{1} --name-only 2>/dev/null | grep -q "Package.swift"; then
+    echo "📦 Package.swift changed, you may need to rebuild"
+fi
+
