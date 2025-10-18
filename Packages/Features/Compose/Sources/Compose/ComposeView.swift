@@ -293,6 +293,16 @@ struct PostingOverlay: View {
     }
 }
 
-#Preview {
-    ComposeView()
+#if DEBUG
+#Preview("Compose Post") {
+    PreviewDeps.scoped {
+        ComposeView()
+    }
 }
+
+#Preview("Quote Post") {
+    PreviewDeps.scoped {
+        ComposeView(quotePostId: "preview-quote-id")
+    }
+}
+#endif

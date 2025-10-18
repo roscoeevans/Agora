@@ -10,9 +10,17 @@ final class HomeFollowingTests: XCTestCase {
     }
     
     func testPostInitialization() {
-        let post = Post(text: "Test post", author: "Test Author")
+        let post = Post(
+            id: "test-id",
+            authorId: "author-id",
+            authorDisplayHandle: "testauthor",
+            text: "Test post",
+            createdAt: Date(),
+            authorDisplayName: "Test Author"
+        )
         XCTAssertEqual(post.text, "Test post")
-        XCTAssertEqual(post.author, "Test Author")
+        XCTAssertEqual(post.authorDisplayName, "Test Author")
+        XCTAssertEqual(post.authorDisplayHandle, "testauthor")
         XCTAssertEqual(post.likeCount, 0)
         XCTAssertEqual(post.repostCount, 0)
         XCTAssertEqual(post.replyCount, 0)

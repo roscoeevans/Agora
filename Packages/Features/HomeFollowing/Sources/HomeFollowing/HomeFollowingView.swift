@@ -19,7 +19,7 @@ public struct HomeFollowingView: View {
     public init() {}
     
     public var body: some View {
-        Group {
+Group {
             if let viewModel = viewModel {
                 ScrollView {
                     LazyVStack(spacing: SpacingTokens.md) {
@@ -57,12 +57,14 @@ public struct HomeFollowingView: View {
             }
         }
         .task {
-            // Initialize view model with dependencies from environment
-            // Following DI rule: dependencies injected from environment
-            self.viewModel = FollowingViewModel(
-                networking: deps.networking,
-                analytics: deps.analytics
-            )
+            // Initialize view model only once
+            // The viewModel's init already triggers initial data load
+            if viewModel == nil {
+                self.viewModel = FollowingViewModel(
+                    networking: deps.networking,
+                    analytics: deps.analytics
+                )
+            }
         }
     }
 }
@@ -82,7 +84,7 @@ struct PostCardView: View {
                     .font(TypographyScale.caption1)
                     .foregroundColor(ColorTokens.tertiaryText)
                 
-                Text(RelativeTimeFormatter.format(post.timestamp))
+                Text(post.createdAt, style: .relative)
                     .font(TypographyScale.caption1)
                     .foregroundColor(ColorTokens.tertiaryText)
                 
@@ -180,6 +182,10 @@ struct LoadingView: View {
     }
 }
 
-#Preview {
-    HomeFollowingView()
+#if DEBUG
+#Preview("Following Feed") {
+    PreviewDeps.scoped {
+        HomeFollowingView()
+    }
 }
+#endif

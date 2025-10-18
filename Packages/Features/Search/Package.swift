@@ -20,11 +20,17 @@ let package = Package(
                 "DesignSystem",
                 "Networking",
                 "AppFoundation"
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "SearchTests",
-            dependencies: ["Search"]
+            dependencies: ["Search"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )

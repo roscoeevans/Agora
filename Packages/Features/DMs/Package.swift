@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "DMs",
-    platforms: [.iOS(.v26)],
+    platforms: [.iOS(.v26), .macOS(.v15)],
     products: [
         .library(name: "DMs", targets: ["DMs"])
     ],
@@ -22,11 +22,17 @@ let package = Package(
                 "Networking",
                 "Media",
                 "AppFoundation"
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "DMsTests",
-            dependencies: ["DMs"]
+            dependencies: ["DMs"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )

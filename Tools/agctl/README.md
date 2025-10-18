@@ -8,6 +8,7 @@ A Swift-based CLI tool for automating common development tasks in the Agora iOS 
 - **Build**: Build individual packages or all packages in dependency order
 - **Test**: Run tests for individual packages or the entire project
 - **Validate**: Check module structure and dependency graph integrity
+- **Clean**: Remove Xcode build artifacts, derived data, and caches
 - **Git Hooks**: Automatic validation and code generation via git hooks
 
 ## Installation
@@ -121,6 +122,34 @@ Checks:
 - All local package dependencies exist
 - Relative paths are valid
 
+### Clean Commands
+
+#### Clean Build Artifacts
+
+```bash
+agctl clean
+```
+
+Cleans:
+- Project build folder
+- Swift Package Manager `.build` directories (for all packages and agctl itself)
+
+#### Clean Everything
+
+```bash
+agctl clean --all
+```
+
+Additionally cleans:
+- DerivedData (project-specific folders)
+- Module cache (Swift Package Manager and Xcode)
+
+Options:
+- `-v, --verbose`: Show detailed output of what's being removed
+- `--all`: Clean everything including DerivedData and module cache
+
+**Tip**: Use `agctl clean --all` when experiencing weird build issues, caching problems, or after switching branches with major changes.
+
 ### Git Hooks
 
 #### Install Hooks
@@ -148,6 +177,7 @@ Tools/agctl/
     │   ├── BuildCommand.swift    # Package building
     │   ├── TestCommand.swift     # Package testing
     │   ├── ValidateCommand.swift # Validation rules
+    │   ├── CleanCommand.swift    # Clean build artifacts
     │   └── InstallHooksCommand.swift
     └── Core/
         ├── Shell.swift           # Shell command execution
@@ -173,6 +203,12 @@ agctl validate modules
 
 # Regenerate OpenAPI if spec changed
 agctl generate openapi
+
+# Clean build artifacts when needed
+agctl clean
+
+# Deep clean when experiencing build issues
+agctl clean --all
 ```
 
 ### CI/CD Integration

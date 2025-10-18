@@ -86,7 +86,7 @@ struct ThreadPostView: View {
                         .font(TypographyScale.caption1)
                         .foregroundColor(ColorTokens.tertiaryText)
                     
-                    Text(RelativeTimeFormatter.format(post.timestamp))
+                    Text(post.timestamp, style: .relative)
                         .font(TypographyScale.caption1)
                         .foregroundColor(ColorTokens.tertiaryText)
                     
@@ -146,8 +146,12 @@ struct InteractionButtonView: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        PostThreadView(threadId: "sample-thread-id")
+#if DEBUG
+#Preview("Post Thread") {
+    PreviewDeps.scoped {
+        NavigationStack {
+            PostThreadView(threadId: "sample-thread-id")
+        }
     }
 }
+#endif

@@ -34,5 +34,7 @@ public enum NotificationsRoute: Hashable, Codable {
 public enum ProfileRoute: Hashable, Codable {
     case settings
     case followers
+    case post(id: UUID)
+    case profile(id: UUID)
 }
 

@@ -207,5 +207,99 @@ public final class StubAgoraClient: AgoraAPIClient {
             createdAt: Date().addingTimeInterval(-86400 * 30)
         )
     }
+    
+    // MARK: - Extended Feed Operations
+    
+    public func fetchFollowingFeed(cursor: String?, limit: Int?) async throws -> FollowingFeedResponse {
+        // Simulate network delay
+        try await Task.sleep(for: .milliseconds(500))
+        
+        // Return empty following feed for stub
+        return FollowingFeedResponse(posts: [], nextCursor: nil)
+    }
+    
+    // MARK: - Extended User Operations
+    
+    public func getUserProfile(userId: String) async throws -> UserProfileWithStats {
+        // Simulate network delay
+        try await Task.sleep(for: .milliseconds(400))
+        
+        // Return mock user profile with stats
+        return UserProfileWithStats(
+            id: userId,
+            handle: "stubuser",
+            displayHandle: "StubUser",
+            displayName: "Stub User",
+            bio: "This is a mock user profile from the stub client",
+            avatarUrl: nil,
+            createdAt: Date().addingTimeInterval(-86400 * 30),
+            followerCount: 42,
+            followingCount: 123,
+            postCount: 89,
+            isCurrentUser: false,
+            isFollowing: false
+        )
+    }
+    
+    public func getUserPosts(userId: String, cursor: String?, limit: Int?) async throws -> UserPostsResponse {
+        // Simulate network delay
+        try await Task.sleep(for: .milliseconds(600))
+        
+        // Return mock user posts
+        let mockPosts = [
+            Post(
+                id: "user-post-1",
+                authorId: userId,
+                authorDisplayHandle: "StubUser",
+                text: "This is a mock post from the stub user profile",
+                likeCount: 10,
+                repostCount: 2,
+                replyCount: 5,
+                createdAt: Date().addingTimeInterval(-3600)
+            ),
+            Post(
+                id: "user-post-2",
+                authorId: userId,
+                authorDisplayHandle: "StubUser",
+                text: "Another mock post for testing the profile view",
+                likeCount: 7,
+                repostCount: 1,
+                replyCount: 3,
+                createdAt: Date().addingTimeInterval(-7200)
+            )
+        ]
+        
+        return UserPostsResponse(posts: mockPosts, nextCursor: nil)
+    }
+    
+    public func createPost(
+        text: String,
+        mediaBundleId: String?,
+        linkUrl: String?,
+        quotePostId: String?,
+        replyToPostId: String?,
+        selfDestructAt: Date?
+    ) async throws -> Post {
+        // Simulate network delay
+        try await Task.sleep(for: .milliseconds(800))
+        
+        // Return mock created post
+        return Post(
+            id: UUID().uuidString,
+            authorId: "stub-user-id",
+            authorDisplayHandle: "StubUser",
+            text: text,
+            linkUrl: linkUrl,
+            mediaBundleId: mediaBundleId,
+            replyToPostId: replyToPostId,
+            quotePostId: quotePostId,
+            likeCount: 0,
+            repostCount: 0,
+            replyCount: 0,
+            visibility: .public,
+            createdAt: Date(),
+            selfDestructAt: selfDestructAt
+        )
+    }
 }
 

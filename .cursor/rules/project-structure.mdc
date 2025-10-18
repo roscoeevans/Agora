@@ -39,7 +39,6 @@ Features/
 ├── Auth/                      # Auth UI/UX + app-level state (services are in AppFoundation)
 ├── Compose/                   # Post composition and media upload
 ├── DMs/                       # Direct messaging
-├── Home/                      # Home feature coordinator
 ├── HomeFollowing/             # Following feed (chronological)
 ├── HomeForYou/                # For You feed (recommendations)
 ├── Notifications/             # Push notifications and in-app alerts
@@ -54,6 +53,8 @@ Features/
 - Feature-specific business logic
 - Feature-level coordinators and state management
 - Dependencies on Kits and Shared modules
+
+**Important:** Feed switching (For You ↔ Following) lives in `Resources/ContentView.swift` at the app root level, not in a separate feature package. This is app-level orchestration, not feature-specific business logic. Features should be isolated and independent; avoid creating "coordinator" features that just combine other features.
 
 #### Kits (`Packages/Kits/`)
 **When to use:** Creating reusable functionality that provides specific capabilities

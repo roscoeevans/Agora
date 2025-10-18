@@ -16,6 +16,7 @@ struct AGCTLCommand: ParsableCommand {
             BuildCommand.self,
             TestCommand.self,
             ValidateCommand.self,
+            CleanCommand.self,
             InstallHooksCommand.self
         ],
         defaultSubcommand: nil

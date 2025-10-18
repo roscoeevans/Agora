@@ -51,33 +51,31 @@ public class ComposeViewModel {
         defer { isPosting = false }
         
         do {
-            // TODO: This is a placeholder implementation
-            // Full implementation requires:
-            // 1. Get user ID from session
-            // 2. Upload media via MediaBundleService
-            // 3. Fetch link preview if URL detected
-            // 4. Call create-post Edge Function
-            
-            // For now, simulate network delay
-            try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-            
             // Calculate self-destruct timestamp if set
             let selfDestructAt = selfDestructDuration.date()
             
-            // TODO: Replace with actual API call
-            // let post = try await networking.createPost(
-            //     text: text,
-            //     mediaBundleId: mediaBundleId,
-            //     linkUrl: linkPreview?.url,
-            //     quotePostId: quotePostId,
-            //     selfDestructAt: selfDestructAt
-            // )
+            // TODO: Upload media if selected
+            // let mediaBundleId = try await uploadMedia()
+            
+            // Create the post
+            let _ = try await networking.createPost(
+                text: text,
+                mediaBundleId: nil, // TODO: Pass actual media bundle ID when media upload is implemented
+                linkUrl: linkPreview?.url,
+                quotePostId: quotePostId,
+                replyToPostId: nil, // TODO: Support replies when thread view is implemented
+                selfDestructAt: selfDestructAt
+            )
             
             // Clear the compose form on successful post
             clearDraft()
             
         } catch {
             self.error = error
+            print("[ComposeViewModel] ❌ Failed to create post: \(error)")
+            if let networkError = error as? NetworkError {
+                print("[ComposeViewModel] ❌ Network error details: \(networkError)")
+            }
         }
     }
     

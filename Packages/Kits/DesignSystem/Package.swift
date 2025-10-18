@@ -8,16 +8,25 @@ let package = Package(
     products: [
         .library(name: "DesignSystem", targets: ["DesignSystem"])
     ],
-    dependencies: [],
+    dependencies: [
+        .package(path: "../../Shared/AppFoundation")
+    ],
     targets: [
         .target(
             name: "DesignSystem",
-            dependencies: [],
-            resources: [.process("Resources")]
+            dependencies: ["AppFoundation"],
+            resources: [.process("Resources")],
+            swiftSettings: [
+                // Ensure DEBUG is defined for this package in Debug config (needed for #if DEBUG blocks).
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         ),
         .testTarget(
             name: "DesignSystemTests",
-            dependencies: ["DesignSystem"]
+            dependencies: ["DesignSystem"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )

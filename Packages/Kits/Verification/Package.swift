@@ -24,12 +24,16 @@ let package = Package(
                 "Networking"
             ],
             swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug)),
                 .enableExperimentalFeature("StrictConcurrency")
             ]
         ),
         .testTarget(
             name: "VerificationTests",
-            dependencies: ["Verification"]
+            dependencies: ["Verification"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         ),
     ]
 )

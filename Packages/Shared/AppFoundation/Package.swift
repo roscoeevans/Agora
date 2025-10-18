@@ -22,13 +22,19 @@ let package = Package(
             name: "AppFoundation",
             dependencies: [
                 .product(name: "Supabase", package: "supabase-swift")
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
             // Note: Environment detection uses runtime bundle ID checks (AppConfig.isStaging, etc.)
             // Swift packages do NOT inherit compilation conditions from the main app target.
         ),
         .testTarget(
             name: "AppFoundationTests",
-            dependencies: ["AppFoundation"]
+            dependencies: ["AppFoundation"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         ),
     ]
 )

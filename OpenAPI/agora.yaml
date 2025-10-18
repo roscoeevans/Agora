@@ -199,6 +199,113 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /feed/following:
+    get:
+      summary: Get Following feed (chronological)
+      tags: [Feed]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          description: Pagination cursor (ISO 8601 timestamp)
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of posts to return
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        '200':
+          description: Following feed posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowingFeedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/{userId}:
+    get:
+      summary: Get user profile by ID
+      tags: [Users]
+      parameters:
+        - name: userId
+          in: path
+          description: User ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileWithStats'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/{userId}/posts:
+    get:
+      summary: Get posts by user ID
+      tags: [Users]
+      parameters:
+        - name: userId
+          in: path
+          description: User ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          description: Pagination cursor (ISO 8601 timestamp)
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of posts to return
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        '200':
+          description: User posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPostsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /posts/create:
     post:
       summary: Create a new post
@@ -377,6 +484,110 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /posts/{id}/like:
+    post:
+      summary: Toggle like on a post (idempotent)
+      tags: [Posts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      responses:
+        '200':
+          description: Like toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /posts/{id}/repost:
+    post:
+      summary: Toggle repost on a post (idempotent)
+      tags: [Posts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      responses:
+        '200':
+          description: Repost toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepostResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /posts/{id}/share-url:
+    get:
+      summary: Get shareable deep link for a post
+      tags: [Posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      responses:
+        '200':
+          description: Share URL retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    example: "https://agora.app/p/abc123"
+        '404':
+          description: Post not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -539,6 +750,15 @@ components:
         authorDisplayHandle:
           type: string
           description: Author's unique handle with their preferred capitalization
+        authorDisplayName:
+          type: string
+          nullable: true
+          description: Author's display name
+        authorAvatarUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Author's avatar URL
         text:
           type: string
           maxLength: 280
@@ -584,6 +804,14 @@ components:
         canEdit:
           type: boolean
           description: Whether post can still be edited (within 15 minutes of creation)
+        isLikedByViewer:
+          type: boolean
+          description: Whether the current user has liked this post (non-optional, defaults to false)
+          default: false
+        isRepostedByViewer:
+          type: boolean
+          description: Whether the current user has reposted this post (non-optional, defaults to false)
+          default: false
 
     EnhancedPost:
       allOf:
@@ -631,6 +859,64 @@ components:
         nextCursor:
           type: string
           nullable: true
+
+    FollowingFeedResponse:
+      type: object
+      required:
+        - posts
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        nextCursor:
+          type: string
+          nullable: true
+          description: ISO 8601 timestamp for pagination
+
+    UserProfileWithStats:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          required:
+            - followerCount
+            - followingCount
+            - postCount
+            - isCurrentUser
+            - isFollowing
+          properties:
+            followerCount:
+              type: integer
+              minimum: 0
+              description: Number of users following this profile
+            followingCount:
+              type: integer
+              minimum: 0
+              description: Number of users this profile follows
+            postCount:
+              type: integer
+              minimum: 0
+              description: Number of public posts by this user
+            isCurrentUser:
+              type: boolean
+              description: Whether this profile belongs to the authenticated user
+            isFollowing:
+              type: boolean
+              description: Whether the authenticated user follows this profile
+
+    UserPostsResponse:
+      type: object
+      required:
+        - posts
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        nextCursor:
+          type: string
+          nullable: true
+          description: ISO 8601 timestamp for pagination
 
     CreatePostRequest:
       type: object
@@ -760,6 +1046,34 @@ components:
           type: integer
           nullable: true
           description: Video duration in seconds
+
+    LikeResult:
+      type: object
+      required:
+        - isLiked
+        - likeCount
+      properties:
+        isLiked:
+          type: boolean
+          description: Whether the current user now likes the post
+        likeCount:
+          type: integer
+          minimum: 0
+          description: Updated total like count
+
+    RepostResult:
+      type: object
+      required:
+        - isReposted
+        - repostCount
+      properties:
+        isReposted:
+          type: boolean
+          description: Whether the current user now has reposted the post
+        repostCount:
+          type: integer
+          minimum: 0
+          description: Updated total repost count
 
     Error:
       type: object

@@ -20,11 +20,17 @@ let package = Package(
                 "DesignSystem",
                 "Networking",
                 "AppFoundation"
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "ThreadingTests",
-            dependencies: ["Threading"]
+            dependencies: ["Threading"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )

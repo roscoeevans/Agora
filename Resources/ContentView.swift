@@ -7,7 +7,8 @@
 
 import SwiftUI
 import AppFoundation
-import Home
+import HomeForYou
+import HomeFollowing
 import Search
 import Notifications
 import Profile
@@ -139,32 +140,71 @@ struct ContentView: View {
 
 private struct HomeFlow: View {
     @Binding var path: [HomeRoute]
+    @State private var selectedFeed: HomeFeedType = .forYou
+    @State private var showingFeedSettings = false
+    @State private var showingMessages = false
     
     var body: some View {
         NavigationStack(path: $path) {
-            HomeView()
-                .environment(\.navigateToPost, NavigateToPost { postId in
-                    Task { @MainActor in
-                        path.append(.post(id: postId))
-                    }
-                })
-                .environment(\.navigateToProfile, NavigateToProfile { profileId in
-                    Task { @MainActor in
-                        path.append(.profile(id: profileId))
-                    }
-                })
-                .navigationDestination(for: HomeRoute.self) { route in
-                    switch route {
-                    case .post(let id):
-                        PostDetailView(postId: id.uuidString)
-                    case .profile(let id):
-                        ProfileView(userId: id.uuidString)
-                    case .compose(let quotePostId):
-                        ComposeView(quotePostId: quotePostId)
-                    case .editHistory(let postId, let currentText):
-                        EditHistorySheet(postId: postId, currentText: currentText)
-                    }
+            Group {
+                switch selectedFeed {
+                case .forYou:
+                    HomeForYouView(onComposeAction: {})
+                case .following:
+                    HomeFollowingView()
                 }
+            }
+            .navigationTitle(selectedFeed.title)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        showingFeedSettings = true
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .accessibilityLabel("Feed settings")
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingMessages = true
+                    } label: {
+                        Image(systemName: "message")
+                    }
+                    .accessibilityLabel("Messages")
+                }
+            }
+            .sheet(isPresented: $showingFeedSettings) {
+                FeedSettingsView(selectedFeed: $selectedFeed)
+            }
+            .sheet(isPresented: $showingMessages) {
+                NavigationStack {
+                    DMThreadsView()
+                }
+            }
+            .environment(\.navigateToPost, NavigateToPost { postId in
+                Task { @MainActor in
+                    path.append(.post(id: postId))
+                }
+            })
+            .environment(\.navigateToProfile, NavigateToProfile { profileId in
+                Task { @MainActor in
+                    path.append(.profile(id: profileId))
+                }
+            })
+            .navigationDestination(for: HomeRoute.self) { route in
+                switch route {
+                case .post(let id):
+                    PostDetailScreen(postId: id.uuidString)
+                case .profile(let id):
+                    ProfileView(userId: id.uuidString)
+                case .compose(let quotePostId):
+                    ComposeView(quotePostId: quotePostId)
+                case .editHistory(let postId, let currentText):
+                    EditHistorySheet(postId: postId, currentText: currentText)
+                }
+            }
         }
     }
 }
@@ -183,7 +223,7 @@ private struct SearchFlow: View {
                 .navigationDestination(for: SearchRoute.self) { route in
                     switch route {
                     case .result(let id):
-                        PostDetailView(postId: id.uuidString)
+                        PostDetailScreen(postId: id.uuidString)
                     }
                 }
         }
@@ -207,7 +247,7 @@ private struct NotificationsFlow: View {
                 .navigationDestination(for: NotificationsRoute.self) { route in
                     switch route {
                     case .detail(let id):
-                        PostDetailView(postId: id.uuidString)
+                        PostDetailScreen(postId: id.uuidString)
                     }
                 }
         }
@@ -220,18 +260,104 @@ private struct ProfileFlow: View {
     var body: some View {
         NavigationStack(path: $path) {
             ProfileView()
+                .environment(\.navigateToPost, NavigateToPost { postId in
+                    Task { @MainActor in
+                        path.append(.post(id: postId))
+                    }
+                })
+                .environment(\.navigateToProfile, NavigateToProfile { profileId in
+                    Task { @MainActor in
+                        path.append(.profile(id: profileId))
+                    }
+                })
                 .navigationDestination(for: ProfileRoute.self) { route in
                     switch route {
                     case .settings:
-                        // TODO: Implement settings view
-                        Text("Settings")
-                            .navigationTitle("Settings")
+                        SettingsView()
                     case .followers:
                         // TODO: Implement followers view
                         Text("Followers")
                             .navigationTitle("Followers")
+                    case .post(let id):
+                        PostDetailScreen(postId: id.uuidString)
+                    case .profile(let id):
+                        ProfileView(userId: id.uuidString)
                     }
                 }
+        }
+    }
+}
+
+// MARK: - Home Feed Types
+
+private enum HomeFeedType: String, CaseIterable {
+    case forYou = "forYou"
+    case following = "following"
+    
+    var title: String {
+        switch self {
+        case .forYou:
+            return "For You"
+        case .following:
+            return "Following"
+        }
+    }
+}
+
+private struct FeedSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedFeed: HomeFeedType
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(HomeFeedType.allCases, id: \.self) { feedType in
+                        Button {
+                            selectedFeed = feedType
+                            dismiss()
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(feedType.title)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text(feedType == .forYou ? "Personalized recommendations" : "Posts from people you follow")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                if selectedFeed == feedType {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Feed Type")
+                }
+                
+                Section {
+                    Text("More feed settings coming soon...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } header: {
+                    Text("Additional Settings")
+                }
+            }
+            .navigationTitle("Feed Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }

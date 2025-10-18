@@ -11,6 +11,7 @@ import DesignSystem
 import AuthFeature
 import Networking
 import Analytics
+import Engagement
 import Observation
 
 @main
@@ -22,6 +23,22 @@ struct AgoraApp: App {
     @State private var authManager: AuthStateManager
     
     init() {
+        #if DEBUG
+        // Skip heavy initialization in Xcode Previews for faster refresh
+        if ProcessInfo.processInfo.isXcodePreviews {
+            // Use lightweight test dependencies for previews
+            self.deps = Dependencies.test()
+            let authMgr = AuthStateManager(
+                authService: deps.auth,
+                apiClient: deps.networking,
+                storageService: nil
+            )
+            _authManager = State(initialValue: authMgr)
+            print("🎨 Agora app initialized with preview dependencies")
+            return
+        }
+        #endif
+        
         // Register networking services first (before any dependencies)
         NetworkingServiceFactory.register()
         
@@ -31,6 +48,23 @@ struct AgoraApp: App {
         
         var baseDeps = Dependencies.production
         baseDeps = baseDeps.withAnalytics(analyticsClient)
+        
+        // Wire up Supabase client for realtime and direct database access
+        let supabaseClient = AgoraSupabaseClient.shared.client
+        baseDeps = baseDeps.withSupabase(supabaseClient)
+        
+        // Wire up engagement service
+        // Supabase Functions URL: https://[project-id].supabase.co/functions/v1
+        let functionsURL = AppConfig.supabaseURL.appendingPathComponent("functions").appendingPathComponent("v1")
+        let engagementService = EngagementServiceLive(
+            baseURL: functionsURL,
+            authTokenProvider: { [auth = baseDeps.auth] in
+                try? await auth.currentAccessToken()
+            },
+            session: .shared
+        )
+        baseDeps = baseDeps.withEngagement(engagementService)
+        
         self.deps = baseDeps
         
         // Create auth manager with dependencies from container

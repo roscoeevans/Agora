@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "Notifications",
-    platforms: [.iOS(.v26)],
+    platforms: [.iOS(.v26), .macOS(.v15)],
     products: [
         .library(name: "Notifications", targets: ["Notifications"])
     ],
@@ -20,11 +20,17 @@ let package = Package(
                 "DesignSystem",
                 "Networking",
                 "AppFoundation"
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "NotificationsTests",
-            dependencies: ["Notifications"]
+            dependencies: ["Notifications"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )

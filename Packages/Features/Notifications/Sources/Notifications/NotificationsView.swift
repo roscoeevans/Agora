@@ -239,6 +239,10 @@ struct LoadingView: View {
     }
 }
 
-#Preview {
-    NotificationsView()
+#if DEBUG
+#Preview("Notifications") {
+    PreviewDeps.scoped {
+        NotificationsView()
+    }
 }
+#endif

@@ -22,11 +22,17 @@ let package = Package(
                 "DesignSystem",
                 "Networking",
                 "AppFoundation"
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "PostDetailTests",
-            dependencies: ["PostDetail"]
+            dependencies: ["PostDetail"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )

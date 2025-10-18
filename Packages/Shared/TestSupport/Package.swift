@@ -24,11 +24,17 @@ let package = Package(
             dependencies: [
                 "AppFoundation",
                 .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime")
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "TestSupportTests",
-            dependencies: ["TestSupport"]
+            dependencies: ["TestSupport"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         ),
     ]
 )

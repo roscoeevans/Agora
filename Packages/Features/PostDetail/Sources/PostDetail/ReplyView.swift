@@ -1,5 +1,5 @@
 //
-//  ReplyCard.swift
+//  ReplyView.swift
 //  Agora
 //
 //  Created by Agora Team on 2024.
@@ -8,8 +8,8 @@
 import SwiftUI
 import DesignSystem
 
-/// A card view displaying a reply to a post with author information and timestamp
-struct ReplyCard: View {
+/// Reply view component displaying a reply to a post with author information and timestamp
+struct ReplyView: View {
     let reply: Reply
     @State private var isPressed = false
     
@@ -36,7 +36,7 @@ struct ReplyCard: View {
                             .font(TypographyScale.caption1)
                             .foregroundColor(ColorTokens.tertiaryText)
                         
-                        Text(RelativeTimeFormatter.format(reply.timestamp))
+                        Text(reply.timestamp, style: .relative)
                             .font(TypographyScale.caption1)
                             .foregroundColor(ColorTokens.tertiaryText)
                         
@@ -70,8 +70,8 @@ struct ReplyCard: View {
     }
 }
 
-#Preview("Reply Card") {
-    ReplyCard(
+#Preview("Reply View") {
+    ReplyView(
         reply: Reply(
             text: "Great post! Thanks for sharing.",
             author: "Reply User",
@@ -81,8 +81,8 @@ struct ReplyCard: View {
     )
 }
 
-#Preview("Reply Card - Recent") {
-    ReplyCard(
+#Preview("Reply View - Recent") {
+    ReplyView(
         reply: Reply(
             text: "Just posted this reply a few seconds ago.",
             author: "Quick Replier",
@@ -92,8 +92,8 @@ struct ReplyCard: View {
     )
 }
 
-#Preview("Reply Card - Long Text") {
-    ReplyCard(
+#Preview("Reply View - Long Text") {
+    ReplyView(
         reply: Reply(
             text: "This is a much longer reply that spans multiple lines to test how the card handles longer text content.",
             author: "Detailed User",
@@ -103,9 +103,9 @@ struct ReplyCard: View {
     )
 }
 
-#Preview("Reply Card - Multiple in List") {
+#Preview("Reply View - Multiple in List") {
     VStack(spacing: SpacingTokens.md) {
-        ReplyCard(
+        ReplyView(
             reply: Reply(
                 text: "First reply in the thread",
                 author: "User One",
@@ -114,7 +114,7 @@ struct ReplyCard: View {
             )
         )
         
-        ReplyCard(
+        ReplyView(
             reply: Reply(
                 text: "Second reply with more content",
                 author: "User Two",
@@ -123,7 +123,7 @@ struct ReplyCard: View {
             )
         )
         
-        ReplyCard(
+        ReplyView(
             reply: Reply(
                 text: "Third reply most recent",
                 author: "User Three",

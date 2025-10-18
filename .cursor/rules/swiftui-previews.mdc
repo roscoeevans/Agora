@@ -1,358 +1,264 @@
 ---
-description: Best practices and utilities for SwiftUI previews in Agora (iOS 26). Use this when creating/updating Previews, building preview-only data, or verifying UI across Dev/Staging/Prod. Guarantees: no live network, deterministic UI, quick refresh.
-alwaysApply: false
+description: When implementing SwiftUI views in local Swift Package Manager (SPM) packages (Features/Kits/Shared), adding #Preview blocks for live canvas development, troubleshooting preview canvas issues, setting up preview dependencies and mocks, configuring package resources for previews, or understanding how Xcode 26+ resolves preview hosts for modular iOS apps. Use this when creating new SwiftUI views in packages, debugging "Cannot preview" errors, or setting up preview infrastructure.
 ---
 
-## SwiftUI Previews — Agora Standard (iOS 26)
+## SwiftUI Previews in Local SPM Packages
 
-### Goals
+### Intent
+Enable SwiftUI `#Preview` blocks **inside local SPM packages** (Features/Kits/Shared) so developers can see live previews right where views are defined, without a separate preview app. Xcode 26 resolves the **Agora** app as the host _if_ the app links the package product.
 
-1. See Dev / Staging / Prod variants side-by-side via `#Preview`, while the app continues to use compile-time configs at runtime
-2. Keep previews safe (no live calls) and deterministic (fonts, locale, device)
-3. Make Snapshots and Previews consistent
+### Scope
+- Applies to all SwiftUI views in `Packages/Features/**`, `Packages/Kits/**`, and (sparingly) `Packages/Shared/**`.
+- Does **not** apply to remote Git packages (previews require a local package + host app).
+- Works with iOS 26 / Swift 6.2+.
 
-### 0) Schemes & Flags (must-fix)
+---
 
-**Owner: iOS Platform**
+## Ground Rules (TL;DR)
 
-Create a third scheme:
-- `Agora Dev` → Run = Debug (uses `DEV_ENVIRONMENT`)
-- `Agora Staging` → Run = Staging (uses `STAGING_ENVIRONMENT`)
-- `Agora` (Prod) → Run = Release (uses `PROD_ENVIRONMENT`)
+1. **The app must link the package product** you want to preview.  
+2. Put `#Preview { ... }` **in the package file next to the view**.  
+3. Use `PreviewDeps.scoped { ... }` to inject safe mocks and a minimal environment.  
+4. Guard heavy startup with `ProcessInfo.processInfo.isiOSPreviews`.  
+5. Package assets live in `Resources/` and are declared in `Package.swift` with `.process("Resources")`.
 
-**Current issue:** Production scheme is using `STAGING_ENVIRONMENT`. Fix `SWIFT_ACTIVE_COMPILATION_CONDITIONS` for "Agora".
+---
 
-#### Verification (paste into terminal)
+## How It Works (one-time wiring)
 
-```bash
-xcodebuild -scheme "Agora" -showBuildSettings | sed -n 's/^ *SWIFT_ACTIVE_COMPILATION_CONDITIONS = //p'
-xcodebuild -scheme "Agora Staging" -showBuildSettings | sed -n 's/^ *SWIFT_ACTIVE_COMPILATION_CONDITIONS = //p'
-# after creating:
-xcodebuild -scheme "Agora Dev" -showBuildSettings | sed -n 's/^ *SWIFT_ACTIVE_COMPILATION_CONDITIONS = //p'
-```
+### 1) App target links package products
 
-### 1) Environment selection in previews (non-invasive)
+In **Agora (app) → Build Phases → Link Binary With Libraries**, add any package products that you want to preview:
+- `Features/HomeForYou`, `Features/Auth`, …
+- `Kits/DesignSystem`, `Kits/Media`, …
+- `Shared/AppFoundation` (already linked)
 
-We'll keep your runtime detection (`AppConfig.isDevelopment`/`.isStaging`) and introduce a preview-only override via a SwiftUI environment value.
+> This is what lets Xcode pick **Agora** as the host when it sees `#Preview` inside the package.
 
-#### Add file: `AppFoundation/AppEnvironment.swift`
+### 2) Lightweight preview helpers (Shared/AppFoundation)
 
-```swift
-import SwiftUI
-
-public enum AppEnvironment: Equatable, Sendable {
-    case dev, staging, prod
-}
-
-public enum EnvironmentConfig {
-    /// Compile-time default: do NOT change runtime behavior.
-    public static var compiledDefault: AppEnvironment {
-        #if DEV_ENVIRONMENT
-        return .dev
-        #elseif STAGING_ENVIRONMENT
-        return .staging
-        #else
-        return .prod
-        #endif
-    }
-
-    /// Convenience: bridge your existing AppConfig into an explicit env when needed.
-    public static func fromRuntime() -> AppEnvironment {
-        if AppConfig.isDevelopment { return .dev }
-        if AppConfig.isStaging { return .staging }
-        return .prod
-    }
-
-    // Example helpers; call into your existing AppConfig/Info.plist logic if you prefer.
-    public static func apiBaseURL(for env: AppEnvironment) -> String {
-        switch env {
-        case .dev:     return "https://api-dev.agora.com"
-        case .staging: return "https://api-staging.agora.com"
-        case .prod:    return "https://api.agora.com"
-        }
-    }
-}
-
-/// SwiftUI key to *override* environment in previews (defaults to compiled value).
-private struct AppEnvironmentKey: EnvironmentKey {
-    static let defaultValue: AppEnvironment = EnvironmentConfig.compiledDefault
-}
-
-public extension EnvironmentValues {
-    var appEnvironment: AppEnvironment {
-        get { self[AppEnvironmentKey.self] }
-        set { self[AppEnvironmentKey.self] = newValue }
-    }
-}
-```
-
-#### Usage in views (opt-in where you need env-dependent behavior)
+**File:** `Packages/Shared/AppFoundation/Sources/AppFoundation/PreviewDeps.swift`
 
 ```swift
 import SwiftUI
 
-struct ExampleView: View {
-    @Environment(\.appEnvironment) private var appEnv
-    @Environment(\.deps) private var deps  // your existing DI
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Text("Env: \(String(describing: appEnv).uppercased())")
-            Text("API: \(EnvironmentConfig.apiBaseURL(for: appEnv))")
-        }
-        .padding()
+public enum PreviewDeps {
+    /// Wrap any preview in a safe DI/environment context.
+    @ViewBuilder
+    public static func scoped<V: View>(@ViewBuilder _ content: () -> V) -> some View {
+        content()
+            .environment(\.locale, .init(identifier: "en_US"))
+            .environment(\.colorScheme, .light)
+            // Example: inject your DI container or mock services if you use EnvironmentKeys.
+            // .environment(AppServicesKey.self, .mocks)
     }
 }
 ```
 
-### 2) Multi-environment #Previews (side-by-side)
-
-#### Add file: `AppUI/PreviewSupport/Preview+Env.swift`
-
-```swift
-import SwiftUI
-
-/// Shorthand helpers for clarity in #Preview blocks
-public extension View {
-    func previewEnv(_ env: AppEnvironment) -> some View {
-        self.environment(\.appEnvironment, env)
-    }
-
-    /// Optional visual watermark so designers/QA can tell which env they're seeing.
-    func previewEnvBadge(_ label: String) -> some View {
-        self.overlay(alignment: .topTrailing) {
-            Text(label)
-                .font(.caption2.monospaced())
-                .padding(6)
-                .background(.thinMaterial, in: Capsule())
-                .padding(6)
-        }
-    }
-}
-```
-
-#### In any view's preview file
-
-```swift
-#Preview("Dev") {
-    ExampleView()
-        .environment(\.deps, .preview)       // you already have this
-        .previewEnv(.dev)
-        .previewEnvBadge("DEV")
-}
-
-#Preview("Staging") {
-    ExampleView()
-        .environment(\.deps, .preview)
-        .previewEnv(.staging)
-        .previewEnvBadge("STAGING")
-}
-
-#Preview("Prod") {
-    ExampleView()
-        .environment(\.deps, .preview)
-        .previewEnv(.prod)
-        .previewEnvBadge("PROD")
-}
-```
-
-**Result:** one canvas refresh renders all three environments—no runtime changes to the app.
-
-### 3) Centralized Preview Scenarios (canonical states)
-
-Create a tiny catalog for realistic, reusable data (no live I/O).
-
-**Folder:** `AppUI/PreviewSupport/Scenarios/`
-
-#### Example: `AppUI/PreviewSupport/Scenarios/PreviewScenarios.swift`
+**File:** `Packages/Shared/AppFoundation/Sources/AppFoundation/ProcessInfo+Previews.swift`
 
 ```swift
 import Foundation
 
-public enum PreviewScenario: String, CaseIterable, Sendable {
-    case emptyFeed
-    case lightEngagement
-    case heavyEngagement
-    case authLoggedOut
-}
-
-public struct PreviewData: Sendable {
-    public var posts: [Post] = []
-    public var currentUser: User? = nil
-    public var isLoggedIn: Bool = true
-}
-
-public enum PreviewScenarios {
-    public static func make(_ scenario: PreviewScenario) -> PreviewData {
-        switch scenario {
-        case .emptyFeed:
-            return PreviewData(posts: [], currentUser: .mock(), isLoggedIn: true)
-        case .lightEngagement:
-            return PreviewData(posts: Post.mocks(count: 5), currentUser: .mock(), isLoggedIn: true)
-        case .heavyEngagement:
-            return PreviewData(posts: Post.mocks(count: 50), currentUser: .mockPowerUser(), isLoggedIn: true)
-        case .authLoggedOut:
-            return PreviewData(posts: [], currentUser: nil, isLoggedIn: false)
-        }
+public extension ProcessInfo {
+    var isiOSPreviews: Bool {
+        environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     }
 }
 ```
 
-#### Wire scenarios into your DI
+Anywhere you have heavy boot code (analytics, network warmups, push setup), guard with:
 
-You already have `Dependencies.preview`:
+```swift
+guard !ProcessInfo.processInfo.isiOSPreviews else { return }
+```
+
+### 3) Package assets (if your view needs them)
+
+In each package's `Package.swift`:
+
+```swift
+.target(
+  name: "DesignSystem",
+  resources: [
+    .process("Resources")
+  ]
+),
+```
+
+Put colors/images/fonts in `Packages/Kits/DesignSystem/Resources/**` (or a feature's `Resources/`).
+SwiftUI will load from `Bundle.module` automatically for `.xcassets`.
+
+---
+
+## In-Package Usage Pattern (author previews where you code)
+
+**Example:** `Packages/Features/HomeForYou/Sources/HomeForYou/FeedView.swift`
 
 ```swift
 import SwiftUI
+import AppFoundation // for PreviewDeps
 
-public extension Dependencies {
-    static func preview(scenario: PreviewScenario) -> Dependencies {
-        var d = Dependencies.preview  // your existing fake deps baseline
-        let data = PreviewScenarios.make(scenario)
-        d.auth = MockAuthService(isLoggedIn: data.isLoggedIn, user: data.currentUser)
-        d.api  = StubAgoraClient(posts: data.posts)  // reuse your stub types
-        return d
-    }
-}
-```
-
-#### Use in previews
-
-```swift
-#Preview("Empty Feed – Dev") {
-    HomeView()
-        .environment(\.deps, .preview(scenario: .emptyFeed))
-        .previewEnv(.dev)
-        .previewEnvBadge("DEV · EMPTY FEED")
-}
-```
-
-### 4) Determinism & Safety Rules
-
-1. **Never perform live I/O in previews.** Use `Dependencies.preview`/scenarios only.
-
-2. **Pin determinism:**
-   - Use fixed device: `.previewDevice("iPhone 17 Pro")`
-   - Force size category/appearance if relevant:
-     ```swift
-     .environment(\.sizeCategory, .medium)
-     .environment(\.locale, .init(identifier: "en_US"))
-     .preferredColorScheme(.light)
-     ```
-
-3. **Avoid `.task`/timers doing real work in previews;** guard with `if isPreview { … }` if necessary.
-
-4. **Keep heavy mock graphs behind previews only;** don't ship them in prod builds (OK to leave in Debug).
-
-5. **(Optional)** If you want a compile-time guard for preview-only code, add:
-   - `Debug.xcconfig`: `OTHER_SWIFT_FLAGS = $(inherited) -DPREVIEW_BUILD`
-   - Then gate heavy code with `#if PREVIEW_BUILD`.
-
-### 5) SnapshotTesting alignment
-
-Standardize how a view is created for both previews and snapshots.
-
-#### Add: `Tests/TestSupport/ViewFactory.swift`
-
-```swift
-import SwiftUI
-@testable import Agora
-
-enum ViewFactory {
-    static func homeView(env: AppEnvironment, scenario: PreviewScenario) -> some View {
-        HomeView()
-            .environment(\.deps, .preview(scenario: scenario))
-            .environment(\.appEnvironment, env)
-            .frame(width: 390, height: 844) // iPhone 17 Pro logical size
-            .environment(\.locale, .init(identifier: "en_US"))
-            .preferredColorScheme(.light)
-    }
-}
-```
-
-#### Use in a snapshot
-
-```swift
-func testHome_light_dev_emptyFeed() {
-    let view = ViewFactory.homeView(env: .dev, scenario: .emptyFeed)
-    assertSnapshot(of: view)  // adapt to your SnapshotTesting API wrapper
-}
-```
-
-**Benefit:** previews and snapshots use the same construction path, reducing "works in preview but not in tests."
-
-### 6) Visual Environment Indicators
-
-To make env obvious in UI mocks, optionally add a tiny banner for non-prod:
-
-#### Add: `AppUI/PreviewSupport/EnvBanner.swift`
-
-```swift
-import SwiftUI
-
-public struct EnvironmentBanner: View {
-    @Environment(\.appEnvironment) private var env
-
+public struct FeedView: View {
     public init() {}
-
+    
     public var body: some View {
-        Group {
-            switch env {
-            case .prod:
-                EmptyView()
-            case .dev:
-                Label("DEV", systemImage: "hammer.fill")
-            case .staging:
-                Label("STAGING", systemImage: "shippingbox.fill")
-            }
-        }
-        .font(.caption2.monospaced())
-        .padding(6)
-        .background(.thinMaterial, in: Capsule())
-        .padding(6)
+        Text("For You")
+            .font(.title.weight(.semibold))
     }
 }
 
-public extension View {
-    func attachEnvBanner() -> some View {
-        self.overlay(alignment: .topLeading) { EnvironmentBanner() }
+@available(iOS 26.0, *)
+#Preview("Default") {
+    PreviewDeps.scoped {
+        FeedView()
+            .padding()
+            .previewLayout(.sizeThatFits)
     }
 }
 ```
 
-#### Usage
+### Multiple States in One Place (recommended)
 
 ```swift
-HomeView()
-  .environment(\.deps, .preview)
-  .previewEnv(.staging)
-  .attachEnvBanner()
+#Preview("Empty") {
+    PreviewDeps.scoped { FeedView() /* with empty state */ }
+}
+
+#Preview("Loading") {
+    PreviewDeps.scoped { FeedView() /* with loading state */ }
+}
+
+#Preview("Error") {
+    PreviewDeps.scoped { FeedView() /* with mock error */ }
+}
 ```
 
-### 7) PR Checklist (previews)
+**Naming:** Keep previews next to the view file or in a `Previews/` subgroup. See `ios-naming.mdc` for file names; no separate "PreviewApp" target is required.
 
-- [ ] No live I/O in `#Previews` (uses `Dependencies.preview` or `.preview(scenario:)`)
-- [ ] At least one multi-env preview (Dev/Staging/Prod) for env-sensitive UI
-- [ ] Deterministic settings (device, color scheme, locale, size category) for complex views
-- [ ] If new mock data added → placed in `PreviewScenarios` (not scattered)
-- [ ] If Snapshot added → uses `ViewFactory` construction matching previews
-- [ ] No production-only secrets/keys referenced in Preview code
-- [ ] (If applicable) watermarks/badges attached for clarity
+---
 
-### 8) Migration To-Dos (Jira-sliceable)
+## Do / Don't
 
-- [ ] Fix scheme flags so "Agora" uses `PROD_ENVIRONMENT`; add "Agora Dev".
-- [ ] Add `AppFoundation/AppEnvironment.swift`.
-- [ ] Add `AppUI/PreviewSupport/Preview+Env.swift` (env override + badge).
-- [ ] Create `AppUI/PreviewSupport/Scenarios/` with `PreviewScenarios.swift`.
-- [ ] Add `Tests/TestSupport/ViewFactory.swift` and convert 1 canary snapshot to use it.
-- [ ] Update 2–3 high-traffic views to include three `#Preview` blocks (Dev/Staging/Prod) with `.environment(\.deps, .preview(scenario: …))`.
-- [ ] (Optional) Add `EnvBanner` and apply to feed/profile previews.
+### ✅ Do
 
-### Notes tailored to your setup
+- Keep previews co-located with the view they exercise.
+- Build fixture models inside each feature (`PreviewModels.swift`) to avoid cross-module runtime coupling.
+- Use `PreviewDeps.scoped` to ensure consistent color scheme/locale/mocks.
+- Keep previews pure: no real network/analytics; rely on mocks.
+- Prefer `.sizeThatFits` or fixed frames for deterministic snapshots.
 
-1. You already have `Dependencies.preview`, `StubAgoraClient`, and `AnalyticsClientFake`—perfect. The rule above just centralizes how they're used with scenarios and adds the env override in a Swifty, non-invasive way.
+### ❌ Don't
 
-2. Swift packages won't see `DEV_ENVIRONMENT` etc.—that's fine; previews should pass env via `EnvironmentValues`, not rely on package compilation flags.
+- Don't add previews to remote Git packages (they won't run).
+- Don't rely on app-global side effects (push, analytics, live DB) in a preview.
+- Don't access app `Info.plist` or entitlements directly from a package preview.
 
-3. This doesn't change your runtime logic (bundle-ID detection + Info.plist injection) and doesn't risk shipping a debug env to prod.
+---
+
+## Integration With Other Rules
+
+### Module Standards (ios-module-standards.mdc)
+Add a "Resources" subsection noting `.process("Resources")` and asset loading expectations for previewable UI.
+
+### DI (ios-di-injection.mdc)
+Add a `Mocks` or `PreviewContainer` pattern referenced by `PreviewDeps`.
+
+### Naming (ios-naming.mdc)
+Add guidance: co-locate preview blocks; optional `Previews/` subgroup; name examples `ThingView.preview.swift` if split.
+
+---
+
+## Troubleshooting
+
+### Canvas says "Cannot preview" or build fails
+
+1. Make sure the **Agora** app links the package product.
+2. Build the app once (`⌘B`) so Xcode indexes; then retry Canvas (`⌥⌘↩︎`).
+3. Clean Build Folder (`Shift-⌘-K`) if symbols changed.
+
+### "No such module …" in preview
+
+The module isn't linked by the app or the scheme isn't building the right graph.
+
+### Assets missing
+
+Ensure `Resources/` is declared with `.process("Resources")` in the package target.
+
+### Slow or crashing previews
+
+- Guard heavy init with `isiOSPreviews`.
+- Move complex data to `PreviewModels` and use tiny fixtures.
+
+---
+
+## Migration Plan (30–60 min)
+
+1. Add `PreviewDeps.swift` and `ProcessInfo+Previews.swift` to `AppFoundation`.
+2. Link your most-used UI packages to the **Agora** app target.
+3. Add one `#Preview` block to:
+   - `Kits/DesignSystem` (e.g., Button showcase),
+   - `Features/HomeForYou` (main screen),
+   - `Features/PostDetail` (with `PreviewModels.samplePost`).
+4. Build app once; open those files; enable Canvas.
+
+---
+
+## FAQs
+
+**Q: Do I need a separate PreviewHost app target?**  
+A: Not required. If the main app is heavy, an optional "PreviewHost" app can speed things up, but this rule assumes the main app hosts previews.
+
+**Q: Can previews reference TestSupport?**  
+A: Yes, but keep Preview APIs public where needed. Prefer minimal, package-local fixtures.
+
+**Q: CI & snapshots?**  
+A: This rule is about developer previews. For image snapshots in CI, follow the guidance in `swiftui-snapshot-testing.mdc` (Point-Free library, deterministic sizes, etc.).
+
+---
+
+## Quick Templates
+
+### Preview Fixture (inside a Feature)
+
+```swift
+public enum PreviewModels {
+    public static let samplePost = Post(
+        id: "p1", 
+        author: "rocky", 
+        text: "Human-only social ✨"
+    )
+}
+```
+
+### Design System Showcase
+
+```swift
+public struct ButtonShowcase: View {
+    public init() {}
+    
+    public var body: some View {
+        VStack(spacing: 12) {
+            PrimaryButton(title: "Primary")
+            SecondaryButton(title: "Secondary")
+        }
+        .padding()
+    }
+}
+
+#Preview("DesignSystem — Buttons") {
+    PreviewDeps.scoped { 
+        ButtonShowcase()
+            .previewLayout(.sizeThatFits) 
+    }
+}
+```
+
+---
+
+## Optional Cross-Rule Updates (suggested)
+
+- **ios-module-standards.mdc** → Add a "Resources for Previews" bullet with `.process("Resources")`.
+- **ios-di-injection.mdc** → Add a `Mocks`/`PreviewContainer` recommendation and mention `PreviewDeps`.
+- **ios-naming.mdc** → Add preview file naming guidance (co-located vs. `Previews/` subgroup).
+

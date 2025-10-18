@@ -156,6 +156,10 @@ struct LoadingView: View {
     }
 }
 
-#Preview {
-    DMThreadsView()
+#if DEBUG
+#Preview("DM Threads") {
+    PreviewDeps.scoped {
+        DMThreadsView()
+    }
 }
+#endif

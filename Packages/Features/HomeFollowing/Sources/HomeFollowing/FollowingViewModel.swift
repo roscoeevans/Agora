@@ -29,8 +29,10 @@ public class FollowingViewModel {
         self.networking = networking
         self.analytics = analytics
         
-        // Load placeholder data
-        loadPlaceholderData()
+        // Load initial data on init
+        Task {
+            await refresh()
+        }
     }
     
     public func refresh() async {
@@ -40,51 +42,49 @@ public class FollowingViewModel {
         do {
             await analytics.track(event: "feed_refresh_started", properties: ["feed_type": "following"])
             
-            // TODO: Implement actual API call
-            // For now, simulate network delay and reload placeholder data
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            loadPlaceholderData()
+            // Call the real API
+            let response = try await networking.fetchFollowingFeed(cursor: nil, limit: 20)
             
-            await analytics.track(event: "feed_refresh_completed", properties: ["feed_type": "following", "post_count": posts.count])
+            self.posts = response.posts
+            self.nextCursor = response.nextCursor
+            
+            await analytics.track(event: "feed_refresh_completed", properties: [
+                "feed_type": "following",
+                "post_count": posts.count
+            ])
         } catch {
             self.error = error
             await analytics.track(event: "feed_refresh_failed", properties: ["feed_type": "following", "error": error.localizedDescription])
+            print("[FollowingViewModel] ❌ Failed to load following feed: \(error)")
         }
     }
     
     public func loadMore() async {
-        // TODO: Implement pagination
-        await analytics.track(event: "feed_load_more", properties: ["feed_type": "following"])
+        guard let cursor = nextCursor, !isLoading else { return }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            await analytics.track(event: "feed_load_more", properties: ["feed_type": "following"])
+            
+            let response = try await networking.fetchFollowingFeed(cursor: cursor, limit: 20)
+            
+            // Append new posts
+            self.posts.append(contentsOf: response.posts)
+            self.nextCursor = response.nextCursor
+            
+            await analytics.track(event: "feed_load_more_completed", properties: [
+                "new_posts_count": response.posts.count
+            ])
+        } catch {
+            self.error = error
+            await analytics.track(event: "feed_load_more_failed", properties: ["error": error.localizedDescription])
+        }
     }
     
-    private func loadPlaceholderData() {
-        posts = [
-            Post(text: "Just posted my first thought on Agora! Excited to be part of this community.", author: "Alice Johnson", timestamp: Date().addingTimeInterval(-1800)),
-            Post(text: "Beautiful sunset today. Sometimes the simple moments are the best.", author: "Bob Smith", timestamp: Date().addingTimeInterval(-3600)),
-            Post(text: "Working on a new project. Can't wait to share more details soon!", author: "Carol Davis", timestamp: Date().addingTimeInterval(-5400)),
-            Post(text: "Coffee and code - the perfect combination for a productive morning.", author: "David Wilson", timestamp: Date().addingTimeInterval(-7200))
-        ]
-    }
+    private var nextCursor: String?
 }
 
-public struct Post: Identifiable, Codable {
-    public let id: String
-    public let text: String
-    public let author: String
-    public let authorDisplayHandle: String
-    public let timestamp: Date
-    public let likeCount: Int
-    public let repostCount: Int
-    public let replyCount: Int
-    
-    public init(text: String, author: String, authorDisplayHandle: String? = nil, timestamp: Date = Date(), likeCount: Int = 0, repostCount: Int = 0, replyCount: Int = 0) {
-        self.id = UUID().uuidString
-        self.text = text
-        self.author = author
-        self.authorDisplayHandle = authorDisplayHandle ?? author
-        self.timestamp = timestamp
-        self.likeCount = likeCount
-        self.repostCount = repostCount
-        self.replyCount = replyCount
-    }
-}
+// Note: Post is imported from Networking (which re-exports AppFoundation)
+// No need to define it here - use the canonical AppFoundation.Post

@@ -223,6 +223,10 @@ struct LoadingView: View {
     }
 }
 
-#Preview {
-    SearchView()
+#if DEBUG
+#Preview("Search") {
+    PreviewDeps.scoped {
+        SearchView()
+    }
 }
+#endif

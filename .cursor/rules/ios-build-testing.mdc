@@ -11,6 +11,39 @@ This rule provides comprehensive guidance for building and testing the Agora iOS
 
 **Primary Tool**: Use `agctl` (Agora's CLI tool) for all module-level operations (build, test, validate). Use `xcodebuild` for main app target operations and UI tests.
 
+### ⚠️ CRITICAL: agctl Usage
+
+**agctl is a standalone command-line tool installed at `/usr/local/bin/agctl`**
+
+✅ **CORRECT Usage:**
+```bash
+agctl build
+agctl build Compose
+agctl test
+agctl test Networking
+agctl validate modules
+```
+
+❌ **WRONG - NEVER DO THIS:**
+```bash
+# DO NOT use swift run with package-path
+swift run --package-path Tools/agctl agctl build  # ❌ WRONG
+cd Tools/agctl && swift run agctl build           # ❌ WRONG
+```
+
+**How to verify agctl is installed:**
+```bash
+which agctl    # Should output: /usr/local/bin/agctl
+agctl --version
+```
+
+**If agctl is not installed:**
+```bash
+cd Tools/agctl
+./install.sh
+agctl install-hooks  # Install git hooks for automatic validation
+```
+
 ### agctl - Agora Command Line Tool
 
 `agctl` is the primary tool for module operations. It provides a unified interface for building, testing, and validating packages.
@@ -38,6 +71,12 @@ agctl validate dependencies
 
 # Generate OpenAPI client
 agctl generate openapi
+
+# Clean build artifacts
+agctl clean
+
+# Deep clean (includes DerivedData and caches)
+agctl clean --all
 ```
 
 For full documentation, see:
@@ -458,6 +497,38 @@ swift package describe --type json
 
 ### Troubleshooting
 
+#### 0. **agctl Command Errors**
+
+**Symptom: Command not found or trying to use swift run**
+
+✅ **CORRECT:**
+```bash
+# Use agctl directly as a standalone command
+agctl build
+agctl test Compose
+agctl validate modules
+```
+
+❌ **WRONG:**
+```bash
+# DO NOT use these patterns
+swift run --package-path Tools/agctl agctl build
+cd Tools/agctl && swift run agctl build
+```
+
+**If agctl is not found:**
+```bash
+# Check if installed
+which agctl
+
+# If not installed, install it
+cd Tools/agctl
+./install.sh
+
+# Verify installation
+agctl --version
+```
+
 #### 1. **Common Build Errors**
 
 **Swift Concurrency Issues:**
@@ -472,7 +543,14 @@ xcodebuild build \
 
 **Dependency Resolution Issues:**
 ```bash
-# Clean and resolve
+# PREFERRED: Use agctl to clean everything
+agctl clean --all
+
+# Then resolve dependencies
+swift package resolve
+swift package update
+
+# Alternative: Manual cleaning
 swift package clean
 swift package resolve
 swift package update
@@ -595,6 +673,8 @@ xcodebuild test \
 - [ ] Use `agctl build [module] --verbose` for detailed build output
 - [ ] Use `agctl test [module] --verbose` for test details
 - [ ] Test modules in dependency order with `agctl test`
+- [ ] Try `agctl clean` to remove build artifacts
+- [ ] Try `agctl clean --all` for deep clean (includes DerivedData)
 - [ ] Verify simulator is properly configured
 - [ ] Run SwiftLint for code quality issues
 
@@ -606,9 +686,15 @@ xcodebuild test \
 - **Command Reference**: `Tools/agctl/README.md`
 - **Built-in Help**: Run `agctl --help` or `agctl [command] --help`
 
-#### Installation
+#### Installation Status
 ```bash
+# Check if agctl is already installed (it should be)
+which agctl  # Should show: /usr/local/bin/agctl
+
+# Only if not installed, run:
 cd Tools/agctl
 ./install.sh
 agctl install-hooks  # Install git hooks for automatic validation
 ```
+
+**Note:** agctl should already be installed at `/usr/local/bin/agctl`. Always use it as a standalone command, never via `swift run --package-path`.

@@ -276,6 +276,103 @@ assertSnapshot(of: sut)
 - **Fake:** lightweight in-memory implementation; deterministic and preferred.
 - **Mock:** records calls/expectations; use sparingly for verification.
 
+#### SwiftUI Previews & Preview Mocks
+
+For `#Preview` blocks in local SPM packages, use a lightweight preview container pattern:
+
+**1. Create PreviewDeps helper (in AppFoundation):**
+```swift
+// Shared/AppFoundation/Sources/AppFoundation/PreviewDeps.swift
+import SwiftUI
+
+public enum PreviewDeps {
+    /// Wrap any preview in a safe DI/environment context.
+    @ViewBuilder
+    public static func scoped<V: View>(@ViewBuilder _ content: () -> V) -> some View {
+        content()
+            .environment(\.locale, .init(identifier: "en_US"))
+            .environment(\.colorScheme, .light)
+            .environment(\.deps, .previewMocks)  // Inject preview-safe mocks
+    }
+}
+```
+
+**2. Add preview mocks to Dependencies:**
+```swift
+// Shared/AppFoundation/Sources/AppFoundation/Dependencies.swift
+extension Dependencies {
+    /// Preview-safe mocks that never perform real I/O
+    public static let previewMocks = Dependencies(
+        networking: NetworkingClientFake(fixtures: .samplePosts),
+        analytics: AnalyticsClientNoOp(),  // No-op for previews
+        auth: AuthSessionFake(user: .preview),
+        clock: TestClock()
+    )
+}
+```
+
+**3. Create preview fixtures in each module:**
+```swift
+// Features/HomeForYou/Sources/HomeForYou/PreviewModels.swift
+public enum PreviewModels {
+    public static let samplePost = Post(
+        id: "p1",
+        author: "rocky",
+        text: "Human-only social ✨"
+    )
+    
+    public static let emptyFeed: [Post] = []
+    public static let loadingState = Phase<[Post]>.loading
+}
+```
+
+**4. Use in preview blocks:**
+```swift
+// Features/HomeForYou/Sources/HomeForYou/FeedView.swift
+import SwiftUI
+import AppFoundation
+
+public struct FeedView: View {
+    @Environment(\.deps) private var deps
+    
+    public var body: some View {
+        // View implementation
+    }
+}
+
+#Preview("Default") {
+    PreviewDeps.scoped {
+        FeedView()
+            .padding()
+            .previewLayout(.sizeThatFits)
+    }
+}
+
+#Preview("Empty State") {
+    PreviewDeps.scoped {
+        FeedView()  // Will use .previewMocks with empty data
+    }
+}
+```
+
+**Benefits:**
+- ✅ Previews never trigger real network/analytics/auth
+- ✅ Consistent environment (locale, color scheme, mocks)
+- ✅ Fast preview rendering
+- ✅ Package-local fixtures avoid cross-module coupling
+- ✅ Guard heavy boot code with `ProcessInfo.processInfo.isiOSPreviews`
+
+**Guard heavy initialization:**
+```swift
+// In app bootstrap or service init
+public init() {
+    guard !ProcessInfo.processInfo.isiOSPreviews else { return }
+    // Skip analytics setup, push registration, etc.
+}
+```
+
+See **swiftui-previews.mdc** for complete preview patterns and troubleshooting.
+
 ### Concurrency & Safety Rules
 
 1. All dependencies must be `Sendable`; annotate types or wrap state in actors.
@@ -371,3 +468,4 @@ For detailed information on related topics:
 - **Naming Conventions:** `ios-naming.mdc` - Comprehensive naming for protocols, implementations, services, and choosing Service vs Repository vs Manager
 - **Module Standards:** `ios-module-standards.mdc` - Package structure and module organization
 - **Concurrency:** `swift-concurrency.mdc` - Actor patterns and Sendable requirements
+- **Previews:** `swiftui-previews.mdc` - SwiftUI preview patterns, PreviewDeps usage, and preview infrastructure

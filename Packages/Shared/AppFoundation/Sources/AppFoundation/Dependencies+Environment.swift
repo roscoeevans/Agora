@@ -12,7 +12,17 @@ import SwiftUI
 /// - Feature-specific dependencies should use initializer injection
 /// - Dependencies are immutable once set
 private struct DependenciesKey: EnvironmentKey {
-    static let defaultValue: Dependencies = .production
+    static let defaultValue: Dependencies = {
+        // In previews, use test dependencies to avoid crashes
+        // In production, this should never be reached (app sets deps at root)
+        #if DEBUG
+        let env = ProcessInfo.processInfo.environment
+        if env["XCODE_RUNNING_FOR_PREVIEWS"] == "1" || env["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1" {
+            return .test()
+        }
+        #endif
+        return .production
+    }()
 }
 
 extension EnvironmentValues {

@@ -7,9 +7,11 @@
 
 import SwiftUI
 import DesignSystem
-import AppFoundation
 import Analytics
 import Networking
+
+// Note: Networking re-exports AppFoundation, giving us access to Post and other types
+// We don't need to explicitly import AppFoundation
 
 public struct HomeForYouView: View {
     @Environment(\.deps) private var deps
@@ -68,12 +70,14 @@ public struct HomeForYouView: View {
             }
         }
         .task {
-            // Initialize view model with dependencies from environment
-            // Following DI rule: dependencies injected from environment
-            self.viewModel = ForYouViewModel(
-                networking: deps.networking,
-                analytics: deps.analytics
-            )
+            // Initialize view model only once
+            // The viewModel's init already triggers initial data load
+            if viewModel == nil {
+                self.viewModel = ForYouViewModel(
+                    networking: deps.networking,
+                    analytics: deps.analytics
+                )
+            }
         }
     }
 }
@@ -85,62 +89,8 @@ struct PostCardView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: SpacingTokens.sm) {
-            // Author and timestamp header
-            HStack(alignment: .top, spacing: SpacingTokens.sm) {
-                // Author avatar placeholder
-                Circle()
-                    .fill(ColorTokens.agoraBrand)
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Text(String(post.authorDisplayHandle.prefix(1)))
-                            .font(TypographyScale.calloutEmphasized)
-                            .foregroundColor(.white)
-                    }
-                
-                VStack(alignment: .leading, spacing: SpacingTokens.xxs) {
-                    // Display handle and timestamp on same line
-                    HStack(spacing: SpacingTokens.xs) {
-                        Text(post.authorDisplayHandle)
-                            .font(TypographyScale.calloutEmphasized)
-                            .foregroundColor(ColorTokens.primaryText)
-                        
-                        Text("·")
-                            .font(TypographyScale.caption1)
-                            .foregroundColor(ColorTokens.tertiaryText)
-                        
-                        Text(RelativeTimeFormatter.format(post.createdAt))
-                            .font(TypographyScale.caption1)
-                            .foregroundColor(ColorTokens.tertiaryText)
-                    }
-                    
-                    // Post content aligned under display handle
-                    Text(post.text)
-                        .font(TypographyScale.body)
-                        .foregroundColor(ColorTokens.primaryText)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                
-                Spacer()
-            }
-            
-            // Interaction buttons
-            HStack(spacing: SpacingTokens.xl) {
-                AgoraInteractionButton.like(count: post.likeCount) {
-                    /* TODO: Implement like */
-                }
-                
-                AgoraInteractionButton.repost(count: post.repostCount) {
-                    /* TODO: Implement repost */
-                }
-                
-                AgoraInteractionButton.reply(count: post.replyCount) {
-                    /* TODO: Implement reply */
-                }
-                
-                Spacer()
-            }
-            .padding(.top, SpacingTokens.xs)
+            postHeader
+            interactionButtons
         }
         .padding(SpacingTokens.md)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
@@ -161,10 +111,81 @@ struct PostCardView: View {
         .accessibilityLabel("Post by \(post.authorDisplayHandle)")
         .accessibilityHint("Double tap to view post details")
     }
+    
+    private var postHeader: some View {
+        HStack(alignment: .top, spacing: SpacingTokens.sm) {
+            authorAvatar
+            
+            VStack(alignment: .leading, spacing: SpacingTokens.xxs) {
+                metadataLine
+                postContent
+            }
+            
+            Spacer()
+        }
+    }
+    
+    private var authorAvatar: some View {
+        Circle()
+            .fill(ColorTokens.agoraBrand)
+            .frame(width: 40, height: 40)
+            .overlay {
+                Text(String(post.authorDisplayHandle.prefix(1)))
+                    .font(TypographyScale.calloutEmphasized)
+                    .foregroundColor(.white)
+            }
+    }
+    
+    private var metadataLine: some View {
+        HStack(spacing: SpacingTokens.xs) {
+            Text(post.authorDisplayHandle)
+                .font(TypographyScale.calloutEmphasized)
+                .foregroundColor(ColorTokens.primaryText)
+            
+            Text("·")
+                .font(TypographyScale.caption1)
+                .foregroundColor(ColorTokens.tertiaryText)
+            
+            Text(post.createdAt, style: .relative)
+                .font(TypographyScale.caption1)
+                .foregroundColor(ColorTokens.tertiaryText)
+        }
+    }
+    
+    private var postContent: some View {
+        Text(post.text)
+            .font(TypographyScale.body)
+            .foregroundColor(ColorTokens.primaryText)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+    
+    private var interactionButtons: some View {
+        HStack(spacing: SpacingTokens.xl) {
+            AgoraInteractionButton.like(count: post.likeCount) {
+                /* TODO: Implement like */
+            }
+            
+            AgoraInteractionButton.repost(count: post.repostCount) {
+                /* TODO: Implement repost */
+            }
+            
+            AgoraInteractionButton.reply(count: post.replyCount) {
+                /* TODO: Implement reply */
+            }
+            
+            Spacer()
+        }
+        .padding(.top, SpacingTokens.xs)
+    }
 }
 
 
 
-#Preview {
-    HomeForYouView()
+#if DEBUG
+#Preview("For You Feed") {
+    PreviewDeps.scoped {
+        HomeForYouView()
+    }
 }
+#endif

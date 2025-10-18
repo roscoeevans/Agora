@@ -47,6 +47,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /feed/for-you`.
     /// - Remark: Generated from `#/paths//feed/for-you/get`.
     func get_sol_feed_sol_for_hyphen_you(_ input: Operations.get_sol_feed_sol_for_hyphen_you.Input) async throws -> Operations.get_sol_feed_sol_for_hyphen_you.Output
+    /// Get Following feed (chronological)
+    ///
+    /// - Remark: HTTP `GET /feed/following`.
+    /// - Remark: Generated from `#/paths//feed/following/get`.
+    func get_sol_feed_sol_following(_ input: Operations.get_sol_feed_sol_following.Input) async throws -> Operations.get_sol_feed_sol_following.Output
+    /// Get user profile by ID
+    ///
+    /// - Remark: HTTP `GET /users/{userId}`.
+    /// - Remark: Generated from `#/paths//users/{userId}/get`.
+    func get_sol_users_sol__lcub_userId_rcub_(_ input: Operations.get_sol_users_sol__lcub_userId_rcub_.Input) async throws -> Operations.get_sol_users_sol__lcub_userId_rcub_.Output
+    /// Get posts by user ID
+    ///
+    /// - Remark: HTTP `GET /users/{userId}/posts`.
+    /// - Remark: Generated from `#/paths//users/{userId}/posts/get`.
+    func get_sol_users_sol__lcub_userId_rcub__sol_posts(_ input: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input) async throws -> Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output
     /// Create a new post
     ///
     /// - Remark: HTTP `POST /posts/create`.
@@ -72,6 +87,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /link-preview`.
     /// - Remark: Generated from `#/paths//link-preview/post`.
     func post_sol_link_hyphen_preview(_ input: Operations.post_sol_link_hyphen_preview.Input) async throws -> Operations.post_sol_link_hyphen_preview.Output
+    /// Toggle like on a post (idempotent)
+    ///
+    /// - Remark: HTTP `POST /posts/{id}/like`.
+    /// - Remark: Generated from `#/paths//posts/{id}/like/post`.
+    func post_sol_posts_sol__lcub_id_rcub__sol_like(_ input: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Input) async throws -> Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output
+    /// Toggle repost on a post (idempotent)
+    ///
+    /// - Remark: HTTP `POST /posts/{id}/repost`.
+    /// - Remark: Generated from `#/paths//posts/{id}/repost/post`.
+    func post_sol_posts_sol__lcub_id_rcub__sol_repost(_ input: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Input) async throws -> Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output
+    /// Get shareable deep link for a post
+    ///
+    /// - Remark: HTTP `GET /posts/{id}/share-url`.
+    /// - Remark: Generated from `#/paths//posts/{id}/share-url/get`.
+    func get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url(_ input: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input) async throws -> Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -161,6 +191,47 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Get Following feed (chronological)
+    ///
+    /// - Remark: HTTP `GET /feed/following`.
+    /// - Remark: Generated from `#/paths//feed/following/get`.
+    public func get_sol_feed_sol_following(
+        query: Operations.get_sol_feed_sol_following.Input.Query = .init(),
+        headers: Operations.get_sol_feed_sol_following.Input.Headers = .init()
+    ) async throws -> Operations.get_sol_feed_sol_following.Output {
+        try await get_sol_feed_sol_following(Operations.get_sol_feed_sol_following.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Get user profile by ID
+    ///
+    /// - Remark: HTTP `GET /users/{userId}`.
+    /// - Remark: Generated from `#/paths//users/{userId}/get`.
+    public func get_sol_users_sol__lcub_userId_rcub_(
+        path: Operations.get_sol_users_sol__lcub_userId_rcub_.Input.Path,
+        headers: Operations.get_sol_users_sol__lcub_userId_rcub_.Input.Headers = .init()
+    ) async throws -> Operations.get_sol_users_sol__lcub_userId_rcub_.Output {
+        try await get_sol_users_sol__lcub_userId_rcub_(Operations.get_sol_users_sol__lcub_userId_rcub_.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Get posts by user ID
+    ///
+    /// - Remark: HTTP `GET /users/{userId}/posts`.
+    /// - Remark: Generated from `#/paths//users/{userId}/posts/get`.
+    public func get_sol_users_sol__lcub_userId_rcub__sol_posts(
+        path: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Path,
+        query: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Query = .init(),
+        headers: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Headers = .init()
+    ) async throws -> Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output {
+        try await get_sol_users_sol__lcub_userId_rcub__sol_posts(Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
     /// Create a new post
     ///
     /// - Remark: HTTP `POST /posts/create`.
@@ -226,6 +297,45 @@ extension APIProtocol {
         try await post_sol_link_hyphen_preview(Operations.post_sol_link_hyphen_preview.Input(
             headers: headers,
             body: body
+        ))
+    }
+    /// Toggle like on a post (idempotent)
+    ///
+    /// - Remark: HTTP `POST /posts/{id}/like`.
+    /// - Remark: Generated from `#/paths//posts/{id}/like/post`.
+    public func post_sol_posts_sol__lcub_id_rcub__sol_like(
+        path: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Input.Path,
+        headers: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Input.Headers = .init()
+    ) async throws -> Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output {
+        try await post_sol_posts_sol__lcub_id_rcub__sol_like(Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Toggle repost on a post (idempotent)
+    ///
+    /// - Remark: HTTP `POST /posts/{id}/repost`.
+    /// - Remark: Generated from `#/paths//posts/{id}/repost/post`.
+    public func post_sol_posts_sol__lcub_id_rcub__sol_repost(
+        path: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Input.Path,
+        headers: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Input.Headers = .init()
+    ) async throws -> Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output {
+        try await post_sol_posts_sol__lcub_id_rcub__sol_repost(Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Get shareable deep link for a post
+    ///
+    /// - Remark: HTTP `GET /posts/{id}/share-url`.
+    /// - Remark: Generated from `#/paths//posts/{id}/share-url/get`.
+    public func get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url(
+        path: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input.Path,
+        headers: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input.Headers = .init()
+    ) async throws -> Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output {
+        try await get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url(Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input(
+            path: path,
+            headers: headers
         ))
     }
 }
@@ -542,6 +652,14 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Post/authorDisplayHandle`.
             public var authorDisplayHandle: Swift.String
+            /// Author's display name
+            ///
+            /// - Remark: Generated from `#/components/schemas/Post/authorDisplayName`.
+            public var authorDisplayName: Swift.String?
+            /// Author's avatar URL
+            ///
+            /// - Remark: Generated from `#/components/schemas/Post/authorAvatarUrl`.
+            public var authorAvatarUrl: Swift.String?
             /// Post text content (1-280 characters)
             ///
             /// - Remark: Generated from `#/components/schemas/Post/text`.
@@ -582,12 +700,22 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Post/canEdit`.
             public var canEdit: Swift.Bool?
+            /// Whether the current user has liked this post (non-optional, defaults to false)
+            ///
+            /// - Remark: Generated from `#/components/schemas/Post/isLikedByViewer`.
+            public var isLikedByViewer: Swift.Bool?
+            /// Whether the current user has reposted this post (non-optional, defaults to false)
+            ///
+            /// - Remark: Generated from `#/components/schemas/Post/isRepostedByViewer`.
+            public var isRepostedByViewer: Swift.Bool?
             /// Creates a new `Post`.
             ///
             /// - Parameters:
             ///   - id:
             ///   - authorId:
             ///   - authorDisplayHandle: Author's unique handle with their preferred capitalization
+            ///   - authorDisplayName: Author's display name
+            ///   - authorAvatarUrl: Author's avatar URL
             ///   - text: Post text content (1-280 characters)
             ///   - linkUrl:
             ///   - mediaBundleId:
@@ -601,10 +729,14 @@ public enum Components {
             ///   - editedAt: Timestamp of last edit (null if never edited)
             ///   - selfDestructAt: Scheduled deletion time (null if not scheduled)
             ///   - canEdit: Whether post can still be edited (within 15 minutes of creation)
+            ///   - isLikedByViewer: Whether the current user has liked this post (non-optional, defaults to false)
+            ///   - isRepostedByViewer: Whether the current user has reposted this post (non-optional, defaults to false)
             public init(
                 id: Swift.String,
                 authorId: Swift.String,
                 authorDisplayHandle: Swift.String,
+                authorDisplayName: Swift.String? = nil,
+                authorAvatarUrl: Swift.String? = nil,
                 text: Swift.String,
                 linkUrl: Swift.String? = nil,
                 mediaBundleId: Swift.String? = nil,
@@ -617,11 +749,15 @@ public enum Components {
                 createdAt: Foundation.Date,
                 editedAt: Foundation.Date? = nil,
                 selfDestructAt: Foundation.Date? = nil,
-                canEdit: Swift.Bool? = nil
+                canEdit: Swift.Bool? = nil,
+                isLikedByViewer: Swift.Bool? = nil,
+                isRepostedByViewer: Swift.Bool? = nil
             ) {
                 self.id = id
                 self.authorId = authorId
                 self.authorDisplayHandle = authorDisplayHandle
+                self.authorDisplayName = authorDisplayName
+                self.authorAvatarUrl = authorAvatarUrl
                 self.text = text
                 self.linkUrl = linkUrl
                 self.mediaBundleId = mediaBundleId
@@ -635,11 +771,15 @@ public enum Components {
                 self.editedAt = editedAt
                 self.selfDestructAt = selfDestructAt
                 self.canEdit = canEdit
+                self.isLikedByViewer = isLikedByViewer
+                self.isRepostedByViewer = isRepostedByViewer
             }
             public enum CodingKeys: String, CodingKey {
                 case id
                 case authorId
                 case authorDisplayHandle
+                case authorDisplayName
+                case authorAvatarUrl
                 case text
                 case linkUrl
                 case mediaBundleId
@@ -653,6 +793,8 @@ public enum Components {
                 case editedAt
                 case selfDestructAt
                 case canEdit
+                case isLikedByViewer
+                case isRepostedByViewer
             }
         }
         /// - Remark: Generated from `#/components/schemas/EnhancedPost`.
@@ -775,6 +917,134 @@ public enum Components {
             }
             public enum CodingKeys: String, CodingKey {
                 case pageId
+                case posts
+                case nextCursor
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/FollowingFeedResponse`.
+        public struct FollowingFeedResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FollowingFeedResponse/posts`.
+            public var posts: [Components.Schemas.Post]
+            /// ISO 8601 timestamp for pagination
+            ///
+            /// - Remark: Generated from `#/components/schemas/FollowingFeedResponse/nextCursor`.
+            public var nextCursor: Swift.String?
+            /// Creates a new `FollowingFeedResponse`.
+            ///
+            /// - Parameters:
+            ///   - posts:
+            ///   - nextCursor: ISO 8601 timestamp for pagination
+            public init(
+                posts: [Components.Schemas.Post],
+                nextCursor: Swift.String? = nil
+            ) {
+                self.posts = posts
+                self.nextCursor = nextCursor
+            }
+            public enum CodingKeys: String, CodingKey {
+                case posts
+                case nextCursor
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/UserProfileWithStats`.
+        public struct UserProfileWithStats: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/UserProfileWithStats/value1`.
+            public var value1: Components.Schemas.User
+            /// - Remark: Generated from `#/components/schemas/UserProfileWithStats/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// Number of users following this profile
+                ///
+                /// - Remark: Generated from `#/components/schemas/UserProfileWithStats/value2/followerCount`.
+                public var followerCount: Swift.Int
+                /// Number of users this profile follows
+                ///
+                /// - Remark: Generated from `#/components/schemas/UserProfileWithStats/value2/followingCount`.
+                public var followingCount: Swift.Int
+                /// Number of public posts by this user
+                ///
+                /// - Remark: Generated from `#/components/schemas/UserProfileWithStats/value2/postCount`.
+                public var postCount: Swift.Int
+                /// Whether this profile belongs to the authenticated user
+                ///
+                /// - Remark: Generated from `#/components/schemas/UserProfileWithStats/value2/isCurrentUser`.
+                public var isCurrentUser: Swift.Bool
+                /// Whether the authenticated user follows this profile
+                ///
+                /// - Remark: Generated from `#/components/schemas/UserProfileWithStats/value2/isFollowing`.
+                public var isFollowing: Swift.Bool
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - followerCount: Number of users following this profile
+                ///   - followingCount: Number of users this profile follows
+                ///   - postCount: Number of public posts by this user
+                ///   - isCurrentUser: Whether this profile belongs to the authenticated user
+                ///   - isFollowing: Whether the authenticated user follows this profile
+                public init(
+                    followerCount: Swift.Int,
+                    followingCount: Swift.Int,
+                    postCount: Swift.Int,
+                    isCurrentUser: Swift.Bool,
+                    isFollowing: Swift.Bool
+                ) {
+                    self.followerCount = followerCount
+                    self.followingCount = followingCount
+                    self.postCount = postCount
+                    self.isCurrentUser = isCurrentUser
+                    self.isFollowing = isFollowing
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case followerCount
+                    case followingCount
+                    case postCount
+                    case isCurrentUser
+                    case isFollowing
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/UserProfileWithStats/value2`.
+            public var value2: Components.Schemas.UserProfileWithStats.Value2Payload
+            /// Creates a new `UserProfileWithStats`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.User,
+                value2: Components.Schemas.UserProfileWithStats.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/UserPostsResponse`.
+        public struct UserPostsResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/UserPostsResponse/posts`.
+            public var posts: [Components.Schemas.Post]
+            /// ISO 8601 timestamp for pagination
+            ///
+            /// - Remark: Generated from `#/components/schemas/UserPostsResponse/nextCursor`.
+            public var nextCursor: Swift.String?
+            /// Creates a new `UserPostsResponse`.
+            ///
+            /// - Parameters:
+            ///   - posts:
+            ///   - nextCursor: ISO 8601 timestamp for pagination
+            public init(
+                posts: [Components.Schemas.Post],
+                nextCursor: Swift.String? = nil
+            ) {
+                self.posts = posts
+                self.nextCursor = nextCursor
+            }
+            public enum CodingKeys: String, CodingKey {
                 case posts
                 case nextCursor
             }
@@ -1019,6 +1289,60 @@ public enum Components {
                 case width
                 case height
                 case durationSec
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/LikeResult`.
+        public struct LikeResult: Codable, Hashable, Sendable {
+            /// Whether the current user now likes the post
+            ///
+            /// - Remark: Generated from `#/components/schemas/LikeResult/isLiked`.
+            public var isLiked: Swift.Bool
+            /// Updated total like count
+            ///
+            /// - Remark: Generated from `#/components/schemas/LikeResult/likeCount`.
+            public var likeCount: Swift.Int
+            /// Creates a new `LikeResult`.
+            ///
+            /// - Parameters:
+            ///   - isLiked: Whether the current user now likes the post
+            ///   - likeCount: Updated total like count
+            public init(
+                isLiked: Swift.Bool,
+                likeCount: Swift.Int
+            ) {
+                self.isLiked = isLiked
+                self.likeCount = likeCount
+            }
+            public enum CodingKeys: String, CodingKey {
+                case isLiked
+                case likeCount
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RepostResult`.
+        public struct RepostResult: Codable, Hashable, Sendable {
+            /// Whether the current user now has reposted the post
+            ///
+            /// - Remark: Generated from `#/components/schemas/RepostResult/isReposted`.
+            public var isReposted: Swift.Bool
+            /// Updated total repost count
+            ///
+            /// - Remark: Generated from `#/components/schemas/RepostResult/repostCount`.
+            public var repostCount: Swift.Int
+            /// Creates a new `RepostResult`.
+            ///
+            /// - Parameters:
+            ///   - isReposted: Whether the current user now has reposted the post
+            ///   - repostCount: Updated total repost count
+            public init(
+                isReposted: Swift.Bool,
+                repostCount: Swift.Int
+            ) {
+                self.isReposted = isReposted
+                self.repostCount = repostCount
+            }
+            public enum CodingKeys: String, CodingKey {
+                case isReposted
+                case repostCount
             }
         }
         /// - Remark: Generated from `#/components/schemas/Error`.
@@ -2547,6 +2871,672 @@ public enum Operations {
             }
         }
     }
+    /// Get Following feed (chronological)
+    ///
+    /// - Remark: HTTP `GET /feed/following`.
+    /// - Remark: Generated from `#/paths//feed/following/get`.
+    public enum get_sol_feed_sol_following {
+        public static let id: Swift.String = "get/feed/following"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/feed/following/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Pagination cursor (ISO 8601 timestamp)
+                ///
+                /// - Remark: Generated from `#/paths/feed/following/GET/query/cursor`.
+                public var cursor: Swift.String?
+                /// Number of posts to return
+                ///
+                /// - Remark: Generated from `#/paths/feed/following/GET/query/limit`.
+                public var limit: Swift.Int?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - cursor: Pagination cursor (ISO 8601 timestamp)
+                ///   - limit: Number of posts to return
+                public init(
+                    cursor: Swift.String? = nil,
+                    limit: Swift.Int? = nil
+                ) {
+                    self.cursor = cursor
+                    self.limit = limit
+                }
+            }
+            public var query: Operations.get_sol_feed_sol_following.Input.Query
+            /// - Remark: Generated from `#/paths/feed/following/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_feed_sol_following.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_feed_sol_following.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.get_sol_feed_sol_following.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.get_sol_feed_sol_following.Input.Query = .init(),
+                headers: Operations.get_sol_feed_sol_following.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/feed/following/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/feed/following/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.FollowingFeedResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.FollowingFeedResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.get_sol_feed_sol_following.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.get_sol_feed_sol_following.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Following feed posts
+            ///
+            /// - Remark: Generated from `#/paths//feed/following/get/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.get_sol_feed_sol_following.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.get_sol_feed_sol_following.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//feed/following/get/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//feed/following/get/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get user profile by ID
+    ///
+    /// - Remark: HTTP `GET /users/{userId}`.
+    /// - Remark: Generated from `#/paths//users/{userId}/get`.
+    public enum get_sol_users_sol__lcub_userId_rcub_ {
+        public static let id: Swift.String = "get/users/{userId}"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/users/{userId}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// User ID (UUID)
+                ///
+                /// - Remark: Generated from `#/paths/users/{userId}/GET/path/userId`.
+                public var userId: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - userId: User ID (UUID)
+                public init(userId: Swift.String) {
+                    self.userId = userId
+                }
+            }
+            public var path: Operations.get_sol_users_sol__lcub_userId_rcub_.Input.Path
+            /// - Remark: Generated from `#/paths/users/{userId}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_users_sol__lcub_userId_rcub_.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_users_sol__lcub_userId_rcub_.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.get_sol_users_sol__lcub_userId_rcub_.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.get_sol_users_sol__lcub_userId_rcub_.Input.Path,
+                headers: Operations.get_sol_users_sol__lcub_userId_rcub_.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/users/{userId}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/users/{userId}/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.UserProfileWithStats)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.UserProfileWithStats {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.get_sol_users_sol__lcub_userId_rcub_.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.get_sol_users_sol__lcub_userId_rcub_.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// User profile
+            ///
+            /// - Remark: Generated from `#/paths//users/{userId}/get/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.get_sol_users_sol__lcub_userId_rcub_.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.get_sol_users_sol__lcub_userId_rcub_.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request
+            ///
+            /// - Remark: Generated from `#/paths//users/{userId}/get/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/users/{userId}/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/users/{userId}/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.get_sol_users_sol__lcub_userId_rcub_.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.get_sol_users_sol__lcub_userId_rcub_.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// User not found
+            ///
+            /// - Remark: Generated from `#/paths//users/{userId}/get/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.get_sol_users_sol__lcub_userId_rcub_.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.get_sol_users_sol__lcub_userId_rcub_.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//users/{userId}/get/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get posts by user ID
+    ///
+    /// - Remark: HTTP `GET /users/{userId}/posts`.
+    /// - Remark: Generated from `#/paths//users/{userId}/posts/get`.
+    public enum get_sol_users_sol__lcub_userId_rcub__sol_posts {
+        public static let id: Swift.String = "get/users/{userId}/posts"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// User ID (UUID)
+                ///
+                /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/path/userId`.
+                public var userId: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - userId: User ID (UUID)
+                public init(userId: Swift.String) {
+                    self.userId = userId
+                }
+            }
+            public var path: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Path
+            /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Pagination cursor (ISO 8601 timestamp)
+                ///
+                /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/query/cursor`.
+                public var cursor: Swift.String?
+                /// Number of posts to return
+                ///
+                /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/query/limit`.
+                public var limit: Swift.Int?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - cursor: Pagination cursor (ISO 8601 timestamp)
+                ///   - limit: Number of posts to return
+                public init(
+                    cursor: Swift.String? = nil,
+                    limit: Swift.Int? = nil
+                ) {
+                    self.cursor = cursor
+                    self.limit = limit
+                }
+            }
+            public var query: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Query
+            /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Path,
+                query: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Query = .init(),
+                headers: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.UserPostsResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.UserPostsResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// User posts
+            ///
+            /// - Remark: Generated from `#/paths//users/{userId}/posts/get/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request
+            ///
+            /// - Remark: Generated from `#/paths//users/{userId}/posts/get/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/users/{userId}/posts/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// User not found
+            ///
+            /// - Remark: Generated from `#/paths//users/{userId}/posts/get/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.get_sol_users_sol__lcub_userId_rcub__sol_posts.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//users/{userId}/posts/get/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Create a new post
     ///
     /// - Remark: HTTP `POST /posts/create`.
@@ -3729,6 +4719,765 @@ public enum Operations {
             /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//link-preview/post/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Toggle like on a post (idempotent)
+    ///
+    /// - Remark: HTTP `POST /posts/{id}/like`.
+    /// - Remark: Generated from `#/paths//posts/{id}/like/post`.
+    public enum post_sol_posts_sol__lcub_id_rcub__sol_like {
+        public static let id: Swift.String = "post/posts/{id}/like"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/posts/{id}/like/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// Post ID
+                ///
+                /// - Remark: Generated from `#/paths/posts/{id}/like/POST/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id: Post ID
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Input.Path
+            /// - Remark: Generated from `#/paths/posts/{id}/like/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Input.Path,
+                headers: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/posts/{id}/like/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/posts/{id}/like/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.LikeResult)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.LikeResult {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Like toggled successfully
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/like/post/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/like/post/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/posts/{id}/like/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/posts/{id}/like/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Post not found
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/like/post/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct TooManyRequests: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/posts/{id}/like/POST/responses/429/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/posts/{id}/like/POST/responses/429/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.TooManyRequests.Body
+                /// Creates a new `TooManyRequests`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.TooManyRequests.Body) {
+                    self.body = body
+                }
+            }
+            /// Rate limited
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/like/post/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Operations.post_sol_posts_sol__lcub_id_rcub__sol_like.Output.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/like/post/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Toggle repost on a post (idempotent)
+    ///
+    /// - Remark: HTTP `POST /posts/{id}/repost`.
+    /// - Remark: Generated from `#/paths//posts/{id}/repost/post`.
+    public enum post_sol_posts_sol__lcub_id_rcub__sol_repost {
+        public static let id: Swift.String = "post/posts/{id}/repost"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// Post ID
+                ///
+                /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id: Post ID
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Input.Path
+            /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Input.Path,
+                headers: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.RepostResult)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.RepostResult {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Repost toggled successfully
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/repost/post/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/repost/post/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Post not found
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/repost/post/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct TooManyRequests: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/responses/429/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/posts/{id}/repost/POST/responses/429/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.TooManyRequests.Body
+                /// Creates a new `TooManyRequests`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.TooManyRequests.Body) {
+                    self.body = body
+                }
+            }
+            /// Rate limited
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/repost/post/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Operations.post_sol_posts_sol__lcub_id_rcub__sol_repost.Output.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/repost/post/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get shareable deep link for a post
+    ///
+    /// - Remark: HTTP `GET /posts/{id}/share-url`.
+    /// - Remark: Generated from `#/paths//posts/{id}/share-url/get`.
+    public enum get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url {
+        public static let id: Swift.String = "get/posts/{id}/share-url"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/posts/{id}/share-url/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Post ID
+                ///
+                /// - Remark: Generated from `#/paths/posts/{id}/share-url/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id: Post ID
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input.Path
+            /// - Remark: Generated from `#/paths/posts/{id}/share-url/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input.Path,
+                headers: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/posts/{id}/share-url/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/posts/{id}/share-url/GET/responses/200/content/json`.
+                    public struct jsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/posts/{id}/share-url/GET/responses/200/content/json/url`.
+                        public var url: Swift.String
+                        /// Creates a new `jsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - url:
+                        public init(url: Swift.String) {
+                            self.url = url
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case url
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/posts/{id}/share-url/GET/responses/200/content/application\/json`.
+                    case json(Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output.Ok.Body.jsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output.Ok.Body.jsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Share URL retrieved
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/share-url/get/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// Creates a new `NotFound`.
+                public init() {}
+            }
+            /// Post not found
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/share-url/get/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output.NotFound)
+            /// Post not found
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/share-url/get/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            public static var notFound: Self {
+                .notFound(.init())
+            }
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//posts/{id}/share-url/get/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalServerError)

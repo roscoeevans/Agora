@@ -22,10 +22,12 @@ See `Tools/agctl/README.md` for complete documentation.
 Every `Package.swift` file must include:
 
 1. **Swift Tools Version:** Always `6.2`
-2. **Platform:** Always `.iOS(.v18)` (iOS 18+)
+2. **Platform:** Always `.iOS(.v18)` (or higher per module needs; match the app's minimum)
 3. **Product Name:** Must match package directory name exactly
 4. **Target Name:** Must match package directory name exactly
 5. **Test Target:** Must be named `{PackageName}Tests`
+6. **Swift Settings for Debug Builds:** Define `DEBUG` for targets that use `#if DEBUG` (previews, debug-only views)
+7. **Resources (if needed):** Declare `.process("Resources")` for assets used by SwiftUI views and previews
 
 #### Template
 
@@ -59,12 +61,19 @@ let package = Package(
                 .product(name: "Supabase", package: "supabase-swift")
             ],
             resources: [
-                .process("Resources")  // If package has resources
+                .process("Resources")  // Only if the package ships assets
+            ],
+            swiftSettings: [
+                // Ensure `#if DEBUG` works inside SwiftPM targets during Debug builds
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "PackageNameTests",
-            dependencies: ["PackageName"]
+            dependencies: ["PackageName"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )
@@ -95,6 +104,158 @@ let package = Package(
 - Document why each external dependency is needed
 - Prefer Swift Package Manager compatible packages
 - Minimize external dependencies to reduce build time and bundle size
+
+#### Resources for Previews
+
+When your package contains SwiftUI views that need assets (colors, images, fonts) for `#Preview` blocks:
+
+**1. Create a Resources directory:**
+```
+PackageName/
+├── Sources/
+│   └── PackageName/
+│       └── YourView.swift
+└── Resources/
+    └── Assets.xcassets/
+        ├── Colors.colorset/
+        └── AppIcon.imageset/
+```
+
+**2. Declare resources in Package.swift:**
+```swift
+.target(
+    name: "PackageName",
+    dependencies: [...],
+    resources: [
+        .process("Resources")  // Xcode processes .xcassets automatically
+    ]
+)
+```
+
+**3. Access assets in code:**
+```swift
+// SwiftUI resolves package assets via Bundle.module
+Image("icon", bundle: .module)
+Color("brandColor", bundle: .module)
+// If you load data/fonts manually, read from Bundle.module
+```
+
+**When to use resources:**
+- ✅ UI-heavy packages like `DesignSystem`, `Features/Auth`, `Features/Compose`
+- ✅ Any package with views that need brand colors, icons, or custom fonts
+- ✅ Packages with `#Preview` blocks that reference assets
+- ❌ Pure logic packages (Networking, Analytics) typically don't need resources
+
+See **swiftui-previews.mdc** for complete preview setup including `PreviewDeps` and linking packages to the app.
+
+### SwiftUI Preview Support in Modules
+
+SwiftUI previews should render **inside package source files** (co-located with the view) using the **main app** as the implicit host. Follow this checklist:
+
+**Authoring Rules**
+- Co-locate `#Preview` blocks next to the view (or in a `Previews/` subgroup).
+- Wrap preview code to keep it out of release builds:
+  ```swift
+  #if DEBUG && canImport(SwiftUI)
+  import SwiftUI
+
+  #Preview("Default") {
+    PreviewDeps.scoped {
+      MyView()
+        .padding()
+        .previewLayout(.sizeThatFits)
+    }
+  }
+  #endif
+  ```
+- Keep previews pure: no live network/analytics. Use fixtures/mocks.
+- If a module needs assets for previews, add a `Resources/` folder and declare `.process("Resources")` in `Package.swift`.
+
+**App Linking (critical)**
+
+The Agora app target must link the package product you're previewing (Target → Build Phases → Link Binary With Libraries). This is how Xcode finds a host.
+
+**Preview DI Helper (Shared/AppFoundation)**
+
+Provide a tiny helper to unify preview environment:
+
+```swift
+// Packages/Shared/AppFoundation/Sources/AppFoundation/PreviewDeps.swift
+import SwiftUI
+
+public enum PreviewDeps {
+  @ViewBuilder
+  public static func scoped<V: View>(@ViewBuilder _ content: () -> V) -> some View {
+    content()
+      .environment(\.locale, .init(identifier: "en_US"))
+      .environment(\.colorScheme, .light)
+      // Inject mock services here if using EnvironmentKeys
+  }
+}
+```
+
+Add preview detection for short-circuiting heavy work:
+
+```swift
+// Packages/Shared/AppFoundation/Sources/AppFoundation/ProcessInfo+Previews.swift
+import Foundation
+
+public extension ProcessInfo {
+  var isiOSPreviews: Bool { environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" }
+}
+```
+
+**Guard Heavy Work in Views**
+
+```swift
+let isPreview = ProcessInfo.processInfo.isiOSPreviews
+
+.task { guard !isPreview else { return }; await model.load() }
+.onAppear { guard !isPreview else { return }; analytics.screen("Foo") }
+```
+
+**Troubleshooting (Canvas stuck)**
+- Build the app (⌘B) once; ensure the app links the module.
+- Add a minimal sanity preview (`Text("Hello")`) in the same file.
+- Clean build folder (Shift-⌘-K), reopen Canvas (⌥⌘-↩︎), pick an iOS device.
+- Confirm `.define("DEBUG", .when(configuration: .debug))` exists in the module's target.
+- Verify `.process("Resources")` if assets are used.
+- Temporarily remove `@available(iOS …)` if the Canvas is selecting the wrong host.
+
+### `#if DEBUG` in Swift Packages
+
+Use `#if DEBUG` **sparingly** for dev-only code (previews, debug UIs, heavy diagnostics). Prefer DI and runtime flags for behavior differences.
+
+**Allowed**
+- Preview blocks and preview-only scaffolding
+- Debug menus, in-app log consoles
+- Diagnostic panels not meant for production
+
+**Avoid**
+- Business logic forks (use DI / feature flags)
+- Changing public API surface across configs
+- Selecting mock services at compile time for the whole app
+
+**SwiftPM requirement**
+
+Add to any target that uses `#if DEBUG`:
+
+```swift
+swiftSettings: [
+  .define("DEBUG", .when(configuration: .debug))
+]
+```
+
+**Pattern**
+
+```swift
+#if DEBUG && canImport(SwiftUI)
+@available(iOS 26.0, *)
+#Preview("States") {
+  PreviewDeps.scoped { MyView() }
+}
+#endif
+```
 
 ### Module Architecture Decisions
 

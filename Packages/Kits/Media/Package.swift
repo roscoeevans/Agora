@@ -5,10 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "Media",
-    platforms: [
-        .iOS(.v26),
-        .macOS(.v15)
-    ],
+    platforms: [.iOS(.v26)],
     products: [
         .library(
             name: "Media",
@@ -29,12 +26,16 @@ let package = Package(
                 .product(name: "Supabase", package: "supabase-swift")
             ],
             swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug)),
                 .enableExperimentalFeature("StrictConcurrency")
             ]
         ),
         .testTarget(
             name: "MediaTests",
-            dependencies: ["Media"]
+            dependencies: ["Media"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         ),
     ]
 )

@@ -25,11 +25,17 @@ let package = Package(
                 "Networking", 
                 "Analytics",
                 "AppFoundation"
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "HomeFollowingTests",
-            dependencies: ["HomeFollowing"]
+            dependencies: ["HomeFollowing"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )

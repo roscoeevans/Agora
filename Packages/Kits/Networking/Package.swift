@@ -4,10 +4,7 @@ import PackageDescription
 let package = Package(
     name: "Networking",
     defaultLocalization: "en",
-    platforms: [
-        .iOS(.v26),
-        .macOS(.v15)
-    ],
+    platforms: [.iOS(.v26)],
     products: [
         .library(
             name: "Networking",
@@ -37,6 +34,8 @@ let package = Package(
             ],
             path: "Sources/Networking",
             swiftSettings: [
+                // Define DEBUG for #if DEBUG blocks (previews, debug-only code)
+                .define("DEBUG", .when(configuration: .debug)),
                 // Define STAGING for debug builds (staging and development environments)
                 .define("STAGING", .when(configuration: .debug)),
                 .define("DEVELOPMENT", .when(configuration: .debug))
@@ -45,7 +44,10 @@ let package = Package(
         .testTarget(
             name: "NetworkingTests",
             dependencies: ["Networking"],
-            path: "Tests/NetworkingTests"
+            path: "Tests/NetworkingTests",
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )

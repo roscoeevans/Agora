@@ -1,4 +1,5 @@
 import Foundation
+import AppFoundation
 
 /// Sample data fixtures for testing
 public struct TestFixtures: Sendable {
@@ -127,27 +128,39 @@ public struct User: Identifiable, Codable, Sendable {
     }
 }
 
-public struct Post: Identifiable, Codable, Sendable {
-    public let id: String
-    public let authorId: String
-    public let text: String
-    public let linkURL: URL?
-    public let mediaBundle: MediaBundle?
-    public let createdAt: Date
-    public let likeCount: Int
-    public let repostCount: Int
-    public let replyCount: Int
-    
-    public init(id: String, authorId: String, text: String, linkURL: URL?, mediaBundle: MediaBundle?, createdAt: Date, likeCount: Int, repostCount: Int, replyCount: Int) {
-        self.id = id
-        self.authorId = authorId
-        self.text = text
-        self.linkURL = linkURL
-        self.mediaBundle = mediaBundle
-        self.createdAt = createdAt
-        self.likeCount = likeCount
-        self.repostCount = repostCount
-        self.replyCount = replyCount
+// Note: Post is imported from AppFoundation
+// We extend it with test helpers instead of creating a duplicate
+
+extension Post {
+    /// Create a sample Post for testing
+    public static func sample(
+        id: String = UUID().uuidString,
+        authorId: String = "test-author-id",
+        authorDisplayHandle: String = "test.user",
+        text: String = "Sample post for testing",
+        linkUrl: String? = nil,
+        mediaBundleId: String? = nil,
+        likeCount: Int = 0,
+        repostCount: Int = 0,
+        replyCount: Int = 0,
+        createdAt: Date = Date(),
+        authorDisplayName: String? = "Test User",
+        authorAvatarUrl: String? = nil
+    ) -> Post {
+        Post(
+            id: id,
+            authorId: authorId,
+            authorDisplayHandle: authorDisplayHandle,
+            text: text,
+            linkUrl: linkUrl,
+            mediaBundleId: mediaBundleId,
+            likeCount: likeCount,
+            repostCount: repostCount,
+            replyCount: replyCount,
+            createdAt: createdAt,
+            authorDisplayName: authorDisplayName,
+            authorAvatarUrl: authorAvatarUrl
+        )
     }
 }
 

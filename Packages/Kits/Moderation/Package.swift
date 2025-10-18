@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 
 import PackageDescription
 
@@ -26,12 +26,16 @@ let package = Package(
                 "Networking"
             ],
             swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug)),
                 .enableExperimentalFeature("StrictConcurrency")
             ]
         ),
         .testTarget(
             name: "ModerationTests",
-            dependencies: ["Moderation"]
+            dependencies: ["Moderation"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         ),
     ]
 )

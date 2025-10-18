@@ -49,11 +49,118 @@ public protocol AgoraAPIClient: AgoraAPIClientProtocol {
     /// - Parameter request: Profile update request
     /// - Returns: Updated user profile
     func updateProfile(request: UpdateProfileRequest) async throws -> User
+    
+    // MARK: - Feed Operations (Extended)
+    
+    /// Fetch the Following feed (chronological)
+    /// - Parameters:
+    ///   - cursor: Pagination cursor (ISO 8601 timestamp)
+    ///   - limit: Number of posts to return (default 20, max 50)
+    /// - Returns: Feed response containing posts and next cursor
+    func fetchFollowingFeed(cursor: String?, limit: Int?) async throws -> FollowingFeedResponse
+    
+    // MARK: - User Operations (Extended)
+    
+    /// Get user profile by ID with stats
+    /// - Parameter userId: User ID (UUID string)
+    /// - Returns: User profile with follower/following/post counts
+    func getUserProfile(userId: String) async throws -> UserProfileWithStats
+    
+    /// Get posts by user ID
+    /// - Parameters:
+    ///   - userId: User ID (UUID string)
+    ///   - cursor: Pagination cursor (ISO 8601 timestamp)
+    ///   - limit: Number of posts to return (default 20, max 50)
+    /// - Returns: Posts response containing user's posts
+    func getUserPosts(userId: String, cursor: String?, limit: Int?) async throws -> UserPostsResponse
+    
+    // MARK: - Post Operations
+    
+    /// Create a new post
+    /// - Parameters:
+    ///   - text: Post text content (1-280 characters)
+    ///   - mediaBundleId: Optional media bundle ID
+    ///   - linkUrl: Optional link URL
+    ///   - quotePostId: Optional ID of post being quoted
+    ///   - replyToPostId: Optional ID of post being replied to
+    ///   - selfDestructAt: Optional self-destruct timestamp
+    /// - Returns: Created post
+    func createPost(
+        text: String,
+        mediaBundleId: String?,
+        linkUrl: String?,
+        quotePostId: String?,
+        replyToPostId: String?,
+        selfDestructAt: Date?
+    ) async throws -> Post
 }
 
 // MARK: - Response Models
 
 public struct FeedResponse: Sendable, Codable {
+    public let posts: [Post]
+    public let nextCursor: String?
+    
+    public init(posts: [Post], nextCursor: String?) {
+        self.posts = posts
+        self.nextCursor = nextCursor
+    }
+}
+
+public struct FollowingFeedResponse: Sendable, Codable {
+    public let posts: [Post]
+    public let nextCursor: String?
+    
+    public init(posts: [Post], nextCursor: String?) {
+        self.posts = posts
+        self.nextCursor = nextCursor
+    }
+}
+
+public struct UserProfileWithStats: Sendable, Codable {
+    public let id: String
+    public let handle: String
+    public let displayHandle: String
+    public let displayName: String
+    public let bio: String?
+    public let avatarUrl: String?
+    public let createdAt: Date
+    public let followerCount: Int
+    public let followingCount: Int
+    public let postCount: Int
+    public let isCurrentUser: Bool
+    public let isFollowing: Bool
+    
+    public init(
+        id: String,
+        handle: String,
+        displayHandle: String,
+        displayName: String,
+        bio: String? = nil,
+        avatarUrl: String? = nil,
+        createdAt: Date,
+        followerCount: Int,
+        followingCount: Int,
+        postCount: Int,
+        isCurrentUser: Bool,
+        isFollowing: Bool
+    ) {
+        self.id = id
+        self.handle = handle
+        self.displayHandle = displayHandle
+        self.displayName = displayName
+        self.bio = bio
+        self.avatarUrl = avatarUrl
+        self.createdAt = createdAt
+        self.followerCount = followerCount
+        self.followingCount = followingCount
+        self.postCount = postCount
+        self.isCurrentUser = isCurrentUser
+        self.isFollowing = isFollowing
+    }
+}
+
+public struct UserPostsResponse: Sendable, Codable {
     public let posts: [Post]
     public let nextCursor: String?
     
@@ -78,10 +185,20 @@ public struct Post: Sendable, Codable, Identifiable {
     public let visibility: PostVisibility
     public let createdAt: Date
     
+    // Presentation fields (for UI display)
+    public let authorDisplayName: String?
+    public let authorAvatarUrl: String?
+    public let editedAt: Date?
+    public let selfDestructAt: Date?
+    
     // Enhanced feed metadata (from recommendation system)
     public let score: Double?
     public let reasons: [RecommendationReason]?
     public let explore: Bool?
+    
+    // Viewer interaction state (non-optional to prevent animation glitches)
+    public let isLikedByViewer: Bool
+    public let isRepostedByViewer: Bool
     
     public init(
         id: String,
@@ -97,9 +214,15 @@ public struct Post: Sendable, Codable, Identifiable {
         replyCount: Int = 0,
         visibility: PostVisibility = .public,
         createdAt: Date,
+        authorDisplayName: String? = nil,
+        authorAvatarUrl: String? = nil,
+        editedAt: Date? = nil,
+        selfDestructAt: Date? = nil,
         score: Double? = nil,
         reasons: [RecommendationReason]? = nil,
-        explore: Bool? = nil
+        explore: Bool? = nil,
+        isLikedByViewer: Bool = false,
+        isRepostedByViewer: Bool = false
     ) {
         self.id = id
         self.authorId = authorId
@@ -114,9 +237,15 @@ public struct Post: Sendable, Codable, Identifiable {
         self.replyCount = replyCount
         self.visibility = visibility
         self.createdAt = createdAt
+        self.authorDisplayName = authorDisplayName
+        self.authorAvatarUrl = authorAvatarUrl
+        self.editedAt = editedAt
+        self.selfDestructAt = selfDestructAt
         self.score = score
         self.reasons = reasons
         self.explore = explore
+        self.isLikedByViewer = isLikedByViewer
+        self.isRepostedByViewer = isRepostedByViewer
     }
 }
 
@@ -291,6 +420,15 @@ public struct Dependencies: Sendable {
     /// Appearance preference (light/dark mode)
     public let appearance: AppearancePreference
     
+    /// Engagement service (likes, reposts, shares)
+    /// Note: Uses placeholder protocol until Engagement Kit is properly imported
+    /// For now, type-erased to avoid circular dependencies
+    public let engagement: (any Sendable)?
+    
+    /// Supabase client for real-time subscriptions and direct database access
+    /// Type-erased to avoid importing Supabase in AppFoundation
+    public let supabase: (any Sendable)?
+    
     // MARK: - Initialization
     
     public init(
@@ -298,13 +436,17 @@ public struct Dependencies: Sendable {
         auth: AuthServiceProtocol,
         analytics: any AnalyticsClient = NoOpAnalyticsClient(),
         environment: any EnvironmentConfig,
-        appearance: AppearancePreference
+        appearance: AppearancePreference,
+        engagement: (any Sendable)? = nil,
+        supabase: (any Sendable)? = nil
     ) {
         self.networking = networking
         self.auth = auth
         self.analytics = analytics
         self.environment = environment
         self.appearance = appearance
+        self.engagement = engagement
+        self.supabase = supabase
     }
 }
 
@@ -314,6 +456,17 @@ public struct Dependencies: Sendable {
 extension Dependencies {
     /// Production dependencies with real implementations
     public static var production: Dependencies {
+        #if DEBUG
+        // Safety check: If we're in a preview environment, return test dependencies
+        // This prevents crashes when previews accidentally call .production
+        let env = ProcessInfo.processInfo.environment
+        if env["XCODE_RUNNING_FOR_PREVIEWS"] == "1" || env["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1" {
+            print("[Dependencies] ⚠️ Production dependencies requested in preview environment")
+            print("[Dependencies]    Returning test dependencies instead")
+            return .test()
+        }
+        #endif
+        
         // Create networking client
         let networking: any AgoraAPIClient
         do {
@@ -384,7 +537,36 @@ extension Dependencies {
             auth: self.auth,
             analytics: analytics,
             environment: self.environment,
-            appearance: self.appearance
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase
+        )
+    }
+    
+    /// Returns a copy with updated engagement service
+    /// This is useful for lazy initialization after Engagement module is loaded
+    public func withEngagement(_ engagement: any Sendable) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: engagement,
+            supabase: self.supabase
+        )
+    }
+    
+    /// Returns a copy with updated Supabase client
+    public func withSupabase(_ supabase: any Sendable) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: supabase
         )
     }
 }
@@ -475,6 +657,58 @@ private final class PreviewStubClient: AgoraAPIClient {
             bio: request.bio,
             avatarUrl: request.avatarUrl,
             createdAt: Date()
+        )
+    }
+    
+    func fetchFollowingFeed(cursor: String?, limit: Int?) async throws -> FollowingFeedResponse {
+        FollowingFeedResponse(posts: [], nextCursor: nil)
+    }
+    
+    func getUserProfile(userId: String) async throws -> UserProfileWithStats {
+        UserProfileWithStats(
+            id: userId,
+            handle: "preview",
+            displayHandle: "preview_user",
+            displayName: "Preview User",
+            bio: "This is a preview profile",
+            avatarUrl: nil,
+            createdAt: Date(),
+            followerCount: 42,
+            followingCount: 123,
+            postCount: 89,
+            isCurrentUser: false,
+            isFollowing: false
+        )
+    }
+    
+    func getUserPosts(userId: String, cursor: String?, limit: Int?) async throws -> UserPostsResponse {
+        UserPostsResponse(posts: [], nextCursor: nil)
+    }
+    
+    func createPost(
+        text: String,
+        mediaBundleId: String?,
+        linkUrl: String?,
+        quotePostId: String?,
+        replyToPostId: String?,
+        selfDestructAt: Date?
+    ) async throws -> Post {
+        Post(
+            id: "preview-post-\(UUID().uuidString)",
+            authorId: "preview-user",
+            authorDisplayHandle: "preview_user",
+            text: text,
+            linkUrl: linkUrl,
+            mediaBundleId: mediaBundleId,
+            replyToPostId: replyToPostId,
+            quotePostId: quotePostId,
+            likeCount: 0,
+            repostCount: 0,
+            replyCount: 0,
+            visibility: .public,
+            createdAt: Date(),
+            authorDisplayName: "Preview User",
+            selfDestructAt: selfDestructAt
         )
     }
 }

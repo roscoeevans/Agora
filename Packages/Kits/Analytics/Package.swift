@@ -24,12 +24,16 @@ let package = Package(
                 "AppFoundation",
             ],
             swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug)),
                 .enableExperimentalFeature("StrictConcurrency")
             ]
         ),
         .testTarget(
             name: "AnalyticsTests",
-            dependencies: ["Analytics"]
+            dependencies: ["Analytics"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         ),
     ]
 )

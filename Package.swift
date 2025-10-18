@@ -30,7 +30,6 @@ let package = Package(
         
         // Local Feature Packages
         .package(path: "Packages/Features/Auth"), // Exports as AuthFeature to avoid Supabase conflict
-        .package(path: "Packages/Features/Home"),
         .package(path: "Packages/Features/HomeForYou"),
         .package(path: "Packages/Features/HomeFollowing"),
         .package(path: "Packages/Features/Compose"),
@@ -50,6 +49,7 @@ let package = Package(
         .package(path: "Packages/Kits/Moderation"),
         .package(path: "Packages/Kits/Verification"),
         .package(path: "Packages/Kits/Recommender"),
+        .package(path: "Packages/Kits/Engagement"),
         
         // Local Shared Packages
         .package(path: "Packages/Shared/AppFoundation"),

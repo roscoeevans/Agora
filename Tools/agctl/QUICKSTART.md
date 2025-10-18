@@ -37,6 +37,13 @@ agctl validate modules              # Check module structure
 agctl validate dependencies         # Check dependency graph
 ```
 
+### Cleaning
+```bash
+agctl clean                        # Clean build artifacts
+agctl clean --all                  # Deep clean (includes DerivedData)
+agctl clean -v                     # Verbose output
+```
+
 ### Git Hooks
 ```bash
 agctl install-hooks                 # Install git hooks
@@ -81,6 +88,8 @@ agctl build --help                  # Build options
 **OpenAPI fails**: Install generator with `brew install mint && mint install apple/swift-openapi-generator`
 
 **Package not found**: Use `agctl build` to list available packages
+
+**Build issues**: Try `agctl clean` or `agctl clean --all` to remove stale artifacts
 
 **Skip git hook**: Use `git commit --no-verify`
 

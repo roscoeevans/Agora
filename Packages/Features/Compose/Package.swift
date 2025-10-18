@@ -24,11 +24,17 @@ let package = Package(
                 "Networking",
                 "Verification",
                 "AppFoundation"
+            ],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "ComposeTests",
-            dependencies: ["Compose"]
+            dependencies: ["Compose"],
+            swiftSettings: [
+                .define("DEBUG", .when(configuration: .debug))
+            ]
         )
     ]
 )
