@@ -102,6 +102,16 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /posts/{id}/share-url`.
     /// - Remark: Generated from `#/paths//posts/{id}/share-url/get`.
     func get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url(_ input: Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input) async throws -> Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output
+    /// Create a reply to a post
+    ///
+    /// - Remark: HTTP `POST /create-reply`.
+    /// - Remark: Generated from `#/paths//create-reply/post`.
+    func post_sol_create_hyphen_reply(_ input: Operations.post_sol_create_hyphen_reply.Input) async throws -> Operations.post_sol_create_hyphen_reply.Output
+    /// Get all replies for a post
+    ///
+    /// - Remark: HTTP `GET /get-replies`.
+    /// - Remark: Generated from `#/paths//get-replies/get`.
+    func get_sol_get_hyphen_replies(_ input: Operations.get_sol_get_hyphen_replies.Input) async throws -> Operations.get_sol_get_hyphen_replies.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -335,6 +345,32 @@ extension APIProtocol {
     ) async throws -> Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Output {
         try await get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url(Operations.get_sol_posts_sol__lcub_id_rcub__sol_share_hyphen_url.Input(
             path: path,
+            headers: headers
+        ))
+    }
+    /// Create a reply to a post
+    ///
+    /// - Remark: HTTP `POST /create-reply`.
+    /// - Remark: Generated from `#/paths//create-reply/post`.
+    public func post_sol_create_hyphen_reply(
+        headers: Operations.post_sol_create_hyphen_reply.Input.Headers = .init(),
+        body: Operations.post_sol_create_hyphen_reply.Input.Body
+    ) async throws -> Operations.post_sol_create_hyphen_reply.Output {
+        try await post_sol_create_hyphen_reply(Operations.post_sol_create_hyphen_reply.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Get all replies for a post
+    ///
+    /// - Remark: HTTP `GET /get-replies`.
+    /// - Remark: Generated from `#/paths//get-replies/get`.
+    public func get_sol_get_hyphen_replies(
+        query: Operations.get_sol_get_hyphen_replies.Input.Query,
+        headers: Operations.get_sol_get_hyphen_replies.Input.Headers = .init()
+    ) async throws -> Operations.get_sol_get_hyphen_replies.Output {
+        try await get_sol_get_hyphen_replies(Operations.get_sol_get_hyphen_replies.Input(
+            query: query,
             headers: headers
         ))
     }
@@ -580,6 +616,10 @@ public enum Components {
         }
         /// - Remark: Generated from `#/components/schemas/UpdateProfileRequest`.
         public struct UpdateProfileRequest: Codable, Hashable, Sendable {
+            /// Lowercase handle (validated server-side with 30-day change limit)
+            ///
+            /// - Remark: Generated from `#/components/schemas/UpdateProfileRequest/handle`.
+            public var handle: Swift.String?
             /// User's preferred capitalization of handle
             ///
             /// - Remark: Generated from `#/components/schemas/UpdateProfileRequest/displayHandle`.
@@ -588,27 +628,33 @@ public enum Components {
             public var displayName: Swift.String?
             /// - Remark: Generated from `#/components/schemas/UpdateProfileRequest/bio`.
             public var bio: Swift.String?
+            /// Avatar URL from Supabase Storage, or null to remove avatar
+            ///
             /// - Remark: Generated from `#/components/schemas/UpdateProfileRequest/avatarUrl`.
             public var avatarUrl: Swift.String?
             /// Creates a new `UpdateProfileRequest`.
             ///
             /// - Parameters:
+            ///   - handle: Lowercase handle (validated server-side with 30-day change limit)
             ///   - displayHandle: User's preferred capitalization of handle
             ///   - displayName:
             ///   - bio:
-            ///   - avatarUrl:
+            ///   - avatarUrl: Avatar URL from Supabase Storage, or null to remove avatar
             public init(
+                handle: Swift.String? = nil,
                 displayHandle: Swift.String? = nil,
                 displayName: Swift.String? = nil,
                 bio: Swift.String? = nil,
                 avatarUrl: Swift.String? = nil
             ) {
+                self.handle = handle
                 self.displayHandle = displayHandle
                 self.displayName = displayName
                 self.bio = bio
                 self.avatarUrl = avatarUrl
             }
             public enum CodingKeys: String, CodingKey {
+                case handle
                 case displayHandle
                 case displayName
                 case bio
@@ -5478,6 +5524,509 @@ public enum Operations {
             /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//posts/{id}/share-url/get/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Create a reply to a post
+    ///
+    /// - Remark: HTTP `POST /create-reply`.
+    /// - Remark: Generated from `#/paths//create-reply/post`.
+    public enum post_sol_create_hyphen_reply {
+        public static let id: Swift.String = "post/create-reply"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/create-reply/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_create_hyphen_reply.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.post_sol_create_hyphen_reply.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.post_sol_create_hyphen_reply.Input.Headers
+            /// - Remark: Generated from `#/paths/create-reply/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/create-reply/POST/requestBody/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// Root post ID being replied to
+                    ///
+                    /// - Remark: Generated from `#/paths/create-reply/POST/requestBody/json/parentPostId`.
+                    public var parentPostId: Swift.String
+                    /// Optional specific comment ID being replied to (for nested replies)
+                    ///
+                    /// - Remark: Generated from `#/paths/create-reply/POST/requestBody/json/replyToCommentId`.
+                    public var replyToCommentId: Swift.String?
+                    /// Reply text content (1-280 characters)
+                    ///
+                    /// - Remark: Generated from `#/paths/create-reply/POST/requestBody/json/text`.
+                    public var text: Swift.String
+                    /// Device attestation token
+                    ///
+                    /// - Remark: Generated from `#/paths/create-reply/POST/requestBody/json/attestation`.
+                    public var attestation: Swift.String?
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - parentPostId: Root post ID being replied to
+                    ///   - replyToCommentId: Optional specific comment ID being replied to (for nested replies)
+                    ///   - text: Reply text content (1-280 characters)
+                    ///   - attestation: Device attestation token
+                    public init(
+                        parentPostId: Swift.String,
+                        replyToCommentId: Swift.String? = nil,
+                        text: Swift.String,
+                        attestation: Swift.String? = nil
+                    ) {
+                        self.parentPostId = parentPostId
+                        self.replyToCommentId = replyToCommentId
+                        self.text = text
+                        self.attestation = attestation
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case parentPostId
+                        case replyToCommentId
+                        case text
+                        case attestation
+                    }
+                }
+                /// - Remark: Generated from `#/paths/create-reply/POST/requestBody/content/application\/json`.
+                case json(Operations.post_sol_create_hyphen_reply.Input.Body.jsonPayload)
+            }
+            public var body: Operations.post_sol_create_hyphen_reply.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.post_sol_create_hyphen_reply.Input.Headers = .init(),
+                body: Operations.post_sol_create_hyphen_reply.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/create-reply/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/create-reply/POST/responses/201/content/application\/json`.
+                    case json(Components.Schemas.Post)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Post {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.post_sol_create_hyphen_reply.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.post_sol_create_hyphen_reply.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            /// Reply created successfully
+            ///
+            /// - Remark: Generated from `#/paths//create-reply/post/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.post_sol_create_hyphen_reply.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.post_sol_create_hyphen_reply.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request
+            ///
+            /// - Remark: Generated from `#/paths//create-reply/post/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//create-reply/post/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/create-reply/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/create-reply/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.post_sol_create_hyphen_reply.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.post_sol_create_hyphen_reply.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Parent post not found
+            ///
+            /// - Remark: Generated from `#/paths//create-reply/post/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.post_sol_create_hyphen_reply.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.post_sol_create_hyphen_reply.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//create-reply/post/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get all replies for a post
+    ///
+    /// - Remark: HTTP `GET /get-replies`.
+    /// - Remark: Generated from `#/paths//get-replies/get`.
+    public enum get_sol_get_hyphen_replies {
+        public static let id: Swift.String = "get/get-replies"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/get-replies/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Post ID to fetch replies for
+                ///
+                /// - Remark: Generated from `#/paths/get-replies/GET/query/postId`.
+                public var postId: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - postId: Post ID to fetch replies for
+                public init(postId: Swift.String) {
+                    self.postId = postId
+                }
+            }
+            public var query: Operations.get_sol_get_hyphen_replies.Input.Query
+            /// - Remark: Generated from `#/paths/get-replies/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_get_hyphen_replies.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_sol_get_hyphen_replies.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.get_sol_get_hyphen_replies.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.get_sol_get_hyphen_replies.Input.Query,
+                headers: Operations.get_sol_get_hyphen_replies.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/get-replies/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/get-replies/GET/responses/200/content/json`.
+                    public struct jsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/get-replies/GET/responses/200/content/json/replies`.
+                        public var replies: [Components.Schemas.Post]
+                        /// Creates a new `jsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - replies:
+                        public init(replies: [Components.Schemas.Post]) {
+                            self.replies = replies
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case replies
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/get-replies/GET/responses/200/content/application\/json`.
+                    case json(Operations.get_sol_get_hyphen_replies.Output.Ok.Body.jsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.get_sol_get_hyphen_replies.Output.Ok.Body.jsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.get_sol_get_hyphen_replies.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.get_sol_get_hyphen_replies.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Replies retrieved successfully
+            ///
+            /// - Remark: Generated from `#/paths//get-replies/get/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.get_sol_get_hyphen_replies.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.get_sol_get_hyphen_replies.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/get-replies/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/get-replies/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.get_sol_get_hyphen_replies.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.get_sol_get_hyphen_replies.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Post not found
+            ///
+            /// - Remark: Generated from `#/paths//get-replies/get/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.get_sol_get_hyphen_replies.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.get_sol_get_hyphen_replies.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//get-replies/get/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalServerError)

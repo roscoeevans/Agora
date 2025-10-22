@@ -1,0 +1,493 @@
+---
+description: "When implementing UI in iOS 26+, choosing between SwiftUI and UIKit, creating UIKit bridges, migrating legacy UIKit code, or ensuring SwiftUI-first architecture. Use this rule for UI architecture decisions, interop patterns, testing SwiftUI/UIKit bridges, and maintaining clean separation between SwiftUI and UIKit code."
+alwaysApply: false
+tags: [ios, swiftui, uikit, architecture, interop, observation, testing, accessibility]
+severity: high
+---
+
+## SwiftUI-First Architecture Rule
+
+### Overview
+
+This rule establishes SwiftUI as the primary UI framework for iOS 26+ development while providing clear guidelines for minimal, well-isolated UIKit usage when absolutely necessary. It ensures consistent architecture decisions, proper testing patterns, and maintains clean separation between SwiftUI and UIKit code.
+
+### Core Principle
+
+**Default**: Build all UI in SwiftUI using iOS 26 APIs and Swift 6.2 features (Observation, modern navigation/presentation, new scroll behaviors, materials, etc.).
+
+**Exception**: UIKit may be used only when SwiftUI cannot achieve parity cleanly or a third-party/system API mandates a UIViewController/UIView.
+
+**Isolation**: Any UIKit usage must be sandboxed in a small, clearly named bridge module or folder and never leak UIKit types past those boundaries.
+
+**Rule of thumb**: If SwiftUI can do it clearly, don't touch UIKit. If it can't (yet), isolate UIKit behind a tiny, well-tested wrapper.
+
+### When UIKit Is Allowed (and Expected)
+
+Use UIKit only for one of these specific cases:
+
+#### 1. System/SDK Surfaces That Require UIKit
+- Camera pickers, payment SDK UIs, ad SDKs
+- System share sheets that need a presenting UIViewController
+- Third-party SDKs that mandate UIKit integration
+
+#### 2. Rich, Editable Text Beyond SwiftUI's Capabilities
+- Inline mixed-style, multi-attribute, live editable text
+- Custom layout behaviors requiring TextKit2/3 via UITextView
+- Complex text editing scenarios not supported by SwiftUI's TextEditor
+
+#### 3. Highly Specialized Input/Gesture Surfaces
+- Drawing canvases with custom touch handling
+- Precision gesture recognizers requiring UIResponder
+- Gesture failure requirements not yet modeled in SwiftUI
+
+#### 4. Legacy or Shared Components (Temporary)
+- Only if wrapped behind a bridge
+- Must include a tech-debt ticket to revisit after next milestone
+- Full rewrite must be unjustified for current timeline
+
+### Anti-Patterns (Do Not Do)
+
+1. **Don't sprinkle UIKit calls across SwiftUI Views**
+2. **Don't pass UIView/UIViewController beyond the bridge boundary**
+3. **Don't use UIAppearance to skin SwiftUI**
+4. **Don't fork navigation** (UIKit nav stack under SwiftUI)
+5. **Don't introduce Catalyst/macOS code paths in iOS modules**
+6. **Don't start new screens with UIKit "just because you know it well"**
+
+### Project Structure & Naming
+
+#### Bridge Organization
+**✅ IMPLEMENTED: Centralized UIKitBridge Package**
+
+All UIKit bridges are consolidated in the `Packages/Kits/UIKitBridge/` module:
+
+```
+Packages/Kits/UIKitBridge/
+├── Package.swift
+├── Sources/
+│   └── UIKitBridge/
+│       ├── UIKitBridge.swift              # Main entry point
+│       ├── MediaPickerBridge.swift        # PHPickerViewController wrapper
+│       ├── ImagePickerBridge.swift        # Single image picker
+│       └── DesignSystemBridge.swift       # UIKit utilities (dark mode, etc.)
+└── Tests/
+    └── UIKitBridgeTests/
+        └── UIKitBridgeTests.swift
+```
+
+**Key Benefits:**
+- ✅ Single source of truth for all UIKit usage
+- ✅ Follows project structure principles (Kits for shared functionality)
+- ✅ Easy to discover and maintain
+- ✅ Enforces SwiftUI-first compliance
+- ✅ Clean dependency management
+
+#### File Naming Convention
+- Pattern: `{Thing}Bridge.swift` (without "UIKit" prefix for cleaner imports)
+- Examples: `MediaPickerBridge.swift`, `ImagePickerBridge.swift`, `DesignSystemBridge.swift`
+- Public surface must be pure SwiftUI with SwiftUI-friendly bindings/closures
+- All bridges are re-exported through `UIKitBridge` main module for easy importing
+
+### Standard Bridge Templates
+
+#### 1. UIViewControllerRepresentable (Controller-based)
+
+**✅ IMPLEMENTED PATTERN: MediaPickerBridge**
+
+```swift
+import SwiftUI
+import Observation
+import UIKit
+
+@available(iOS 26.0, *)
+public struct MediaPickerBridge: UIViewControllerRepresentable {
+    @Binding public var selectedMedia: [Data]
+    public let onSelectionChanged: ([Data]) -> Void
+    public let onCancel: () -> Void
+    
+    public init(
+        selectedMedia: Binding<[Data]>,
+        onSelectionChanged: @escaping ([Data]) -> Void = { _ in },
+        onCancel: @escaping () -> Void = {}
+    ) {
+        self._selectedMedia = selectedMedia
+        self.onSelectionChanged = onSelectionChanged
+        self.onCancel = onCancel
+    }
+    
+    public func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 0 // Unlimited
+        config.filter = .images
+        
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        return picker
+    }
+    
+    public func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {
+        // Keep minimal; prefer state-driven presentation at the SwiftUI layer
+    }
+    
+    public func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    public final class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: MediaPickerBridge
+        
+        init(_ parent: MediaPickerBridge) {
+            self.parent = parent
+        }
+        
+        public func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            // Handle selection logic...
+            parent.onSelectionChanged(parent.selectedMedia)
+        }
+    }
+}
+```
+
+**Key Implementation Notes:**
+- ✅ Uses `@available(iOS 26.0, *)` for platform targeting
+- ✅ Public API with SwiftUI-friendly `@Binding` parameters
+- ✅ Clean coordinator pattern with proper delegate implementation
+- ✅ No UIKit types leak into public interface
+
+#### 2. UIViewRepresentable (View-based)
+
+**✅ IMPLEMENTED PATTERN: DesignSystemBridge**
+
+```swift
+import SwiftUI
+
+#if canImport(UIKit)
+import UIKit
+
+@available(iOS 26.0, *)
+public struct DesignSystemBridge: Sendable {
+    @MainActor
+    public static let shared = DesignSystemBridge()
+    
+    private init() {}
+    
+    /// Configures the app to use dark mode as the default
+    public static func configureDarkModeAsDefault() {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            windowScene.windows.forEach { window in
+                window.overrideUserInterfaceStyle = .dark
+            }
+        }
+    }
+    
+    /// Checks if the app is currently in dark mode
+    public static var isDarkMode: Bool {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            return windowScene.traitCollection.userInterfaceStyle == .dark
+        }
+        return false
+    }
+}
+
+#else
+// Fallback for platforms without UIKit
+@available(iOS 26.0, *)
+public struct DesignSystemBridge: Sendable {
+    @MainActor
+    public static let shared = DesignSystemBridge()
+    
+    private init() {}
+    
+    public static func configureDarkModeAsDefault() {
+        // No-op for non-UIKit platforms
+    }
+    
+    public static var isDarkMode: Bool {
+        return false
+    }
+}
+#endif
+```
+
+**Key Implementation Notes:**
+- ✅ Platform-specific implementation with `#if canImport(UIKit)`
+- ✅ `Sendable` conformance for Swift 6.2 concurrency safety
+- ✅ `@MainActor` for UI-related static properties
+- ✅ Graceful fallback for non-UIKit platforms
+
+### Bridge Implementation Rules
+
+1. **SwiftUI wrapper owns configuration** via inputs/bindings; UIKit object stays private
+2. **Keep updateUIView(Controller) idempotent**, minimal, and state-driven
+3. **Use @Observable models** for two-way state; avoid ad-hoc delegates leaking outward
+4. **No UIKit symbols in public signatures**
+5. **Use SwiftUI First (2025 / iOS 26 patterns)**
+
+### UIKitBridge Package Usage
+
+#### Adding UIKitBridge to Your Package
+
+```swift
+// Package.swift
+dependencies: [
+    .package(path: "../UIKitBridge")
+],
+targets: [
+    .target(
+        name: "YourFeature",
+        dependencies: ["UIKitBridge"]
+    )
+]
+```
+
+#### Importing and Using Bridges
+
+```swift
+import UIKitBridge
+
+// Use any bridge directly
+struct MyView: View {
+    @State private var selectedImage: Data?
+    
+    var body: some View {
+        VStack {
+            if let image = selectedImage {
+                Image(uiImage: UIImage(data: image)!)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            }
+            
+            Button("Pick Image") {
+                // Present ImagePickerBridge
+            }
+            .sheet(isPresented: $showingPicker) {
+                ImagePickerBridge(image: $selectedImage)
+            }
+        }
+    }
+}
+```
+
+#### Available Bridges
+
+- **MediaPickerBridge**: Multi-image selection with PHPickerViewController
+- **ImagePickerBridge**: Single image selection with PHPickerViewController  
+- **DesignSystemBridge**: UIKit utilities (dark mode, system colors, etc.)
+
+#### Creating New Bridges
+
+1. **Add to UIKitBridge package** in `Packages/Kits/UIKitBridge/Sources/UIKitBridge/`
+2. **Follow naming convention**: `{Thing}Bridge.swift`
+3. **Make public** and add to main `UIKitBridge.swift` exports
+4. **Add tests** in `UIKitBridgeTests`
+5. **Update this rule** with the new pattern
+
+### SwiftUI First Patterns (iOS 26)
+
+When in doubt, prefer these modern SwiftUI patterns:
+
+#### State & Data Flow
+- `@Observable`, `@Environment`, `@Bindable`, derived state
+- Avoid `@StateObject` and `@ObservedObject` in favor of `@Observable`
+
+#### Navigation
+- `NavigationStack`, `.navigationDestination`, sheet/presentation modifiers
+- Avoid `NavigationView` and UIKit navigation patterns
+
+#### Collections
+- `ScrollView` + `LazyVStack`/`LazyHStack` or `List` with `.scrollTargetLayout`
+- Use modern scroll behaviors and content transitions
+
+#### Animations
+- `withAnimation`, implicit animations, phase APIs, transaction tuning
+- Leverage iOS 26's enhanced animation capabilities
+
+#### Styling
+- `toolbar`, `menu`, `.scrollContentBackground`, Materials, `.background(.thinMaterial)`
+- Use system materials and modern styling approaches
+
+#### Media & System Surfaces
+- `PhotosPicker`, `ShareLink`, `Map` (SwiftUI wrappers) before UIKit
+- Prefer native SwiftUI system integrations
+
+### Testing & Snapshots
+
+#### SwiftUI Surfaces
+- Snapshot with standard SwiftUI snapshot library
+- Prefer device-scaled images and deterministic timing (`.whenReady` helpers)
+- Test across different device sizes and orientations
+
+#### UIKit Bridges
+Add integration tests to ensure:
+- Construction doesn't crash
+- Delegate → model bindings work correctly
+- Accessibility traits exist and are appropriate
+- State updates propagate properly
+
+```swift
+// Example bridge test
+func testCameraPickerBridge() {
+    let state = CameraState()
+    let picker = CameraPicker(state: state) { _ in }
+    
+    // Test construction
+    let controller = picker.makeUIViewController(context: picker.makeCoordinator())
+    XCTAssertNotNil(controller)
+    
+    // Test state binding
+    state.isPresented = true
+    picker.updateUIViewController(controller, context: picker.makeCoordinator())
+    // Verify state changes are reflected
+}
+```
+
+### Accessibility & Theming Requirements
+
+All bridges must:
+
+1. **Set accessibility traits properly** or let UIKit views expose defaults
+2. **Respect Dynamic Type** (`adjustsFontForContentSizeCategory = true`)
+3. **Respect color schemes** (avoid hardcoded colors; expose via inputs or use system)
+4. **Participate in SwiftUI focus** where applicable (`.focusable` on the wrapper as needed)
+5. **Support VoiceOver** and other accessibility features
+6. **Handle dark/light mode** transitions properly
+
+### Performance & Cancellation
+
+1. **Avoid retaining large UIKit objects** longer than needed; lifecycle is owned by SwiftUI
+2. **Keep heavy work off the main thread**; only UI updates on main
+3. **Clean up delegates and KVO** in Coordinator deinit if used
+4. **Use proper memory management** patterns for UIKit objects
+
+### PR Checklist (Enforced in Reviews)
+
+#### UIKit Justification
+- [ ] Required by system/SDK / rich text / specialized input / legacy wrap
+- [ ] SwiftUI parity evaluated and insufficient
+- [ ] Bridge isolated (path: …)
+- [ ] Public API SwiftUI-only
+- [ ] A11y & theming verified
+- [ ] Tests/snapshots added
+- [ ] Follow-up ticket (if temp)
+
+#### Code Quality
+- [ ] No UIKit symbols in public signatures
+- [ ] Bridge follows standard template patterns
+- [ ] Coordinator properly implements required delegates
+- [ ] State management uses @Observable
+- [ ] No platform creep (macOS/Catalyst references)
+
+### Migration Guidance (Legacy UIKit → SwiftUI)
+
+When replacing legacy UIKit:
+
+1. **Model state with @Observable**
+2. **Rebuild screen in SwiftUI first** (feature parity baseline)
+3. **Keep legacy component wrapped** behind a bridge only where parity is missing
+4. **Delete UIKit once parity lands**; remove bridge and tests
+5. **Create migration tickets** for complex legacy components
+
+### Examples (Do / Don't)
+
+#### ✅ Do:
+- SwiftUI Sheet that hosts a UIKit camera picker via `UIViewControllerRepresentable`
+- A SwiftUI text editor for simple cases; only bridge `UITextView` for true rich editing
+- Isolate third-party SDK UI behind clean SwiftUI wrappers
+
+#### ❌ Don't:
+- Start a new screen with UIKit just because you "know it well"
+- Pass `UIViewController` into a `ViewModel`
+- Use UIKit for standard UI patterns that SwiftUI handles well
+- Mix UIKit and SwiftUI navigation patterns
+
+### Linting/Automation Hints
+
+#### CI Integration
+```bash
+# Block import UIKit outside UIKitBridge package
+grep -r "import UIKit" --exclude-dir=Packages/Kits/UIKitBridge --exclude-dir=.git .
+if [ $? -eq 0 ]; then
+    echo "❌ UIKit imports found outside UIKitBridge package"
+    exit 1
+fi
+```
+
+#### Script to Validate UIKit Usage
+```bash
+#!/bin/bash
+# List files importing UIKit and fail if not in UIKitBridge package
+find . -name "*.swift" -exec grep -l "import UIKit" {} \; | \
+while read file; do
+    if [[ "$file" != *"Packages/Kits/UIKitBridge"* ]]; then
+        echo "❌ UIKit import in non-bridge file: $file"
+        echo "   Move UIKit usage to Packages/Kits/UIKitBridge/ or remove UIKit dependency"
+        exit 1
+    fi
+done
+echo "✅ All UIKit imports are properly contained in UIKitBridge package"
+```
+
+#### agctl Integration
+```bash
+# Validate UIKit usage with agctl
+agctl validate uikit-usage
+
+# This should check:
+# - No UIKit imports outside UIKitBridge package
+# - All bridges follow naming conventions
+# - Proper Sendable conformance
+# - Platform availability annotations
+```
+
+### TL;DR
+
+- **SwiftUI everywhere** for new development
+- **UIKit only** for system-required UIs, rich editing, or specialized input
+- **All UIKit usage** must go through `Packages/Kits/UIKitBridge/` package
+- **Import UIKitBridge** and use provided bridges (MediaPickerBridge, ImagePickerBridge, DesignSystemBridge)
+- **Test thoroughly** and maintain accessibility standards
+- **Document decisions** and create follow-up tickets for temporary usage
+
+### Quick Reference
+
+```swift
+// ✅ DO: Use UIKitBridge package
+import UIKitBridge
+ImagePickerBridge(image: $selectedImage)
+
+// ❌ DON'T: Import UIKit directly
+import UIKit
+UIImagePickerController() // This should be in UIKitBridge
+```
+
+**North Star**: Every UIKit usage should be invisible to SwiftUI consumers. If you need UIKit, add it to `Packages/Kits/UIKitBridge/` and expose a clean SwiftUI API.
+
+### Current Implementation Status
+
+#### ✅ Completed
+- **UIKitBridge Package**: Centralized module at `Packages/Kits/UIKitBridge/`
+- **MediaPickerBridge**: Multi-image selection with PHPickerViewController
+- **ImagePickerBridge**: Single image selection with PHPickerViewController
+- **DesignSystemBridge**: Dark mode utilities and UIKit system integration
+- **Package Dependencies**: AuthFeature and other modules properly depend on UIKitBridge
+
+#### 🚧 In Progress
+- **DesignSystem Migration**: Moving remaining UIKit usage (UIColor, UIImpactFeedbackGenerator, UIPasteboard) from DesignSystem to UIKitBridge
+- **Comprehensive Testing**: Adding full test coverage for all bridges
+
+#### 📋 Migration Roadmap
+1. **Phase 1**: ✅ Core UIKitBridge package and essential bridges
+2. **Phase 2**: 🚧 Complete DesignSystem UIKit migration
+3. **Phase 3**: 📋 Add remaining UIKit utilities (haptic feedback, pasteboard, etc.)
+4. **Phase 4**: 📋 Comprehensive testing and documentation
+5. **Phase 5**: 📋 CI enforcement of UIKit usage rules
+
+### Enforcement Checklist
+
+Before any PR that touches UIKit:
+- [ ] Is UIKit usage absolutely necessary?
+- [ ] Is it properly isolated in UIKitBridge package?
+- [ ] Does it follow the established bridge patterns?
+- [ ] Are all public APIs SwiftUI-native?
+- [ ] Is it properly tested?
+- [ ] Does it respect platform availability?

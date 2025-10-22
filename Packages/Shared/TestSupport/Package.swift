@@ -6,7 +6,7 @@ let package = Package(
     name: "TestSupport",
     platforms: [
         .iOS(.v26),
-        .macOS(.v15)
+        .macOS(.v26)
     ],
     products: [
         .library(
@@ -15,14 +15,12 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../AppFoundation"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.0.0")
     ],
     targets: [
         .target(
             name: "TestSupport",
             dependencies: [
-                "AppFoundation",
                 .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime")
             ],
             swiftSettings: [

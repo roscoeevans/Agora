@@ -1,5 +1,4 @@
 import Foundation
-import AppFoundation
 
 /// Mock implementation of AuthTokenProvider for testing
 public final class MockAuthTokenProvider: AuthTokenProvider, @unchecked Sendable {

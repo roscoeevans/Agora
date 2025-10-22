@@ -1,0 +1,339 @@
+---
+description: "When implementing haptic feedback in SwiftUI for iOS 26+, replacing UIKit-based haptics with native SwiftUI sensoryFeedback modifiers, or when designing user interaction feedback patterns."
+---
+
+## SwiftUI Native Haptics Implementation
+
+### Overview
+
+This rule defines the modern, SwiftUI-native approach to haptic feedback using the `sensoryFeedback` family of modifiers introduced in iOS 17 and refined through iOS 26. This approach eliminates the need for UIKit-based haptic implementations and provides a clean, declarative way to add tactile feedback to SwiftUI views.
+
+### Core Principles
+
+1. **Pure SwiftUI Approach**
+   - Use `sensoryFeedback` modifiers exclusively
+   - Avoid UIKit haptic generators (`UIImpactFeedbackGenerator`, `UINotificationFeedbackGenerator`)
+   - Leverage Apple's built-in haptic patterns and customization options
+
+2. **Declarative Implementation**
+   - Attach haptic feedback directly to SwiftUI views
+   - Use trigger-based activation for state changes
+   - Implement conditional feedback through closure-based overloads
+
+3. **Platform-Native Patterns**
+   - Choose appropriate feedback types for user actions
+   - Customize impact feedback with weight and intensity
+   - Respect platform limitations and capabilities
+
+### Implementation Patterns
+
+#### Basic Haptic Feedback
+
+```swift
+import SwiftUI
+
+struct ButtonWithHaptics: View {
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button("Tap Me") {
+            isPressed.toggle()
+        }
+        .sensoryFeedback(.selection, trigger: isPressed)
+    }
+}
+```
+
+#### Conditional Haptic Feedback
+
+```swift
+struct ConditionalHaptics: View {
+    @State private var counter = 0
+    
+    var body: some View {
+        Button("Increment") {
+            counter += 1
+        }
+        .sensoryFeedback(.success, trigger: counter) { oldValue, newValue in
+            // Only trigger on multiples of 5
+            return newValue % 5 == 0
+        }
+    }
+}
+```
+
+#### Custom Impact Feedback
+
+```swift
+struct CustomImpactHaptics: View {
+    @State private var isHeavyAction = false
+    
+    var body: some View {
+        Button("Heavy Action") {
+            isHeavyAction.toggle()
+        }
+        .sensoryFeedback(.impact(weight: .heavy, intensity: 0.9), trigger: isHeavyAction)
+    }
+}
+```
+
+### Available Feedback Types
+
+#### Standard Feedback Patterns
+
+1. **`.selection`**
+   - Use for: Tab changes, list selections, toggle switches
+   - Provides: Light, precise feedback for selection changes
+
+2. **`.success`**
+   - Use for: Completed actions, successful operations, confirmations
+   - Provides: Positive, satisfying feedback
+
+3. **`.warning`**
+   - Use for: Cautionary actions, reversible operations, attention-grabbing events
+   - Provides: Moderate, alerting feedback
+
+4. **`.error`**
+   - Use for: Failed operations, invalid inputs, error states
+   - Provides: Strong, negative feedback
+
+5. **`.impact(weight: .light/.medium/.heavy, intensity: 0.0...1.0)`**
+   - Use for: Button presses, physical interactions, custom feedback
+   - Provides: Customizable impact simulation
+
+#### Platform-Specific Types
+
+- **`.start`** and **`.stop`**: watchOS only
+- **`.alignment`**: Available on supported platforms
+- **`.levelChange`**: Available on supported platforms
+
+### Best Practices
+
+#### 1. Appropriate Feedback Selection
+
+```swift
+// ✅ Good: Appropriate feedback for action type
+Button("Save") {
+    saveData()
+}
+.sensoryFeedback(.success, trigger: saveSuccess)
+
+// ❌ Avoid: Wrong feedback type
+Button("Delete") {
+    deleteItem()
+}
+.sensoryFeedback(.success, trigger: deleteSuccess) // Should be .warning or .error
+```
+
+#### 2. Trigger Value Management
+
+```swift
+// ✅ Good: Use dedicated trigger state
+@State private var hapticTrigger = false
+
+Button("Action") {
+    performAction()
+    hapticTrigger.toggle() // Explicit trigger
+}
+.sensoryFeedback(.selection, trigger: hapticTrigger)
+
+// ❌ Avoid: Using business logic as trigger
+@State private var dataCount = 0
+
+Button("Action") {
+    dataCount += 1 // Business logic mixed with haptics
+}
+.sensoryFeedback(.selection, trigger: dataCount)
+```
+
+#### 3. Conditional Feedback Implementation
+
+```swift
+// ✅ Good: Clear conditional logic
+.sensoryFeedback(.success, trigger: userAction) { oldValue, newValue in
+    return newValue && isValidAction
+}
+
+// ❌ Avoid: Complex conditions in haptic logic
+.sensoryFeedback(.success, trigger: userAction) { oldValue, newValue in
+    return newValue && someComplexCondition && anotherCondition && yetAnotherCondition
+}
+```
+
+### Common Use Cases
+
+#### Button Interactions
+
+```swift
+struct AgoraButton: View {
+    let action: () -> Void
+    @State private var hapticTrigger = false
+    
+    var body: some View {
+        Button(action: {
+            action()
+            hapticTrigger.toggle()
+        }) {
+            Text("Button")
+        }
+        .sensoryFeedback(.selection, trigger: hapticTrigger)
+    }
+}
+```
+
+#### List Selection
+
+```swift
+struct SelectableList: View {
+    @State private var selectedItem: Item?
+    
+    var body: some View {
+        List(items, id: \.id) { item in
+            ItemRow(item: item)
+                .onTapGesture {
+                    selectedItem = item
+                }
+                .sensoryFeedback(.selection, trigger: selectedItem?.id)
+        }
+    }
+}
+```
+
+#### Form Validation
+
+```swift
+struct FormWithValidation: View {
+    @State private var email = ""
+    @State private var isValid = false
+    @State private var hapticTrigger = false
+    
+    var body: some View {
+        TextField("Email", text: $email)
+            .onChange(of: email) { _, newValue in
+                isValid = isValidEmail(newValue)
+                hapticTrigger.toggle()
+            }
+            .sensoryFeedback(isValid ? .success : .error, trigger: hapticTrigger)
+    }
+}
+```
+
+### Migration from UIKit Haptics
+
+#### Before (UIKit Approach)
+
+```swift
+// ❌ Old UIKit approach - avoid this
+import UIKit
+
+struct OldHapticButton: View {
+    var body: some View {
+        Button("Tap") {
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+        }
+    }
+}
+```
+
+#### After (SwiftUI Native)
+
+```swift
+// ✅ New SwiftUI approach
+struct NewHapticButton: View {
+    @State private var hapticTrigger = false
+    
+    var body: some View {
+        Button("Tap") {
+            hapticTrigger.toggle()
+        }
+        .sensoryFeedback(.impact(weight: .medium), trigger: hapticTrigger)
+    }
+}
+```
+
+### Performance Considerations
+
+1. **Minimize Trigger Frequency**
+   - Use specific trigger values rather than frequently changing state
+   - Implement debouncing for rapid state changes
+
+2. **Conditional Execution**
+   - Use closure-based overloads to prevent unnecessary haptic triggers
+   - Consider user preferences for haptic feedback
+
+3. **Memory Management**
+   - Avoid creating unnecessary `@State` variables for haptics
+   - Reuse trigger states when possible
+
+### Testing Guidelines
+
+#### Unit Testing
+
+```swift
+func testHapticFeedback() {
+    let view = ButtonWithHaptics()
+    // Test that haptic trigger state changes appropriately
+    // Note: Actual haptic feedback cannot be tested in unit tests
+}
+```
+
+#### UI Testing
+
+```swift
+func testHapticFeedbackInUI() {
+    let app = XCUIApplication()
+    app.launch()
+    
+    // Test user interactions that should trigger haptics
+    app.buttons["Tap Me"].tap()
+    // Verify expected behavior occurs
+}
+```
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Haptics Not Triggering**
+   - Ensure device supports haptic feedback
+   - Check that trigger value actually changes
+   - Verify feedback type is supported on platform
+
+2. **Excessive Haptic Feedback**
+   - Review trigger logic for unintended state changes
+   - Implement conditional feedback to limit frequency
+   - Consider user accessibility settings
+
+3. **Performance Issues**
+   - Avoid using complex computed properties as triggers
+   - Use dedicated `@State` variables for haptic triggers
+   - Implement proper state management
+
+### Accessibility Considerations
+
+1. **Respect User Preferences**
+   - Haptic feedback respects system accessibility settings
+   - No additional code needed for accessibility compliance
+
+2. **Alternative Feedback**
+   - Consider visual feedback for users who cannot feel haptics
+   - Ensure important information isn't conveyed through haptics alone
+
+### Platform Compatibility
+
+- **iOS 17+**: Full `sensoryFeedback` support
+- **iOS 26+**: Enhanced patterns and customization options
+- **macOS**: Limited haptic support (primarily trackpad)
+- **watchOS**: Full support including `.start` and `.stop` patterns
+- **tvOS**: No haptic support
+
+### Migration Checklist
+
+- [ ] Identify all UIKit haptic implementations
+- [ ] Replace `UIImpactFeedbackGenerator` with `.impact()` patterns
+- [ ] Replace `UINotificationFeedbackGenerator` with appropriate feedback types
+- [ ] Convert trigger logic to SwiftUI state management
+- [ ] Test haptic feedback on target devices
+- [ ] Verify accessibility compliance
+- [ ] Update documentation and code comments

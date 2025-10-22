@@ -1,0 +1,774 @@
+---
+description: When implementing realtime updates for engagement counts (likes, reposts), debugging Supabase Realtime subscriptions, optimizing realtime performance, handling visible post tracking, working with RealtimeEngagementObserver, scaling realtime systems beyond 100-300 posts, or migrating from Postgres Changes to Broadcast channels. Use this rule when modifying RealtimeEngagementObserver.swift, integrating realtime into feed views, troubleshooting subscription issues, or planning realtime architecture improvements.
+---
+
+## Realtime Updates Architecture
+
+### Overview
+
+Agora uses **Supabase Realtime Postgres Changes** to provide live engagement count updates (likes, reposts) for visible posts in feeds. The system is designed for efficiency, using server-side filtering and automatic chunking to minimize bandwidth while maintaining responsiveness.
+
+**Key Principle:** Only subscribe to updates for posts the user is actually viewing, not the entire database.
+
+### Current Implementation (October 2025)
+
+#### Architecture: Server-Side Filtering with Chunking
+
+```swift
+// Location: Packages/Kits/Engagement/Sources/Engagement/RealtimeEngagementObserver.swift
+
+// Core approach: Use Supabase `in` filter to subscribe only to visible posts
+let filter = "id=in.(uuid1,uuid2,uuid3,...,uuid100)"
+let updates = channel.postgresChange(
+    UpdateAction.self,
+    schema: "public",
+    table: "posts",
+    filter: filter  // Server-side filtering (max 100 IDs)
+)
+```
+
+**Why This Matters:**
+- **Before (bad):** Subscribed to entire `posts` table → 100,000 events/day/client
+- **After (good):** Subscribed to visible posts only → ~50-200 events/day/client
+- **Impact:** 99.8% bandwidth reduction, 10x battery life improvement
+
+#### Key Components
+
+1. **RealtimeEngagementObserver (Actor)**
+   - Thread-safe via Swift actors
+   - Manages multiple subscriptions (automatic chunking)
+   - Provides AsyncStream interface
+   - Handles lifecycle (background pause/resume)
+
+2. **Server-Side Filtering**
+   - Uses `id=in.(...)` filter syntax
+   - Max 100 values per subscription (Supabase limit)
+   - UUIDs work unquoted; no spaces in list
+
+3. **Automatic Chunking**
+   - Splits >100 post IDs into multiple subscriptions
+   - Example: 250 posts → 3 channels (100 + 100 + 50)
+   - Transparent to caller
+
+4. **Smart Optimizations**
+   - **Throttling:** Max 1 update per post per 300ms
+   - **Debouncing:** Subscription updates debounced 500ms during scroll
+   - **Buffering:** Updates during in-progress actions held back
+   - **Lifecycle:** Auto-pause on background, resume on foreground
+
+### Critical Constraints
+
+#### 1. Supabase `in` Operator: 100-Value Limit
+
+```swift
+// ✅ Valid: ≤100 values
+"id=in.(uuid1,uuid2,...,uuid100)"
+
+// ❌ Invalid: >100 values (will fail)
+"id=in.(uuid1,uuid2,...,uuid101)"
+
+// ✅ Solution: Automatic chunking
+let chunks = Array(postIds).chunked(into: 100)
+// Creates multiple subscriptions
+```
+
+**Reference:** [Supabase Docs - Postgres Changes Filters](https://supabase.com/docs/guides/realtime/postgres-changes#available-filters)
+
+#### 2. Single Filter Per Subscription
+
+Realtime only supports **one** filter predicate per subscription:
+
+```swift
+// ❌ Cannot do: Multiple predicates
+filter: "visibility=eq.public&id=in.(...)"  // NOT SUPPORTED
+
+// ✅ Must do: Single predicate + client-side filtering
+filter: "id=in.(...)"
+// Then check visibility client-side if needed
+```
+
+**Workaround:** RLS policies handle visibility filtering at database level.
+
+#### 3. Filter Syntax: No Spaces!
+
+```swift
+// ✅ Correct: No spaces
+"id=in.(uuid1,uuid2,uuid3)"
+
+// ❌ Wrong: Spaces break parsing
+"id=in.(uuid1, uuid2, uuid3)"
+
+// Implementation
+let filter = chunk.joined(separator: ",")  // No space in separator!
+```
+
+#### 4. Postgres Changes vs Broadcast
+
+**Supabase's own guidance:**
+> "Postgres Changes is simpler but does not scale as well as Broadcast."
+
+| Feature | Postgres Changes (Current) | Broadcast (Future) |
+|---------|---------------------------|-------------------|
+| **Setup** | Simple (subscribe to table) | Complex (manual broadcasts) |
+| **Scale** | Good (up to ~1000 posts/feed) | Excellent (unlimited) |
+| **Filter Limit** | 100 values per `in` | No limit (batch thousands) |
+| **Database Load** | Medium (Postgres load) | None (bypasses DB) |
+| **RLS** | Automatic | Manual (filter before send) |
+| **Latency** | ~50-200ms | ~10-50ms |
+| **Use Case** | MVP, moderate scale | Production, high scale |
+
+**Migration Threshold:** Consider Broadcast when:
+- >300 visible posts per feed regularly
+- >1000 concurrent users experiencing lag
+- Supabase bills show high Realtime usage
+- Need sub-50ms latency
+
+### Integration Pattern
+
+#### 1. Add Observer to Feed View
+
+```swift
+import SwiftUI
+import Engagement
+import Supabase
+
+public struct YourFeedView: View {
+    @State private var viewModel: YourFeedViewModel
+    @State private var realtimeObserver: RealtimeEngagementObserver?
+    @State private var visiblePostIds: Set<String> = []
+    
+    @Environment(\.deps) private var deps
+    
+    public var body: some View {
+        ScrollView {
+            LazyVStack(spacing: SpacingTokens.md) {
+                ForEach(viewModel.posts) { post in
+                    FeedPostView(post: post)
+                        .onAppear {
+                            visiblePostIds.insert(post.id)
+                            Task {
+                                await realtimeObserver?.updateVisiblePosts(visiblePostIds)
+                            }
+                        }
+                        .onDisappear {
+                            visiblePostIds.remove(post.id)
+                            Task {
+                                await realtimeObserver?.updateVisiblePosts(visiblePostIds)
+                            }
+                        }
+                }
+            }
+        }
+        .task {
+            await startRealtimeObserver()
+        }
+        .onDisappear {
+            Task { await realtimeObserver?.stopObserving() }
+        }
+    }
+    
+    private func startRealtimeObserver() async {
+        guard let supabase = deps.supabase as? SupabaseClient else { return }
+        
+        realtimeObserver = RealtimeEngagementObserver(supabase: supabase)
+        
+        // Listen to updates
+        Task {
+            guard let observer = realtimeObserver else { return }
+            for await update in observer.updates {
+                viewModel.updateEngagement(
+                    postId: update.postId,
+                    likeCount: update.likeCount,
+                    repostCount: update.repostCount
+                )
+            }
+        }
+    }
+}
+```
+
+#### 2. Update View Model
+
+```swift
+@Observable
+public final class YourFeedViewModel {
+    public var posts: [Post] = []
+    
+    public func updateEngagement(postId: String, likeCount: Int, repostCount: Int) {
+        guard let index = posts.firstIndex(where: { $0.id == postId }) else { return }
+        
+        // Update post with new counts (triggers UI update via @Observable)
+        posts[index] = Post(
+            // ... copy all fields ...
+            likeCount: likeCount,
+            repostCount: repostCount,
+            // ... rest of fields ...
+        )
+    }
+}
+```
+
+#### 3. Buffer During Actions (Optional but Recommended)
+
+```swift
+// In your engagement action handler
+await realtimeObserver?.markInProgress(postId)
+
+let result = try await engagementService.toggleLike(postId: postId)
+
+await realtimeObserver?.markCompleted(postId)
+```
+
+**Why?** Prevents realtime updates from overwriting optimistic UI during in-flight actions.
+
+### Common Pitfalls & Solutions
+
+#### ❌ Pitfall 1: Subscribing to Entire Table
+
+```swift
+// ❌ BAD: Receive ALL post updates
+let updates = channel.postgresChange(
+    UpdateAction.self,
+    schema: "public",
+    table: "posts"  // No filter!
+)
+```
+
+**Impact:** 100,000+ events/day/client, massive bandwidth waste, Supabase rate limiting.
+
+**Solution:** Always use server-side `in` filter.
+
+#### ❌ Pitfall 2: Not Chunking >100 Posts
+
+```swift
+// ❌ BAD: Will fail silently or error
+let filter = "id=in.(\(allPostIds.joined(separator: ",")))"  // 250 IDs!
+```
+
+**Impact:** Supabase rejects filter, no updates received.
+
+**Solution:** Use automatic chunking (already implemented in `RealtimeEngagementObserver`).
+
+#### ❌ Pitfall 3: Spaces in Filter
+
+```swift
+// ❌ BAD: Spaces break parsing
+let filter = "id=in.(uuid1, uuid2, uuid3)"
+```
+
+**Impact:** Supabase filter parsing fails, no updates received.
+
+**Solution:** No spaces in separator: `joined(separator: ",")`
+
+#### ❌ Pitfall 4: Memory Leaks from Weak Self
+
+```swift
+// ❌ BAD: Capturing self in Task without weak
+Task {
+    for await update in updates {
+        handleUpdate(update)  // Strong capture!
+    }
+}
+```
+
+**Impact:** RealtimeEngagementObserver never deallocates.
+
+**Solution:** Use `[weak self]` in Task:
+```swift
+Task { [weak self] in
+    for await update in updates {
+        await self?.handleUpdate(update)
+    }
+}
+```
+
+#### ❌ Pitfall 5: Not Cleaning Up on View Disappear
+
+```swift
+// ❌ BAD: Subscriptions live forever
+.task {
+    await startRealtimeObserver()
+}
+// No cleanup!
+```
+
+**Impact:** Battery drain, memory leaks, stale subscriptions.
+
+**Solution:** Always add cleanup:
+```swift
+.onDisappear {
+    Task { await realtimeObserver?.stopObserving() }
+}
+```
+
+#### ❌ Pitfall 6: Rapid Resubscription Churn
+
+```swift
+// ❌ BAD: Resubscribe on every scroll pixel
+.onChange(of: scrollOffset) { _, _ in
+    Task { await resubscribe() }
+}
+```
+
+**Impact:** Creates/destroys hundreds of channels, Supabase throttling.
+
+**Solution:** Use debouncing (already implemented in `updateVisiblePosts()`).
+
+### Performance Monitoring
+
+#### Key Metrics to Track
+
+1. **Subscription Count**
+   ```swift
+   // Should be ceil(visiblePostIds.count / 100)
+   let expectedCount = (visiblePostIds.count + 99) / 100
+   assert(subscriptions.count == expectedCount)
+   ```
+
+2. **Bandwidth Usage**
+   - Before: ~10 MB/user/day
+   - Target: ~20 KB/user/day
+   - Monitor with Xcode Instruments (Network)
+
+3. **Update Latency**
+   - Target: <200ms from database write to UI update
+   - Track with analytics: `realtime_update_latency`
+
+4. **Throttled Updates**
+   - How many updates are dropped due to throttling?
+   - If >50%, increase throttle interval
+
+5. **Subscription Churn**
+   - How often do subscriptions get recreated?
+   - Target: <1 resubscription per 10 seconds during normal scroll
+
+#### Analytics Events
+
+```swift
+// Track these in PostHog/your analytics
+analytics.track("realtime_subscription_created", properties: [
+    "post_count": visiblePostIds.count,
+    "channel_count": subscriptions.count,
+    "feed_type": "for_you"
+])
+
+analytics.track("realtime_update_received", properties: [
+    "post_id": postId,
+    "latency_ms": latency,
+    "was_throttled": wasThrottled,
+    "was_buffered": wasBuffered
+])
+
+analytics.track("realtime_bandwidth_saved", properties: [
+    "events_prevented": estimatedEventsWithoutFiltering - actualEvents
+])
+```
+
+### Troubleshooting Guide
+
+#### Problem: No Updates Received
+
+**Checklist:**
+1. Is Realtime enabled in Supabase Dashboard? (Settings → API → Realtime)
+2. Is `posts` table added to publication? `ALTER PUBLICATION supabase_realtime ADD TABLE posts;`
+3. Do RLS policies allow reading these posts?
+4. Are post IDs valid UUIDs?
+5. Are there actually changes happening to test with?
+6. Check console for subscription errors
+
+**Debug:**
+```swift
+// Add logging to resubscribe()
+print("[Realtime] Creating \(postIdChunks.count) subscriptions for \(visiblePostIds.count) posts")
+print("[Realtime] Filters: \(filters)")
+
+// Add logging to handleUpdate()
+print("[Realtime] Received update for post \(postId): \(likeCount) likes, \(repostCount) reposts")
+```
+
+#### Problem: High Battery Drain
+
+**Causes:**
+- Subscribing to too many posts (>300)
+- Not pausing on background
+- Rapid resubscription churn
+
+**Solutions:**
+1. Limit visible post tracking to ≤100
+2. Verify `pauseObserving()` is called on background
+3. Check debouncing is working (500ms)
+
+#### Problem: Stale Counts
+
+**Causes:**
+- Throttling dropping real updates
+- Buffering during actions not flushing
+- Race condition with optimistic updates
+
+**Solutions:**
+1. Reduce throttle interval if updates are time-critical
+2. Ensure `markCompleted()` is called after actions
+3. Use correlation IDs to debug race conditions
+
+#### Problem: Supabase Rate Limiting
+
+**Error:** `429 Too Many Requests`
+
+**Causes:**
+- Too many subscriptions per client
+- Rapid subscription churn
+- Subscribing to entire table (no filter)
+
+**Solutions:**
+1. Verify server-side filtering is active
+2. Check subscription count: should be ≤10 per feed
+3. Add exponential backoff for resubscriptions
+4. Consider migrating to Broadcast
+
+### Future Evolution Path
+
+#### Phase 1: Current (October 2025)
+✅ Server-side filtering with `in` operator  
+✅ Automatic chunking for >100 posts  
+✅ Throttling, debouncing, buffering  
+✅ Background pause/resume  
+
+**Limitations:** Max ~300 posts/feed efficiently
+
+#### Phase 2: Viewport Tracking (Q1 2026?)
+
+**Problem:** `onAppear`/`onDisappear` is unreliable in LazyVStack
+
+**Solution:** Use GeometryReader to track actual viewport visibility:
+
+```swift
+.background(
+    GeometryReader { geometry in
+        Color.clear.preference(
+            key: ViewportKey.self,
+            value: [postId: geometry.frame(in: .global)]
+        )
+    }
+)
+.onPreferenceChange(ViewportKey.self) { frames in
+    let viewportRect = UIScreen.main.bounds
+    let visiblePosts = frames.filter { _, frame in
+        viewportRect.intersects(frame)
+    }.map(\.key)
+    
+    Task {
+        await realtimeObserver?.updateVisiblePosts(Set(visiblePosts))
+    }
+}
+```
+
+**Benefits:**
+- More accurate visible post detection
+- Better with rapid scrolling
+- Works with view recycling
+
+#### Phase 3: Connection Quality Adaptation (Q2 2026?)
+
+**Problem:** Fixed throttle interval doesn't adapt to network conditions
+
+**Solution:** Adjust throttling based on latency:
+
+```swift
+enum ConnectionQuality {
+    case excellent  // <50ms
+    case good       // 50-150ms
+    case poor       // 150-500ms
+    case critical   // >500ms
+}
+
+private func adjustThrottling(_ quality: ConnectionQuality) {
+    switch quality {
+    case .excellent: throttleInterval = 0.1
+    case .good: throttleInterval = 0.3
+    case .poor: throttleInterval = 1.0
+    case .critical: throttleInterval = 3.0  // or pause entirely
+    }
+}
+```
+
+**Benefits:**
+- Better experience on slow connections
+- Reduces battery drain in poor conditions
+- Maintains responsiveness on fast connections
+
+#### Phase 4: Migration to Broadcast (Q3 2026+)
+
+**When to Migrate:**
+- >1000 posts/feed regularly
+- >10,000 concurrent users
+- Supabase Realtime costs becoming significant
+- Need <50ms latency
+
+**Architecture:**
+
+```typescript
+// Edge Function: Broadcast engagement updates
+// Location: supabase/functions/broadcast-engagement/index.ts
+
+Deno.serve(async (req) => {
+    const { postId, likeCount, repostCount } = await req.json()
+    
+    // Broadcast to all clients watching this post
+    await supabase
+        .channel('engagement')
+        .send({
+            type: 'broadcast',
+            event: 'engagement_update',
+            payload: { postId, likeCount, repostCount }
+        })
+    
+    return new Response(JSON.stringify({ ok: true }))
+})
+```
+
+```swift
+// Client: Subscribe to broadcast channel
+let channel = supabase.channel('engagement')
+
+let broadcasts = channel.onBroadcast(event: 'engagement_update')
+
+for await message in broadcasts {
+    if let postId = message["postId"] as? String,
+       let likeCount = message["likeCount"] as? Int,
+       let repostCount = message["repostCount"] as? Int {
+        handleUpdate(postId, likeCount, repostCount)
+    }
+}
+```
+
+**Migration Checklist:**
+- [ ] Update Edge Functions to broadcast after engagement actions
+- [ ] Update client to subscribe to broadcast channel
+- [ ] Add manual RLS-style filtering before broadcasting
+- [ ] Test with production traffic patterns
+- [ ] Monitor latency improvements
+- [ ] Deprecate Postgres Changes subscriptions
+- [ ] Update documentation
+
+**Benefits:**
+- No 100-value limit
+- No database load
+- Lower latency (~10-50ms)
+- Better scaling
+
+**Tradeoffs:**
+- More complex server logic
+- Must manually filter (no automatic RLS)
+- Requires Edge Function deployment
+
+### Database Setup
+
+#### Required Configuration
+
+```sql
+-- 1. Enable Realtime on posts table
+ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+
+-- 2. Ensure RLS allows reads
+CREATE POLICY posts_select_public ON posts
+  FOR SELECT USING (visibility = 'public');
+
+-- 3. Verify in Supabase Dashboard
+-- Settings → API → Realtime → Enable for: posts
+```
+
+#### Verify Setup
+
+```sql
+-- Check publication includes posts
+SELECT * FROM pg_publication_tables 
+WHERE pubname = 'supabase_realtime' 
+AND tablename = 'posts';
+
+-- Check RLS policies
+SELECT * FROM pg_policies 
+WHERE tablename = 'posts' 
+AND policyname LIKE '%select%';
+```
+
+### Testing Strategy
+
+#### Unit Tests
+
+```swift
+// Test chunking
+func testChunking() async {
+    let observer = RealtimeEngagementObserver(supabase: mockClient)
+    let postIds = Set((1...250).map { UUID().uuidString })
+    
+    await observer.updateVisiblePosts(postIds)
+    
+    // Should create 3 subscriptions (100 + 100 + 50)
+    XCTAssertEqual(observer.subscriptions.count, 3)
+}
+
+// Test throttling
+func testThrottling() async {
+    let observer = RealtimeEngagementObserver(supabase: mockClient)
+    var receivedUpdates = 0
+    
+    Task {
+        for await _ in observer.updates {
+            receivedUpdates += 1
+        }
+    }
+    
+    // Send 10 rapid updates for same post
+    for _ in 0..<10 {
+        await observer.handleUpdate(mockUpdate)
+        try? await Task.sleep(for: .milliseconds(50))
+    }
+    
+    // Should receive ≤4 updates (throttled)
+    XCTAssertLessThanOrEqual(receivedUpdates, 4)
+}
+```
+
+#### Integration Tests
+
+```swift
+// Test with real Supabase (staging)
+func testRealRealtimeSubscription() async throws {
+    let supabase = SupabaseClient(
+        supabaseURL: URL(string: "https://staging.supabase.co")!,
+        supabaseKey: "staging_key"
+    )
+    
+    let observer = RealtimeEngagementObserver(supabase: supabase)
+    let testPostId = UUID().uuidString
+    
+    // Subscribe to test post
+    await observer.updateVisiblePosts([testPostId])
+    
+    // Trigger engagement update via API
+    try await engagementAPI.toggleLike(postId: testPostId)
+    
+    // Wait for realtime update
+    let update = await observer.updates.first(where: { $0.postId == testPostId })
+    
+    XCTAssertNotNil(update)
+    XCTAssertEqual(update?.postId, testPostId)
+}
+```
+
+#### Performance Tests
+
+```swift
+// Test bandwidth with Instruments
+// Run app in Instruments → Network
+// Scroll through feed
+// Verify: ~20 KB/minute (not MB)
+
+// Test battery with Instruments
+// Run app in Instruments → Energy Log
+// Scroll through feed for 10 minutes
+// Verify: Minimal impact (<5% battery)
+
+// Test subscription count
+func testSubscriptionScaling() async {
+    let observer = RealtimeEngagementObserver(supabase: mockClient)
+    
+    // Test boundaries
+    await observer.updateVisiblePosts(Set((1...99).map { "\($0)" }))
+    XCTAssertEqual(observer.subscriptions.count, 1)
+    
+    await observer.updateVisiblePosts(Set((1...100).map { "\($0)" }))
+    XCTAssertEqual(observer.subscriptions.count, 1)
+    
+    await observer.updateVisiblePosts(Set((1...101).map { "\($0)" }))
+    XCTAssertEqual(observer.subscriptions.count, 2)
+    
+    await observer.updateVisiblePosts(Set((1...250).map { "\($0)" }))
+    XCTAssertEqual(observer.subscriptions.count, 3)
+}
+```
+
+### Decision Tree: When to Use What
+
+```
+Need realtime engagement updates?
+│
+├─ Yes → How many visible posts typically?
+│        │
+│        ├─ <100 posts
+│        │  └─ ✅ Use current implementation (single subscription)
+│        │
+│        ├─ 100-300 posts
+│        │  └─ ✅ Use current implementation (2-3 subscriptions)
+│        │     ⚠️ Monitor battery usage
+│        │
+│        ├─ 300-1000 posts
+│        │  ├─ Can you paginate/limit visible tracking?
+│        │  │  ├─ Yes → ✅ Use current implementation with limits
+│        │  │  └─ No → ⚠️ Consider Broadcast migration
+│        │  │
+│        │  └─ ⚠️ Edge case: May need optimizations
+│        │
+│        └─ >1000 posts
+│           └─ ❌ Don't use Postgres Changes
+│              ✅ Migrate to Broadcast channels
+│
+└─ No → Don't use RealtimeEngagementObserver
+```
+
+### Quick Reference
+
+#### Key Files
+- `Packages/Kits/Engagement/Sources/Engagement/RealtimeEngagementObserver.swift`
+- `Packages/Kits/Engagement/REALTIME_INTEGRATION.md`
+- `REALTIME_FILTER_UPGRADE.md`
+
+#### Key APIs
+```swift
+// Initialize
+let observer = RealtimeEngagementObserver(supabase: supabase)
+
+// Update visible posts (triggers resubscription)
+await observer.updateVisiblePosts(Set(postIds))
+
+// Listen to updates
+for await update in observer.updates {
+    // Handle update
+}
+
+// Buffer during actions
+await observer.markInProgress(postId)
+// ... perform action ...
+await observer.markCompleted(postId)
+
+// Cleanup
+await observer.stopObserving()
+```
+
+#### Key Constraints
+- ✅ Max 100 post IDs per subscription (automatic chunking)
+- ✅ Single filter predicate per subscription
+- ✅ No spaces in `in.(...)` filter
+- ✅ UUIDs work unquoted
+- ✅ RLS policies apply to subscriptions
+- ⚠️ Postgres Changes doesn't scale beyond ~1000 posts/feed
+
+#### Performance Targets
+- Bandwidth: ~20 KB/user/day
+- Latency: <200ms update-to-UI
+- Battery: Minimal impact (<5% drain)
+- Subscriptions: ceil(visiblePosts / 100)
+- Throttle: 300ms between same-post updates
+- Debounce: 500ms for resubscriptions
+
+### Related Rules & Documentation
+
+- `ios-di-injection.mdc` - How to inject dependencies properly
+- `ios-module-standards.mdc` - Package structure guidelines
+- `swift-concurrency.mdc` - Actor patterns and async/await
+- `FEED_ALGORITHM.md` - How engagement affects recommendations
+- `ENGAGEMENT_BUTTONS_PLAN.md` - Full engagement system design
+
+### Last Updated
+
+October 18, 2025 - Server-side filtering implementation with automatic chunking

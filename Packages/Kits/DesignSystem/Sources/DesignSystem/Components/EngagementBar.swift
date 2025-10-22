@@ -90,7 +90,6 @@ public struct EngagementBar: View {
             
             Spacer()
         }
-        .padding(.top, SpacingTokens.xs)
     }
 }
 
@@ -120,6 +119,6 @@ public struct EngagementBar: View {
             onShare: { print("Share") }
         )
     }
-    .padding()
+    //.padding()
 }
 

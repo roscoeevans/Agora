@@ -31,7 +31,9 @@ public struct NotificationsView: View {
                     .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                 }
                 .navigationTitle("Notifications")
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.large)
+                #endif
                 .refreshable {
                     await viewModel.refresh()
                 }
@@ -58,6 +60,7 @@ public struct NotificationsView: View {
 struct NotificationRowView: View {
     let notification: NotificationItem
     @State private var isPressed = false
+    @State private var hapticTrigger = false
     @Environment(\.navigateToPost) private var navigateToPost
     
     var body: some View {
@@ -135,9 +138,7 @@ struct NotificationRowView: View {
         .scaleEffect(isPressed ? 0.98 : 1.0)
         .animation(.easeInOut(duration: 0.1), value: isPressed)
         .onTapGesture {
-            // Add haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            hapticTrigger.toggle()
             // Navigate to related post (using notification id as a placeholder)
             if let navigate = navigateToPost, let uuid = UUID(uuidString: notification.id) {
                 navigate.action(uuid)
@@ -150,6 +151,7 @@ struct NotificationRowView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint("Double tap to view notification details")
+        .sensoryFeedback(.selection, trigger: hapticTrigger)
     }
     
     private var accessibilityLabel: String {

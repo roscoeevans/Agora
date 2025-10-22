@@ -5,7 +5,10 @@ import PackageDescription
 
 let package = Package(
     name: "Media",
-    platforms: [.iOS(.v26)],
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v26)
+    ],
     products: [
         .library(
             name: "Media",
@@ -15,7 +18,8 @@ let package = Package(
     dependencies: [
         .package(path: "../Networking"),
         .package(path: "../../Shared/AppFoundation"),
-        .package(url: "https://github.com/supabase/supabase-swift", exact: "2.34.0")
+        .package(path: "../UIKitBridge"),
+        .package(url: "https://github.com/supabase/supabase-swift", from: "2.35.0")
     ],
     targets: [
         .target(
@@ -23,6 +27,7 @@ let package = Package(
             dependencies: [
                 "Networking",
                 "AppFoundation",
+                "UIKitBridge",
                 .product(name: "Supabase", package: "supabase-swift")
             ],
             swiftSettings: [

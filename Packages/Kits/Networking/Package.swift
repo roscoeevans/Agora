@@ -4,7 +4,10 @@ import PackageDescription
 let package = Package(
     name: "Networking",
     defaultLocalization: "en",
-    platforms: [.iOS(.v26)],
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v26)
+    ],
     products: [
         .library(
             name: "Networking",

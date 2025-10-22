@@ -35,6 +35,13 @@ public enum AnalyticsEvent {
     case errorOccurred(error: String, context: String)
     case networkError(statusCode: Int, endpoint: String)
     
+    // Skeleton loading events
+    case firstContentfulRow(feedType: String, rowIndex: Int, elapsedTimeMs: Int)
+    case timeToInteractive(feedType: String, totalRows: Int, elapsedTimeMs: Int)
+    case skeletonError(feedType: String, error: String, context: String, retryCount: Int)
+    case skeletonFPSDrop(currentFPS: Double, threshold: Double)
+    case skeletonMemoryThreshold(memoryUsageMB: Int64, thresholdMB: Int)
+    
     /// Event name for tracking
     public var name: String {
         switch self {
@@ -56,6 +63,11 @@ public enum AnalyticsEvent {
         case .mediaProcessed: return "media_processed"
         case .errorOccurred: return "error_occurred"
         case .networkError: return "network_error"
+        case .firstContentfulRow: return "first_contentful_row"
+        case .timeToInteractive: return "time_to_interactive"
+        case .skeletonError: return "skeleton_error"
+        case .skeletonFPSDrop: return "skeleton_fps_drop"
+        case .skeletonMemoryThreshold: return "skeleton_memory_threshold"
         }
     }
     
@@ -107,6 +119,16 @@ public enum AnalyticsEvent {
             return ["error": error, "context": context]
         case .networkError(let statusCode, let endpoint):
             return ["status_code": statusCode, "endpoint": endpoint]
+        case .firstContentfulRow(let feedType, let rowIndex, let elapsedTimeMs):
+            return ["feed_type": feedType, "row_index": rowIndex, "elapsed_time_ms": elapsedTimeMs]
+        case .timeToInteractive(let feedType, let totalRows, let elapsedTimeMs):
+            return ["feed_type": feedType, "total_rows": totalRows, "elapsed_time_ms": elapsedTimeMs]
+        case .skeletonError(let feedType, let error, let context, let retryCount):
+            return ["feed_type": feedType, "error": error, "context": context, "retry_count": retryCount]
+        case .skeletonFPSDrop(let currentFPS, let threshold):
+            return ["current_fps": currentFPS, "threshold": threshold]
+        case .skeletonMemoryThreshold(let memoryUsageMB, let thresholdMB):
+            return ["memory_usage_mb": memoryUsageMB, "threshold_mb": thresholdMB]
         }
     }
 }

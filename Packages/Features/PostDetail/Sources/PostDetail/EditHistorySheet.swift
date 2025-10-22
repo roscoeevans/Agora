@@ -55,10 +55,12 @@ public struct EditHistorySheet: View {
                 }
             }
             .navigationTitle("Edit History")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .primaryAction) {
                     Button {
                         dismiss()
                     } label: {
@@ -109,7 +111,11 @@ public struct EditHistorySheet: View {
                 }
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
     }
     
     private var loadingView: some View {

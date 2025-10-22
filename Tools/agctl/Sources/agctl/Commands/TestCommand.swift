@@ -7,7 +7,7 @@ struct TestCommand: ParsableCommand {
         abstract: "Test one or all Swift packages"
     )
     
-    @Argument(help: "The package to test (e.g., AuthFeature, DesignSystem). If omitted, tests all packages.")
+    @Argument(help: "The package to test (e.g., Auth, DesignSystem). If omitted, tests all packages.")
     var packageName: String?
     
     @Flag(name: .shortAndLong, help: "Show verbose test output")
@@ -15,6 +15,7 @@ struct TestCommand: ParsableCommand {
     
     @Flag(name: .long, help: "Run tests in parallel")
     var parallel = false
+    
     
     func run() throws {
         if let packageName = packageName {
@@ -64,8 +65,13 @@ struct TestCommand: ParsableCommand {
                 }
             }
             Logger.success("All tests passed!")
+        } catch let error as Shell.CommandError {
+            Logger.error("Tests failed")
+            Logger.error("Error: \(error.localizedDescription)")
+            throw ExitCode.failure
         } catch {
             Logger.error("Tests failed")
+            Logger.error("Unexpected error: \(error.localizedDescription)")
             throw ExitCode.failure
         }
     }
@@ -111,8 +117,17 @@ struct TestCommand: ParsableCommand {
                     Logger.error("  ✗ \(package.displayName) (\(results.failed) failed)")
                     failed.append(package.displayName)
                 }
+            } catch let error as Shell.CommandError {
+                Logger.error("  ✗ \(package.displayName) (build/test error)")
+                if verbose {
+                    Logger.error("    Error: \(error.localizedDescription)")
+                }
+                failed.append(package.displayName)
             } catch {
                 Logger.error("  ✗ \(package.displayName) (build/test error)")
+                if verbose {
+                    Logger.error("    Unexpected error: \(error.localizedDescription)")
+                }
                 failed.append(package.displayName)
             }
         }

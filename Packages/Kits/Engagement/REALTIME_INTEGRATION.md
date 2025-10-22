@@ -4,15 +4,23 @@ This guide shows how to add real-time engagement count updates to feed views.
 
 ## Overview
 
-The `RealtimeEngagementObserver` provides live updates for like and repost counts across all visible posts in a feed. It uses a single Supabase Realtime channel for optimal performance.
+The `RealtimeEngagementObserver` provides live updates for like and repost counts across all visible posts in a feed. It uses **server-side filtering** with Supabase Realtime's `in` operator and automatically chunks subscriptions for >100 posts.
 
 ## Key Features
 
-- ✅ **Single channel per feed** (not per post)
+- ✅ **Server-side filtering** (uses `id=in.(...)` filter, max 100 IDs per channel)
+- ✅ **Automatic chunking** (creates multiple channels if >100 visible posts)
 - ✅ **Automatic throttling** (300ms between updates)
 - ✅ **Background pause/resume** (conserves battery)
 - ✅ **Buffering during actions** (local actions win)
 - ✅ **Debounced subscriptions** (smooth during scroll)
+
+## Scaling Considerations
+
+- **Up to 100 posts**: Single subscription with `in` filter
+- **101-300 posts**: 2-3 chunked subscriptions (still efficient)
+- **>300 posts**: Consider pagination or Broadcast channels
+- **Production scale**: Supabase recommends migrating to Broadcast channels for very high throughput
 
 ## Integration Steps
 
@@ -147,6 +155,12 @@ This ensures that local optimistic updates always win over realtime updates.
 
 ## Performance Characteristics
 
+### Server-Side Filtering
+- Uses `id=in.(uuid1,uuid2,...)` filter (Supabase Realtime Postgres Changes)
+- Only receives updates for visible posts (99%+ bandwidth reduction vs all-posts subscription)
+- Automatically chunks into ≤100 IDs per channel (Supabase limit)
+- No spaces in filter string to avoid parsing issues
+
 ### Throttling
 - Maximum 1 update per post every 300ms
 - Drops intermediate updates to prevent UI churn
@@ -163,6 +177,15 @@ This ensures that local optimistic updates always win over realtime updates.
 - Auto-pauses on app background
 - Auto-resumes on app foreground
 - Unsubscribes when view disappears
+
+### Chunking Example
+```
+Visible posts: 250 posts
+Result: 3 channels created
+  - Channel 1: posts 1-100 with filter "id=in.(uuid1,uuid2,...,uuid100)"
+  - Channel 2: posts 101-200 with filter "id=in.(uuid101,uuid102,...,uuid200)"
+  - Channel 3: posts 201-250 with filter "id=in.(uuid201,uuid202,...,uuid250)"
+```
 
 ## Testing
 
@@ -188,13 +211,22 @@ Use the fake engagement service to test real-time behavior:
 2. Verify post IDs are being tracked in `visiblePostIds`
 3. Ensure Supabase Realtime is enabled in your project
 4. Check console for subscription errors
+5. Verify post IDs are valid UUIDs (malformed IDs will fail the `in` filter)
 
 ### Performance issues?
 
 1. Ensure only visible posts are tracked
 2. Check that `.onDisappear` is removing posts
 3. Verify throttling is working (check update frequency)
-4. Consider reducing visible post count
+4. Check number of active subscriptions (should be `ceil(visiblePostIds.count / 100)`)
+5. If >300 visible posts, consider pagination or limiting visible tracking
+
+### Filter not working?
+
+1. Check that post IDs are UUIDs (no quotes needed)
+2. Ensure no spaces in the `in.(...)` list: `in.(uuid1,uuid2)` ✅ not `in.(uuid1, uuid2)` ❌
+3. Verify visiblePostIds.count ≤ maxPostIdsPerChannel * subscriptions.count
+4. Check Supabase logs for filter parsing errors
 
 ### Conflicts with local actions?
 
@@ -204,24 +236,43 @@ Use the fake engagement service to test real-time behavior:
 
 ## Database Setup
 
-The observer subscribes to the `posts` table. Ensure your database has:
+The observer subscribes to the `posts` table with server-side `in` filters. Ensure your database has:
 
 ```sql
--- Enable Realtime on posts table
+-- Enable Realtime on posts table (required for Postgres Changes)
 ALTER PUBLICATION supabase_realtime ADD TABLE posts;
 
--- Ensure RLS allows reads
+-- Ensure RLS allows reads for public posts
 CREATE POLICY posts_select_all ON posts
   FOR SELECT USING (visibility = 'public');
+
+-- Verify Realtime is enabled in Supabase Dashboard:
+-- Settings → API → Realtime → Enable Realtime for tables: posts
 ```
+
+**Important:** The `in` filter is server-side, so RLS policies still apply. Make sure your RLS policies allow reading the posts you're subscribing to.
 
 ## Advanced: Multiple Feeds
 
 Each feed view creates its own observer instance. This is efficient because:
 
-1. Each observer only tracks its visible posts
+1. Each observer only tracks its visible posts (server-side filtering)
 2. Supabase multiplexes channels efficiently
 3. Observers clean up on view disappear
+4. Multiple observers watching the same post will share the same Realtime event (no duplication)
 
 No special handling needed for multiple feeds.
+
+## Migration Path to Broadcast (Future Scale)
+
+If you outgrow Postgres Changes (e.g., >1000 posts/feed, millions of users), migrate to Broadcast:
+
+```swift
+// Instead of subscribing to database changes, subscribe to broadcast messages
+// Edge Function broadcasts targeted engagement updates:
+//   supabase.channel('engagement').send({ postId: 'x', likeCount: 42 })
+// Client receives and applies updates without database subscriptions
+```
+
+Supabase docs recommend Broadcast for "high scale, high throughput" use cases.
 

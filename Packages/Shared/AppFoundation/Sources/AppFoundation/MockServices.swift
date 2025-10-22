@@ -380,6 +380,28 @@ private enum MockAuthError: LocalizedError {
     }
 }
 
+// MARK: - No-Op Comment Composition Service
+
+import SwiftUI
+
+/// No-op implementation of CommentCompositionProtocol
+/// Used when PostDetail module is not available or for testing
+public struct NoOpCommentCompositionService: CommentCompositionProtocol {
+    public init() {}
+    
+    public func createCommentSheet(
+        for post: Post,
+        replyToCommentId: String?,
+        replyToUsername: String?
+    ) -> AnyView {
+        AnyView(
+            Text("Comment composition not available")
+                .foregroundColor(.secondary)
+                .padding()
+        )
+    }
+}
+
 // MARK: - PersonNameComponents Extension
 
 extension PersonNameComponents {

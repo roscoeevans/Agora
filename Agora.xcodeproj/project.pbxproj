@@ -9,20 +9,22 @@
 /* Begin PBXBuildFile section */
 		310C73B72E962CCF00AA5C35 /* HomeForYou in Frameworks */ = {isa = PBXBuildFile; productRef = HomeForYou /* HomeForYou */; };
 		310C73B82E962CCF00AA5C35 /* HomeFollowing in Frameworks */ = {isa = PBXBuildFile; productRef = HomeFollowing /* HomeFollowing */; };
-		310C73B92E962CCF00AA5C35 /* Compose in Frameworks */ = {isa = PBXBuildFile; productRef = Compose /* Compose */; };
 		310C73BA2E962CCF00AA5C35 /* PostDetail in Frameworks */ = {isa = PBXBuildFile; productRef = PostDetail /* PostDetail */; };
 		310C73BB2E962CCF00AA5C35 /* Threading in Frameworks */ = {isa = PBXBuildFile; productRef = Threading /* Threading */; };
 		310C73BC2E962CCF00AA5C35 /* Profile in Frameworks */ = {isa = PBXBuildFile; productRef = Profile /* Profile */; };
 		310C73BD2E962CCF00AA5C35 /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = Search /* Search */; };
 		310C73BE2E962CCF00AA5C35 /* Notifications in Frameworks */ = {isa = PBXBuildFile; productRef = Notifications /* Notifications */; };
 		310C73BF2E962CCF00AA5C35 /* DMs in Frameworks */ = {isa = PBXBuildFile; productRef = DMs /* DMs */; };
+		311EF1B32EA32B0A00C941C1 /* Engagement in Frameworks */ = {isa = PBXBuildFile; productRef = 311EF1B22EA32B0A00C941C1 /* Engagement */; };
 		3122BDC52E95FC4700E495EE /* Resources/AgoraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3122BDC32E95FC4700E495EE /* Resources/AgoraApp.swift */; };
 		3122BDC62E95FC4700E495EE /* Resources/ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3122BDC42E95FC4700E495EE /* Resources/ContentView.swift */; };
 		3122BDC72E95FC4700E495EE /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC02E95FC4700E495EE /* Resources/Assets.xcassets */; };
 		3122BDC82E95FC4700E495EE /* Resources/Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC12E95FC4700E495EE /* Resources/Localizable.strings */; };
 		3122BDC92E95FC4700E495EE /* Resources/Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC22E95FC4700E495EE /* Resources/Secrets.plist */; };
-		31499DF52E9C70EA0079E2D2 /* AuthFeature in Frameworks */ = {isa = PBXBuildFile; productRef = AuthFeature /* AuthFeature */; };
 		3191F36B2EA088E500C72CB8 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 3191F36A2EA088E500C72CB8 /* DesignSystem */; };
+		31BEE2332EA57724006F127C /* AuthFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 31BEE2322EA57724006F127C /* AuthFeature */; };
+		31BEE2362EA582CA006F127C /* Compose in Frameworks */ = {isa = PBXBuildFile; productRef = 31BEE2352EA582CA006F127C /* Compose */; };
+		OnboardingInFrameworks /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = Onboarding /* Onboarding */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,16 +91,18 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				31499DF52E9C70EA0079E2D2 /* AuthFeature in Frameworks */,
+				311EF1B32EA32B0A00C941C1 /* Engagement in Frameworks */,
 				310C73BF2E962CCF00AA5C35 /* DMs in Frameworks */,
 				310C73BE2E962CCF00AA5C35 /* Notifications in Frameworks */,
 				310C73BD2E962CCF00AA5C35 /* Search in Frameworks */,
 				310C73BC2E962CCF00AA5C35 /* Profile in Frameworks */,
 				310C73BB2E962CCF00AA5C35 /* Threading in Frameworks */,
 				310C73BA2E962CCF00AA5C35 /* PostDetail in Frameworks */,
-				310C73B92E962CCF00AA5C35 /* Compose in Frameworks */,
 				310C73B82E962CCF00AA5C35 /* HomeFollowing in Frameworks */,
 				310C73B72E962CCF00AA5C35 /* HomeForYou in Frameworks */,
+				31BEE2362EA582CA006F127C /* Compose in Frameworks */,
+				31BEE2332EA57724006F127C /* AuthFeature in Frameworks */,
+				OnboardingInFrameworks /* Onboarding in Frameworks */,
 				3191F36B2EA088E500C72CB8 /* DesignSystem in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -140,6 +144,7 @@
 				3122BDAE2E95FC4700E495EE /* AgoraUITests */,
 				3122BD912E95FC4500E495EE /* Products */,
 				310C73C02E962CCF00AA5C35 /* Recovered References */,
+				31BEE2342EA582CA006F127C /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -151,6 +156,13 @@
 				3122BDAB2E95FC4700E495EE /* AgoraUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		31BEE2342EA582CA006F127C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -170,10 +182,8 @@
 			);
 			name = Agora;
 			packageProductDependencies = (
-				AuthFeature /* AuthFeature */,
 				HomeForYou /* HomeForYou */,
 				HomeFollowing /* HomeFollowing */,
-				Compose /* Compose */,
 				PostDetail /* PostDetail */,
 				Threading /* Threading */,
 				Profile /* Profile */,
@@ -181,6 +191,10 @@
 				Notifications /* Notifications */,
 				DMs /* DMs */,
 				3191F36A2EA088E500C72CB8 /* DesignSystem */,
+				311EF1B22EA32B0A00C941C1 /* Engagement */,
+				31BEE2322EA57724006F127C /* AuthFeature */,
+				Onboarding /* Onboarding */,
+				31BEE2352EA582CA006F127C /* Compose */,
 			);
 			productName = Agora;
 			productReference = 3122BD902E95FC4500E495EE /* Agora (Dev).app */;
@@ -265,7 +279,6 @@
 			mainGroup = 3122BD872E95FC4500E495EE;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */,
 				HomeForYouPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeForYou" */,
 				HomeFollowingPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeFollowing" */,
 				ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */,
@@ -276,6 +289,11 @@
 				NotificationsPackage /* XCLocalSwiftPackageReference "Packages/Features/Notifications" */,
 				DMsPackage /* XCLocalSwiftPackageReference "Packages/Features/DMs" */,
 				3191F3692EA088E500C72CB8 /* XCLocalSwiftPackageReference "Packages/Kits/DesignSystem" */,
+				311EF1B12EA32B0A00C941C1 /* XCLocalSwiftPackageReference "Packages/Kits/Engagement" */,
+				31ECCB572EA4459C00B14E7E /* XCLocalSwiftPackageReference "Packages/Kits/SupabaseKit" */,
+				31ECCB752EA4478500B14E7E /* XCLocalSwiftPackageReference "Packages/Kits/Analytics" */,
+				31ECCBCA2EA4650E00B14E7E /* XCLocalSwiftPackageReference "Packages/Features/AuthFeature" */,
+				OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3122BD912E95FC4500E495EE /* Products */;
@@ -848,13 +866,29 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		311EF1B12EA32B0A00C941C1 /* XCLocalSwiftPackageReference "Packages/Kits/Engagement" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Kits/Engagement;
+		};
 		3191F3692EA088E500C72CB8 /* XCLocalSwiftPackageReference "Packages/Kits/DesignSystem" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Kits/DesignSystem;
 		};
-		AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */ = {
+		31ECCB572EA4459C00B14E7E /* XCLocalSwiftPackageReference "Packages/Kits/SupabaseKit" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Features/Auth;
+			relativePath = Packages/Kits/SupabaseKit;
+		};
+		31ECCB752EA4478500B14E7E /* XCLocalSwiftPackageReference "Packages/Kits/Analytics" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Kits/Analytics;
+		};
+		31ECCBCA2EA4650E00B14E7E /* XCLocalSwiftPackageReference "Packages/Features/AuthFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/AuthFeature;
+		};
+		OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Onboarding;
 		};
 		ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -895,19 +929,27 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		311EF1B22EA32B0A00C941C1 /* Engagement */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Engagement;
+		};
 		3191F36A2EA088E500C72CB8 /* DesignSystem */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DesignSystem;
 		};
-		AuthFeature /* AuthFeature */ = {
+		31BEE2322EA57724006F127C /* AuthFeature */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AuthFeaturePackage /* XCLocalSwiftPackageReference "Packages/Features/Auth" */;
 			productName = AuthFeature;
 		};
-		Compose /* Compose */ = {
+		31BEE2352EA582CA006F127C /* Compose */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */;
 			productName = Compose;
+		};
+		Onboarding /* Onboarding */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */;
+			productName = Onboarding;
 		};
 		DMs /* DMs */ = {
 			isa = XCSwiftPackageProductDependency;

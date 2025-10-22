@@ -2,7 +2,7 @@ import Foundation
 import Analytics
 
 /// User interaction signals for recommendation
-public enum InteractionSignal {
+public enum InteractionSignal: Sendable {
     case view(postId: String, dwellTime: TimeInterval)
     case like(postId: String)
     case unlike(postId: String)
@@ -17,7 +17,7 @@ public enum InteractionSignal {
 }
 
 /// Reasons for skipping content
-public enum SkipReason: String, CaseIterable {
+public enum SkipReason: String, CaseIterable, Sendable {
     case notInterested = "not_interested"
     case tooSimilar = "too_similar"
     case inappropriate = "inappropriate"
@@ -27,7 +27,7 @@ public enum SkipReason: String, CaseIterable {
 }
 
 /// Signal metadata for context
-public struct SignalMetadata {
+public struct SignalMetadata: Sendable {
     public let timestamp: Date
     public let sessionId: String
     public let feedPosition: Int?
@@ -49,14 +49,18 @@ public struct SignalMetadata {
 }
 
 /// Device context for signals
-public struct DeviceContext {
+public struct DeviceContext: Sendable {
     public let batteryLevel: Float?
     public let isLowPowerMode: Bool
     public let networkType: String
     public let timeOfDay: String
     
     public init() {
+        #if os(iOS)
         self.batteryLevel = UIDevice.current.batteryLevel >= 0 ? UIDevice.current.batteryLevel : nil
+        #else
+        self.batteryLevel = nil
+        #endif
         self.isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
         self.networkType = "unknown" // TODO: Detect actual network type
         
@@ -75,7 +79,7 @@ public struct DeviceContext {
 }
 
 /// Collected signal with metadata
-public struct CollectedSignal {
+public struct CollectedSignal: Sendable {
     public let signal: InteractionSignal
     public let metadata: SignalMetadata
     
@@ -245,6 +249,7 @@ public final class SignalCollector: Sendable {
 
 // MARK: - UIDevice Extension
 
+#if os(iOS)
 import UIKit
 
 private extension UIDevice {
@@ -254,3 +259,4 @@ private extension UIDevice {
         return batteryLevel
     }
 }
+#endif

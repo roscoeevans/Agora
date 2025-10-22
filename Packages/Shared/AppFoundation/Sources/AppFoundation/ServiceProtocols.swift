@@ -210,3 +210,486 @@ public enum CaptchaError: LocalizedError, Sendable {
         }
     }
 }
+
+// MARK: - Comment Composition Protocol
+
+import SwiftUI
+
+/// Protocol for comment composition functionality
+/// Allows features to present comment composition without depending on PostDetail
+public protocol CommentCompositionProtocol: Sendable {
+    /// Creates a comment composition view for a given post
+    /// - Parameters:
+    ///   - post: The post to comment on
+    ///   - replyToCommentId: Optional comment ID to reply to
+    ///   - replyToUsername: Optional username being replied to
+    /// - Returns: A SwiftUI view for comment composition
+    func createCommentSheet(
+        for post: Post,
+        replyToCommentId: String?,
+        replyToUsername: String?
+    ) -> AnyView
+}
+
+// MARK: - Engagement Service Protocol
+
+/// Service for handling post engagement actions (like, repost, share)
+public protocol EngagementService: Sendable {
+    /// Toggle like on a post (idempotent)
+    /// - Parameter postId: The ID of the post to like/unlike
+    /// - Returns: Result containing new like state and count
+    /// - Throws: EngagementError if operation fails
+    func toggleLike(postId: String) async throws -> LikeResult
+    
+    /// Toggle repost on a post (idempotent)
+    /// - Parameter postId: The ID of the post to repost/unrepost
+    /// - Returns: Result containing new repost state and count
+    /// - Throws: EngagementError if operation fails
+    func toggleRepost(postId: String) async throws -> RepostResult
+    
+    /// Get shareable URL for a post
+    /// - Parameter postId: The ID of the post to share
+    /// - Returns: Deep link URL for the post
+    /// - Throws: EngagementError if operation fails
+    func getShareURL(postId: String) async throws -> URL
+}
+
+/// Result of a like toggle operation
+public struct LikeResult: Sendable {
+    public let isLiked: Bool
+    public let likeCount: Int
+    
+    public init(isLiked: Bool, likeCount: Int) {
+        self.isLiked = isLiked
+        self.likeCount = likeCount
+    }
+}
+
+/// Result of a repost toggle operation
+public struct RepostResult: Sendable {
+    public let isReposted: Bool
+    public let repostCount: Int
+    
+    public init(isReposted: Bool, repostCount: Int) {
+        self.isReposted = isReposted
+        self.repostCount = repostCount
+    }
+}
+
+/// Errors that can occur during engagement operations
+public enum EngagementError: LocalizedError, Sendable {
+    case postNotFound
+    case unauthorized
+    case networkError
+    case serverError(String)
+    case rateLimited
+    
+    public var errorDescription: String? {
+        switch self {
+        case .postNotFound:
+            return "Post not found"
+        case .unauthorized:
+            return "You must be signed in to perform this action"
+        case .networkError:
+            return "Network connection failed. Please try again."
+        case .serverError(let message):
+            return "Server error: \(message)"
+        case .rateLimited:
+            return "You're doing that too quickly. Please wait a moment."
+        }
+    }
+}
+
+// MARK: - Messaging Service Protocols
+
+/// Protocol for messaging service handling conversations and messages
+public protocol MessagingServiceProtocol: Sendable {
+    /// Creates a new conversation with specified participants
+    /// - Parameter participantIds: Array of user IDs to include in conversation
+    /// - Returns: Created conversation
+    /// - Throws: MessagingError if creation fails
+    func createConversation(participantIds: [UUID]) async throws -> Conversation
+    
+    /// Leaves a conversation
+    /// - Parameter id: Conversation ID to leave
+    /// - Throws: MessagingError if operation fails
+    func leaveConversation(id: UUID) async throws
+    
+    /// Sets muted status for a conversation
+    /// - Parameters:
+    ///   - muted: Whether to mute the conversation
+    ///   - id: Conversation ID
+    /// - Throws: MessagingError if operation fails
+    func setMuted(_ muted: Bool, for id: UUID) async throws
+    
+    /// Sets archived status for a conversation
+    /// - Parameters:
+    ///   - archived: Whether to archive the conversation
+    ///   - id: Conversation ID
+    /// - Throws: MessagingError if operation fails
+    func setArchived(_ archived: Bool, for id: UUID) async throws
+    
+    /// Sets pinned status for a conversation
+    /// - Parameters:
+    ///   - pinned: Whether to pin the conversation
+    ///   - id: Conversation ID
+    /// - Throws: MessagingError if operation fails
+    func pin(_ pinned: Bool, for id: UUID) async throws
+    
+    /// Fetches conversations with pagination
+    /// - Parameters:
+    ///   - page: Page number (0-based)
+    ///   - pageSize: Number of conversations per page
+    /// - Returns: Array of conversations
+    /// - Throws: MessagingError if fetch fails
+    func fetchConversations(page: Int, pageSize: Int) async throws -> [Conversation]
+    
+    /// Fetches messages for a conversation with pagination
+    /// - Parameters:
+    ///   - conversationId: Conversation ID
+    ///   - before: Optional date to fetch messages before
+    ///   - limit: Maximum number of messages to fetch
+    /// - Returns: Array of messages
+    /// - Throws: MessagingError if fetch fails
+    func fetchMessages(conversationId: UUID, before: Date?, limit: Int) async throws -> [Message]
+    
+    /// Sends a text message
+    /// - Parameters:
+    ///   - text: Message text content
+    ///   - conversationId: Target conversation ID
+    /// - Returns: Sent message
+    /// - Throws: MessagingError if send fails
+    func send(text: String, in conversationId: UUID) async throws -> Message
+    
+    /// Sends a message with attachment
+    /// - Parameters:
+    ///   - attachment: Media attachment
+    ///   - conversationId: Target conversation ID
+    /// - Returns: Sent message
+    /// - Throws: MessagingError if send fails
+    func send(attachment: Attachment, in conversationId: UUID) async throws -> Message
+    
+    /// Marks a message as delivered
+    /// - Parameters:
+    ///   - conversationId: Conversation ID
+    ///   - messageId: Message ID to mark as delivered
+    /// - Throws: MessagingError if operation fails
+    func markDelivered(conversationId: UUID, messageId: UUID) async throws
+    
+    /// Marks messages as read up to a specific message
+    /// - Parameters:
+    ///   - conversationId: Conversation ID
+    ///   - messageId: Last message ID to mark as read
+    /// - Throws: MessagingError if operation fails
+    func markReadRange(conversationId: UUID, upTo messageId: UUID) async throws
+}
+
+/// Protocol for real-time messaging functionality
+public protocol MessagingRealtimeProtocol: Sendable {
+    /// Subscribes to conversation list updates
+    /// - Returns: Subscription for managing the connection
+    /// - Throws: MessagingError if subscription fails
+    func subscribeConversationList() async throws -> MessagingSubscription
+    
+    /// Subscribes to updates for a specific conversation
+    /// - Parameter conversationId: Conversation ID to subscribe to
+    /// - Returns: Subscription for managing the connection
+    /// - Throws: MessagingError if subscription fails
+    func subscribe(conversationId: UUID) async throws -> MessagingSubscription
+    
+    /// Sets typing status for a conversation
+    /// - Parameters:
+    ///   - conversationId: Conversation ID
+    ///   - isTyping: Whether user is currently typing
+    func setTyping(conversationId: UUID, isTyping: Bool) async
+    
+    /// Stream of real-time messaging events
+    var events: AsyncStream<MessagingEvent> { get }
+}
+
+/// Protocol for messaging media handling
+public protocol MessagingMediaProtocol: Sendable {
+    /// Prepares a media attachment for sending
+    /// - Parameter pick: Selected media from picker
+    /// - Returns: Prepared attachment ready for sending
+    /// - Throws: MessagingError if preparation fails
+    func prepareAttachment(_ pick: MediaPick) async throws -> Attachment
+}
+
+/// Subscription handle for managing real-time connections
+public protocol MessagingSubscription: Sendable {
+    /// Cancels the subscription
+    func cancel() async
+    
+    /// Whether the subscription is currently active
+    var isActive: Bool { get async }
+}
+
+/// Real-time messaging events
+public enum MessagingEvent: Sendable {
+    case messageAdded(Message)
+    case messageUpdated(Message)
+    case messageDeleted(UUID, conversationId: UUID)
+    case typing(conversationId: UUID, userId: UUID, isTyping: Bool)
+    case readReceipt(conversationId: UUID, messageId: UUID, userId: UUID)
+    case conversationUpdated(Conversation)
+}
+
+// MARK: - Messaging Data Models
+
+/// Conversation model
+public struct Conversation: Identifiable, Codable, Sendable {
+    public let id: UUID
+    public let participants: [User]
+    public let lastMessage: Message?
+    public let lastActivity: Date
+    public let unreadCount: Int
+    public let unreadMentionsCount: Int
+    public let isArchived: Bool
+    public let isPinned: Bool
+    public let isMuted: Bool
+    public let lastReadMessageId: UUID?
+    public let draftText: String?
+    public let isGroup: Bool
+    public let title: String?
+    public let avatarUrl: URL?
+    
+    public init(
+        id: UUID,
+        participants: [User],
+        lastMessage: Message? = nil,
+        lastActivity: Date,
+        unreadCount: Int = 0,
+        unreadMentionsCount: Int = 0,
+        isArchived: Bool = false,
+        isPinned: Bool = false,
+        isMuted: Bool = false,
+        lastReadMessageId: UUID? = nil,
+        draftText: String? = nil,
+        isGroup: Bool = false,
+        title: String? = nil,
+        avatarUrl: URL? = nil
+    ) {
+        self.id = id
+        self.participants = participants
+        self.lastMessage = lastMessage
+        self.lastActivity = lastActivity
+        self.unreadCount = unreadCount
+        self.unreadMentionsCount = unreadMentionsCount
+        self.isArchived = isArchived
+        self.isPinned = isPinned
+        self.isMuted = isMuted
+        self.lastReadMessageId = lastReadMessageId
+        self.draftText = draftText
+        self.isGroup = isGroup
+        self.title = title
+        self.avatarUrl = avatarUrl
+    }
+}
+
+/// Message model
+public struct Message: Identifiable, Codable, Sendable {
+    public let id: UUID
+    public let conversationId: UUID
+    public let senderId: UUID
+    public let content: String
+    public let attachments: [Attachment]
+    public let timestamp: Date
+    public let deliveryStatus: DeliveryStatus
+    public let replyTo: UUID?
+    public let nonce: MessageNonce?
+    public let editedAt: Date?
+    public let deletedAt: Date?
+    public let expiresAt: Date?
+    public let systemKind: SystemMessageKind?
+    public let linkPreview: LinkPreview?
+    
+    public init(
+        id: UUID,
+        conversationId: UUID,
+        senderId: UUID,
+        content: String,
+        attachments: [Attachment] = [],
+        timestamp: Date,
+        deliveryStatus: DeliveryStatus = .sent,
+        replyTo: UUID? = nil,
+        nonce: MessageNonce? = nil,
+        editedAt: Date? = nil,
+        deletedAt: Date? = nil,
+        expiresAt: Date? = nil,
+        systemKind: SystemMessageKind? = nil,
+        linkPreview: LinkPreview? = nil
+    ) {
+        self.id = id
+        self.conversationId = conversationId
+        self.senderId = senderId
+        self.content = content
+        self.attachments = attachments
+        self.timestamp = timestamp
+        self.deliveryStatus = deliveryStatus
+        self.replyTo = replyTo
+        self.nonce = nonce
+        self.editedAt = editedAt
+        self.deletedAt = deletedAt
+        self.expiresAt = expiresAt
+        self.systemKind = systemKind
+        self.linkPreview = linkPreview
+    }
+}
+
+/// Attachment model
+public struct Attachment: Identifiable, Codable, Sendable {
+    public let id: UUID
+    public let type: AttachmentType
+    public let url: URL
+    public let thumbnailUrl: URL?
+    public let sizeBytes: Int64
+    public let duration: TimeInterval?
+    public let metadata: AttachmentMetadata
+    
+    public init(
+        id: UUID,
+        type: AttachmentType,
+        url: URL,
+        thumbnailUrl: URL? = nil,
+        sizeBytes: Int64,
+        duration: TimeInterval? = nil,
+        metadata: AttachmentMetadata
+    ) {
+        self.id = id
+        self.type = type
+        self.url = url
+        self.thumbnailUrl = thumbnailUrl
+        self.sizeBytes = sizeBytes
+        self.duration = duration
+        self.metadata = metadata
+    }
+}
+
+/// Message nonce for optimistic updates
+public struct MessageNonce: Hashable, Codable, Sendable {
+    public let value: UUID
+    
+    public init(value: UUID = UUID()) {
+        self.value = value
+    }
+}
+
+/// Outbound message draft
+public struct OutboundMessageDraft: Sendable {
+    public let conversationId: UUID
+    public let nonce: MessageNonce
+    public var text: String
+    public var attachments: [Attachment]
+    
+    public init(
+        conversationId: UUID,
+        nonce: MessageNonce = MessageNonce(),
+        text: String = "",
+        attachments: [Attachment] = []
+    ) {
+        self.conversationId = conversationId
+        self.nonce = nonce
+        self.text = text
+        self.attachments = attachments
+    }
+}
+
+/// Message delivery status
+public enum DeliveryStatus: String, Codable, Sendable {
+    case sending, sent, delivered, read, failed
+}
+
+/// System message types
+public enum SystemMessageKind: String, Codable, Sendable {
+    case userJoined, userLeft, conversationCreated, titleChanged
+}
+
+/// Attachment types
+public enum AttachmentType: String, Codable, Sendable {
+    case image, video, audio, document
+}
+
+/// Attachment metadata
+public struct AttachmentMetadata: Codable, Sendable {
+    public let filename: String?
+    public let mimeType: String?
+    public let width: Int?
+    public let height: Int?
+    
+    public init(
+        filename: String? = nil,
+        mimeType: String? = nil,
+        width: Int? = nil,
+        height: Int? = nil
+    ) {
+        self.filename = filename
+        self.mimeType = mimeType
+        self.width = width
+        self.height = height
+    }
+}
+
+/// Link preview information
+public struct LinkPreview: Codable, Sendable {
+    public let url: URL
+    public let title: String?
+    public let description: String?
+    public let imageUrl: URL?
+    
+    public init(url: URL, title: String? = nil, description: String? = nil, imageUrl: URL? = nil) {
+        self.url = url
+        self.title = title
+        self.description = description
+        self.imageUrl = imageUrl
+    }
+}
+
+/// Media pick from photo picker
+public struct MediaPick: Sendable {
+    public let data: Data
+    public let filename: String
+    public let mimeType: String
+    
+    public init(data: Data, filename: String, mimeType: String) {
+        self.data = data
+        self.filename = filename
+        self.mimeType = mimeType
+    }
+}
+
+/// Messaging errors
+public enum MessagingError: LocalizedError, Sendable {
+    case conversationNotFound
+    case messageNotFound
+    case unauthorized
+    case networkError
+    case serverError(String)
+    case attachmentTooLarge
+    case unsupportedAttachmentType
+    case subscriptionFailed
+    case rateLimited
+    
+    public var errorDescription: String? {
+        switch self {
+        case .conversationNotFound:
+            return "Conversation not found"
+        case .messageNotFound:
+            return "Message not found"
+        case .unauthorized:
+            return "You must be signed in to send messages"
+        case .networkError:
+            return "Network connection failed. Please try again."
+        case .serverError(let message):
+            return "Server error: \(message)"
+        case .attachmentTooLarge:
+            return "Attachment is too large to send"
+        case .unsupportedAttachmentType:
+            return "This attachment type is not supported"
+        case .subscriptionFailed:
+            return "Failed to connect to real-time messaging"
+        case .rateLimited:
+            return "You're sending messages too quickly. Please wait a moment."
+        }
+    }
+}

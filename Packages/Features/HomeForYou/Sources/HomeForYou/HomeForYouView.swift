@@ -9,14 +9,14 @@ import SwiftUI
 import DesignSystem
 import Analytics
 import Networking
-
-// Note: Networking re-exports AppFoundation, giving us access to Post and other types
-// We don't need to explicitly import AppFoundation
+import AppFoundation
+import PostDetail
 
 public struct HomeForYouView: View {
     @Environment(\.deps) private var deps
     @Environment(\.navigateToPost) private var navigateToPost
     @State private var viewModel: ForYouViewModel?
+    @State private var postToCommentOn: Post?
     
     let onComposeAction: () -> Void
     
@@ -27,56 +27,149 @@ public struct HomeForYouView: View {
     public var body: some View {
         Group {
             if let viewModel = viewModel {
-                ScrollView {
-                    LazyVStack(spacing: SpacingTokens.md) {
-                        if viewModel.posts.isEmpty && !viewModel.isLoading {
+                Group {
+                    if viewModel.skeletonAwarePosts.isEmpty && (viewModel.skeletonLoadingState == .loaded || viewModel.skeletonLoadingState == .idle) {
+                        // Show centered empty state (no ScrollView needed)
+                        VStack {
+                            Spacer()
                             AgoraEmptyStateView.emptyFeed(action: onComposeAction)
-                        } else {
-                            ForEach(viewModel.posts, id: \.id) { post in
-                                PostCardView(post: post) {
-                                    if let navigate = navigateToPost, let uuid = UUID(uuidString: post.id) {
-                                        navigate.action(uuid)
+                                .padding(.horizontal, SpacingTokens.md)
+                            Spacer()
+                        }
+                    } else {
+                        // Show scrollable feed with enhanced pagination skeleton integration
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(viewModel.skeletonAwarePosts.enumerated()), id: \.offset) { index, post in
+                                    VStack(spacing: 0) {
+                                        SkeletonAwareFeedPostView(
+                                            post: post,
+                                            error: viewModel.errorForIndex(index),
+                                            index: index,
+                                            onAuthorTap: {
+                                                // TODO: Navigate to profile
+                                            },
+                                            onReply: {
+                                                if let post = post {
+                                                    postToCommentOn = post
+                                                }
+                                            },
+                                            onTap: {
+                                                if let post = post,
+                                                   let navigate = navigateToPost,
+                                                   let uuid = UUID(uuidString: post.id) {
+                                                    navigate.action(uuid)
+                                                }
+                                            },
+                                            onRetry: {
+                                                Task {
+                                                    await viewModel.retryLoadingAtIndex(index)
+                                                }
+                                            },
+                                            shouldDisableShimmer: viewModel.shouldDisableShimmer,
+                                            performanceMonitor: viewModel.performanceMonitor
+                                        )
+                                        .onAppear {
+                                            // Enhanced pagination trigger with 5-row threshold
+                                            if viewModel.shouldTriggerPagination(currentIndex: index) {
+                                                Task {
+                                                    await viewModel.loadMoreWithSkeletonSupport()
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Add divider between posts (except after the last post)
+                                        if index < viewModel.skeletonAwarePosts.count - 1 {
+                                            Divider()
+                                                .padding(.horizontal, SpacingTokens.md)
+                                                .padding(.vertical, SpacingTokens.xs)
+                                        }
                                     }
                                 }
+                                
+                                // Pagination error handling
+                                if let paginationError = viewModel.paginationError {
+                                    SkeletonErrorView.paginationError(
+                                        error: paginationError,
+                                        retryAction: {
+                                            Task {
+                                                await viewModel.retryPagination()
+                                            }
+                                        }
+                                    )
+                                    .padding(.top, SpacingTokens.md)
+                                }
                             }
+                            .padding(.horizontal, SpacingTokens.md)
+                            .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
+                            .skeletonContainerAccessibility(
+                                isLoading: viewModel.skeletonLoadingState.isLoading,
+                                loadingMessage: "Loading your feed",
+                                loadedMessage: "Feed loaded"
+                            )
                         }
                     }
-                    .padding(.horizontal, SpacingTokens.md)
-                    .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                 }
                 .refreshable {
-                    await viewModel.refresh()
-                }
-                .overlay {
-                    if viewModel.isLoading && viewModel.posts.isEmpty {
-                        AgoraLoadingView.feedLoading()
-                    }
+                    await viewModel.refreshWithSkeletonSupport()
                 }
                 .alert("Couldn't Load Feed", isPresented: .constant(viewModel.error != nil)) {
                     Button("Try Again") {
                         viewModel.error = nil
                         Task {
-                            await viewModel.refresh()
+                            await viewModel.refreshWithSkeletonSupport()
                         }
                     }
                     Button("OK", role: .cancel) {
                         viewModel.error = nil
                     }
                 } message: {
-                    Text("We couldn't load your feed. Please check your connection and try again.")
+                    Text("Please check your connection and try again.")
                 }
             } else {
-                AgoraLoadingView.feedLoading()
+                // Initial loading state with skeleton
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(0..<SkeletonConfiguration.homeForYou.placeholderCount, id: \.self) { index in
+                            VStack(spacing: 0) {
+                                FeedPostSkeletonView()
+                                
+                                // Add divider between skeleton posts (except after the last post)
+                                if index < SkeletonConfiguration.homeForYou.placeholderCount - 1 {
+                                    Divider()
+                                        .padding(.horizontal, SpacingTokens.md)
+                                        .padding(.vertical, SpacingTokens.xs)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, SpacingTokens.md)
+                }
             }
+        }
+        .skeletonTheme(DefaultSkeletonTheme())
+        .sheet(item: $postToCommentOn) { post in
+            CommentSheet(
+                post: post,
+                replyToCommentId: nil,
+                replyToUsername: nil
+            )
         }
         .task {
             // Initialize view model only once
-            // The viewModel's init already triggers initial data load
             if viewModel == nil {
                 self.viewModel = ForYouViewModel(
                     networking: deps.networking,
                     analytics: deps.analytics
                 )
+                
+                // Pre-seed skeleton placeholders for 200ms target display time
+                viewModel?.preloadSkeletonPlaceholders()
+                
+                // Start initial data load with skeleton support
+                Task {
+                    await viewModel?.refreshWithSkeletonSupport()
+                }
             }
         }
     }

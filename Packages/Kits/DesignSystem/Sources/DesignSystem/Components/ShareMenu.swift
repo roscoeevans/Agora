@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppFoundation
+import UIKitBridge
 
 /// Share menu with multiple sharing options
 /// Displays as a bottom sheet with native iOS patterns
@@ -103,7 +104,7 @@ public struct ShareMenu: View {
     }
     
     private func copyLink() {
-        UIPasteboard.general.url = shareURL
+        DesignSystemBridge.copyURL(shareURL)
         
         withAnimation(.spring(response: 0.3)) {
             showCopiedToast = true
@@ -116,8 +117,7 @@ public struct ShareMenu: View {
             }
         }
         
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+        DesignSystemBridge.mediumImpact()
     }
 }
 

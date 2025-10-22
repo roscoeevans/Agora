@@ -1,5 +1,4 @@
 import Foundation
-import AppFoundation
 
 /// Sample data fixtures for testing
 public struct TestFixtures: Sendable {
@@ -43,48 +42,46 @@ public struct TestFixtures: Sendable {
     public static let samplePost = Post(
         id: "post_123",
         authorId: "user_123",
+        authorDisplayHandle: "testuser",
         text: "Just shipped a new feature! 🚀",
-        linkURL: nil,
-        mediaBundle: nil,
-        createdAt: Date().addingTimeInterval(-3600), // 1 hour ago
         likeCount: 42,
         repostCount: 7,
-        replyCount: 12
+        replyCount: 12,
+        createdAt: Date().addingTimeInterval(-3600) // 1 hour ago
     )
     
     public static let samplePosts = [
         Post(
             id: "post_123",
             authorId: "user_123",
+            authorDisplayHandle: "testuser",
             text: "Just shipped a new feature! 🚀",
-            linkURL: nil,
-            mediaBundle: nil,
-            createdAt: Date().addingTimeInterval(-3600),
             likeCount: 42,
             repostCount: 7,
-            replyCount: 12
+            replyCount: 12,
+            createdAt: Date().addingTimeInterval(-3600)
         ),
         Post(
             id: "post_456",
             authorId: "user_456",
+            authorDisplayHandle: "photographer",
             text: "Beautiful sunset today 🌅",
-            linkURL: nil,
-            mediaBundle: sampleMediaBundle,
-            createdAt: Date().addingTimeInterval(-7200),
+            mediaBundleId: sampleMediaBundle.id,
             likeCount: 128,
             repostCount: 23,
-            replyCount: 45
+            replyCount: 45,
+            createdAt: Date().addingTimeInterval(-7200)
         ),
         Post(
             id: "post_789",
             authorId: "user_789",
+            authorDisplayHandle: "developer",
             text: "Check out this interesting article about SwiftUI performance optimizations",
-            linkURL: URL(string: "https://example.com/article"),
-            mediaBundle: nil,
-            createdAt: Date().addingTimeInterval(-10800),
+            linkUrl: "https://example.com/article",
             likeCount: 89,
             repostCount: 34,
-            replyCount: 67
+            replyCount: 67,
+            createdAt: Date().addingTimeInterval(-10800)
         )
     ]
     

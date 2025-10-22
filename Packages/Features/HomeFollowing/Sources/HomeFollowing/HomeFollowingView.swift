@@ -10,60 +10,166 @@ import DesignSystem
 import AppFoundation
 import Analytics
 import Networking
+import PostDetail
 
 public struct HomeFollowingView: View {
     @Environment(\.deps) private var deps
     @Environment(\.navigateToPost) private var navigateToPost
     @State private var viewModel: FollowingViewModel?
+    @State private var postToCommentOn: Post?
     
-    public init() {}
+    let onComposeAction: () -> Void
+    
+    public init(onComposeAction: @escaping () -> Void = {}) {
+        self.onComposeAction = onComposeAction
+    }
     
     public var body: some View {
-Group {
+        Group {
             if let viewModel = viewModel {
-                ScrollView {
-                    LazyVStack(spacing: SpacingTokens.md) {
-                        if viewModel.posts.isEmpty && !viewModel.isLoading {
-                            EmptyStateView()
-                        } else {
-                            ForEach(viewModel.posts, id: \.id) { post in
-                                PostCardView(post: post) {
-                                    if let navigate = navigateToPost, let uuid = UUID(uuidString: post.id) {
-                                        navigate.action(uuid)
+                Group {
+                    if viewModel.skeletonAwarePosts.isEmpty && (viewModel.skeletonLoadingState == .loaded || viewModel.skeletonLoadingState == .idle) {
+                        // Show centered empty state (no ScrollView needed)
+                        VStack {
+                            Spacer()
+                            AgoraEmptyStateView.emptyFeed(action: onComposeAction)
+                                .padding(.horizontal, SpacingTokens.md)
+                            Spacer()
+                        }
+                    } else {
+                        // Show scrollable feed with enhanced pagination skeleton integration
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(viewModel.skeletonAwarePosts.enumerated()), id: \.offset) { index, post in
+                                    VStack(spacing: 0) {
+                                        SkeletonAwareFeedPostView(
+                                            post: post,
+                                            error: viewModel.errorForIndex(index),
+                                            index: index,
+                                            onAuthorTap: {
+                                                // TODO: Navigate to profile
+                                            },
+                                            onReply: {
+                                                if let post = post {
+                                                    postToCommentOn = post
+                                                }
+                                            },
+                                            onTap: {
+                                                if let post = post,
+                                                   let navigate = navigateToPost,
+                                                   let uuid = UUID(uuidString: post.id) {
+                                                    navigate.action(uuid)
+                                                }
+                                            },
+                                            onRetry: {
+                                                Task {
+                                                    await viewModel.retryLoadingAtIndex(index)
+                                                }
+                                            },
+                                            shouldDisableShimmer: viewModel.shouldDisableShimmer,
+                                            performanceMonitor: viewModel.performanceMonitor
+                                        )
+                                        .onAppear {
+                                            // Enhanced pagination trigger with 5-row threshold
+                                            if viewModel.shouldTriggerPagination(currentIndex: index) {
+                                                Task {
+                                                    await viewModel.loadMoreWithSkeletonSupport()
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Add divider between posts (except after the last post)
+                                        if index < viewModel.skeletonAwarePosts.count - 1 {
+                                            Divider()
+                                                .padding(.horizontal, SpacingTokens.md)
+                                                .padding(.vertical, SpacingTokens.xs)
+                                        }
                                     }
+                                }
+                                
+                                // Pagination error handling
+                                if let paginationError = viewModel.paginationError {
+                                    SkeletonErrorView.paginationError(
+                                        error: paginationError,
+                                        retryAction: {
+                                            Task {
+                                                await viewModel.retryPagination()
+                                            }
+                                        }
+                                    )
+                                    .padding(.top, SpacingTokens.md)
+                                }
+                            }
+                            .padding(.horizontal, SpacingTokens.md)
+                            .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
+                            .skeletonContainerAccessibility(
+                                isLoading: viewModel.skeletonLoadingState.isLoading,
+                                loadingMessage: "Loading following feed",
+                                loadedMessage: "Following feed loaded"
+                            )
+                        }
+                    }
+                }
+                .refreshable {
+                    await viewModel.refreshWithSkeletonSupport()
+                }
+                .alert("Couldn't Load Feed", isPresented: .constant(viewModel.error != nil)) {
+                    Button("Try Again") {
+                        viewModel.error = nil
+                        Task {
+                            await viewModel.refreshWithSkeletonSupport()
+                        }
+                    }
+                    Button("OK", role: .cancel) {
+                        viewModel.error = nil
+                    }
+                } message: {
+                    Text("Please check your connection and try again.")
+                }
+            } else {
+                // Initial loading state with skeleton
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(0..<SkeletonConfiguration.homeFollowing.placeholderCount, id: \.self) { index in
+                            VStack(spacing: 0) {
+                                FeedPostSkeletonView()
+                                
+                                // Add divider between skeleton posts (except after the last post)
+                                if index < SkeletonConfiguration.homeFollowing.placeholderCount - 1 {
+                                    Divider()
+                                        .padding(.horizontal, SpacingTokens.md)
+                                        .padding(.vertical, SpacingTokens.xs)
                                 }
                             }
                         }
                     }
                     .padding(.horizontal, SpacingTokens.md)
                 }
-                .refreshable {
-                    await viewModel.refresh()
-                }
-                .overlay {
-                    if viewModel.isLoading && viewModel.posts.isEmpty {
-                        LoadingView()
-                    }
-                }
-                .alert("Error", isPresented: .constant(viewModel.error != nil)) {
-                    Button("OK") {
-                        viewModel.error = nil
-                    }
-                } message: {
-                    Text(viewModel.error?.localizedDescription ?? "An unknown error occurred")
-                }
-            } else {
-                LoadingView()
             }
+        }
+        .skeletonTheme(DefaultSkeletonTheme())
+        .sheet(item: $postToCommentOn) { post in
+            CommentSheet(
+                post: post,
+                replyToCommentId: nil,
+                replyToUsername: nil
+            )
         }
         .task {
             // Initialize view model only once
-            // The viewModel's init already triggers initial data load
             if viewModel == nil {
                 self.viewModel = FollowingViewModel(
                     networking: deps.networking,
                     analytics: deps.analytics
                 )
+                
+                // Pre-seed skeleton placeholders for 200ms target display time
+                viewModel?.preloadSkeletonPlaceholders()
+                
+                // Start initial data load with skeleton support
+                Task {
+                    await viewModel?.refreshWithSkeletonSupport()
+                }
             }
         }
     }
@@ -72,6 +178,8 @@ Group {
 struct PostCardView: View {
     let post: Post
     let onTap: () -> Void
+    @Environment(\.deps) private var deps
+    @State private var engagementState: PostEngagementState?
     
     var body: some View {
         VStack(alignment: .leading, spacing: SpacingTokens.xs) {
@@ -97,25 +205,45 @@ struct PostCardView: View {
                 .multilineTextAlignment(.leading)
             
             HStack(spacing: SpacingTokens.lg) {
-                InteractionButtonView(
-                    icon: "heart",
-                    count: post.likeCount,
-                    action: { /* TODO: Implement like */ }
-                )
-                
-                InteractionButtonView(
-                    icon: "arrow.2.squarepath",
-                    count: post.repostCount,
-                    action: { /* TODO: Implement repost */ }
-                )
-                
-                InteractionButtonView(
-                    icon: "bubble.right",
-                    count: post.replyCount,
-                    action: { /* TODO: Implement reply */ }
-                )
-                
-                Spacer()
+                // Engagement bar
+                if let state = engagementState {
+                    EngagementBar(
+                        likeCount: state.likeCount,
+                        isLiked: state.isLiked,
+                        isLikeLoading: state.isLikingInProgress,
+                        repostCount: state.repostCount,
+                        isReposted: state.isReposted,
+                        isRepostLoading: state.isRepostingInProgress,
+                        replyCount: post.replyCount,
+                        onLike: { Task { await state.toggleLike() } },
+                        onRepost: { Task { await state.toggleRepost() } },
+                        onReply: { /* TODO: Implement reply */ },
+                        onShare: { /* TODO: Implement share */ }
+                    )
+                } else {
+                    // Fallback to static buttons while loading
+                    HStack(spacing: SpacingTokens.lg) {
+                        InteractionButtonView(
+                            icon: "heart",
+                            count: post.likeCount,
+                            action: { /* TODO: Implement like */ }
+                        )
+                        
+                        InteractionButtonView(
+                            icon: "arrow.2.squarepath",
+                            count: post.repostCount,
+                            action: { /* TODO: Implement repost */ }
+                        )
+                        
+                        InteractionButtonView(
+                            icon: "bubble.right",
+                            count: post.replyCount,
+                            action: { /* TODO: Implement reply */ }
+                        )
+                        
+                        Spacer()
+                    }
+                }
             }
         }
         .padding(SpacingTokens.md)
@@ -124,6 +252,27 @@ struct PostCardView: View {
         .shadow(color: ColorTokens.separator.opacity(0.3), radius: 2, x: 0, y: 1)
         .onTapGesture {
             onTap()
+        }
+        .task {
+            // Initialize engagement state
+            if let engagement = deps.engagement {
+                engagementState = PostEngagementState(
+                    post: post,
+                    engagementService: engagement
+                )
+            }
+        }
+        .alert(
+            "Action Failed",
+            isPresented: Binding(
+                get: { engagementState?.error != nil },
+                set: { if !$0 { engagementState?.error = nil } }
+            ),
+            presenting: engagementState?.error
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { error in
+            Text(error.localizedDescription)
         }
     }
 }
@@ -149,25 +298,6 @@ struct InteractionButtonView: View {
     }
 }
 
-struct EmptyStateView: View {
-    var body: some View {
-        VStack(spacing: SpacingTokens.lg) {
-            Image(systemName: "person.2")
-                .font(.system(size: 48))
-                .foregroundColor(ColorTokens.agoraBrand)
-            
-            Text("No Posts Yet")
-                .font(TypographyScale.title2)
-                .foregroundColor(ColorTokens.primaryText)
-            
-            Text("Follow some people to see their posts in your chronological feed!")
-                .font(TypographyScale.body)
-                .foregroundColor(ColorTokens.secondaryText)
-                .multilineTextAlignment(.center)
-        }
-        .padding(SpacingTokens.xl)
-    }
-}
 
 struct LoadingView: View {
     var body: some View {

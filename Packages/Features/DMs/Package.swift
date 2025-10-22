@@ -4,7 +4,10 @@ import PackageDescription
 
 let package = Package(
     name: "DMs",
-    platforms: [.iOS(.v26), .macOS(.v15)],
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v26)  // Required to satisfy SPM dependency resolution
+    ],
     products: [
         .library(name: "DMs", targets: ["DMs"])
     ],
@@ -23,6 +26,7 @@ let package = Package(
                 "Media",
                 "AppFoundation"
             ],
+            path: "Sources/DMs",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]
@@ -30,6 +34,7 @@ let package = Package(
         .testTarget(
             name: "DMsTests",
             dependencies: ["DMs"],
+            path: "Tests/DMsTests",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]

@@ -33,6 +33,14 @@ public struct NavigateToSearchResult: @unchecked Sendable {
     }
 }
 
+public struct NavigateToEditProfile: @unchecked Sendable {
+    public let action: @Sendable () -> Void
+    
+    public init(action: @escaping @Sendable () -> Void) {
+        self.action = action
+    }
+}
+
 // MARK: - Environment Keys
 
 private struct NavigateToPostKey: EnvironmentKey {
@@ -45,6 +53,10 @@ private struct NavigateToProfileKey: EnvironmentKey {
 
 private struct NavigateToSearchResultKey: EnvironmentKey {
     static let defaultValue: NavigateToSearchResult? = nil
+}
+
+private struct NavigateToEditProfileKey: EnvironmentKey {
+    static let defaultValue: NavigateToEditProfile? = nil
 }
 
 // MARK: - Environment Values Extension
@@ -63,6 +75,11 @@ public extension EnvironmentValues {
     var navigateToSearchResult: NavigateToSearchResult? {
         get { self[NavigateToSearchResultKey.self] }
         set { self[NavigateToSearchResultKey.self] = newValue }
+    }
+    
+    var navigateToEditProfile: NavigateToEditProfile? {
+        get { self[NavigateToEditProfileKey.self] }
+        set { self[NavigateToEditProfileKey.self] = newValue }
     }
 }
 

@@ -6,14 +6,51 @@ alwaysApply: false
 
 ### Overview
 
-This rule defines standards for creating and maintaining Swift Package modules in the Agora iOS app, including Package.swift conventions, module design principles, testing structure, documentation requirements, and architectural rationales.
+This rule defines standards for creating and maintaining Swift Package modules in the **iOS-only** Agora app, including Package.swift conventions, module design principles, testing structure, documentation requirements, and architectural rationales.
+
+**Important:** Agora is an **iOS-only application** with no plans for macOS support. All modules must be iOS-only.
 
 **Build & Test Commands:** Use `agctl` for all module operations:
 - Build: `agctl build {ModuleName}`
 - Test: `agctl test {ModuleName}`
 - Validate: `agctl validate modules`
+- Platform Check: `agctl validate platforms` (ensures iOS-only, no macOS)
 
 See `Tools/agctl/README.md` for complete documentation.
+
+### Platform Requirements
+
+**iOS-Only Policy:**
+- All packages must declare `.iOS(.v26)` as the only platform
+- No macOS, watchOS, tvOS, or visionOS support
+- No `@available` annotations for non-iOS platforms
+- No platform-specific code for non-iOS platforms
+
+**Validation:**
+```bash
+# Check all packages for iOS-only compliance
+agctl validate platforms
+```
+
+**Common Violations to Avoid:**
+```swift
+// ❌ BAD - Multiple platforms
+platforms: [.iOS(.v26), .macOS(.v15)]
+
+// ❌ BAD - macOS availability
+@available(iOS 26.0, macOS 15.0, *)
+
+// ❌ BAD - Platform-specific code
+#if os(macOS)
+// macOS fallback code
+#endif
+
+// ✅ GOOD - iOS-only
+platforms: [.iOS(.v26)]
+
+// ✅ GOOD - iOS-only availability
+@available(iOS 26.0, *)
+```
 
 ### Package.swift Standards
 
@@ -22,7 +59,7 @@ See `Tools/agctl/README.md` for complete documentation.
 Every `Package.swift` file must include:
 
 1. **Swift Tools Version:** Always `6.2`
-2. **Platform:** Always `.iOS(.v18)` (or higher per module needs; match the app's minimum)
+2. **Platform:** Always `.iOS(.v26)` (iOS-only, no macOS support)
 3. **Product Name:** Must match package directory name exactly
 4. **Target Name:** Must match package directory name exactly
 5. **Test Target:** Must be named `{PackageName}Tests`
@@ -37,7 +74,7 @@ import PackageDescription
 
 let package = Package(
     name: "PackageName",  // Match directory name exactly
-    platforms: [.iOS(.v18)],
+    platforms: [.iOS(.v26)],  // iOS-only, no macOS support
     products: [
         .library(
             name: "PackageName",  // Match directory name exactly

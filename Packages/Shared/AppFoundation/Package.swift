@@ -6,7 +6,7 @@ let package = Package(
     name: "AppFoundation",
     platforms: [
         .iOS(.v26),
-        .macOS(.v15)
+        .macOS(.v26)
     ],
     products: [
         .library(
@@ -15,13 +15,13 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/supabase/supabase-swift", exact: "2.34.0")
+        .package(path: "../../Kits/SupabaseKit")
     ],
     targets: [
         .target(
             name: "AppFoundation",
             dependencies: [
-                .product(name: "Supabase", package: "supabase-swift")
+                "SupabaseKit"
             ],
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))

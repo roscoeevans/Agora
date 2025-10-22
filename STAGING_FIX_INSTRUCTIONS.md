@@ -34,7 +34,7 @@ Added `import Networking` so the `NetworkingServiceFactory` extension loads:
 import SwiftUI
 import AppFoundation
 import DesignSystem
-import AuthFeature
+import Authentication
 import Networking  // Required for NetworkingServiceFactory extension to load
 ```
 

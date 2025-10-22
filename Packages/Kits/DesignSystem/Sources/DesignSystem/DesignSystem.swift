@@ -6,9 +6,8 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
+import UIKitBridge
+import AppFoundation
 
 /// The main entry point for Agora's design system.
 ///
@@ -21,87 +20,25 @@ public struct DesignSystem: Sendable {
     
     private init() {}
     
-    // MARK: - Dark Mode Configuration
+    // MARK: - Design System Configuration
     
-    /// Configures the app to use dark mode as the default
-    /// Call this in your App's init or SceneDelegate
-    public static func configureDarkModeAsDefault() {
-        #if canImport(UIKit)
-        // Set dark mode as default for the entire app
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            windowScene.windows.forEach { window in
-                window.overrideUserInterfaceStyle = .dark
-            }
-        }
-        #endif
-    }
-    
-    /// Forces the app to use dark mode regardless of system setting
-    public static func forceDarkMode() {
-        #if canImport(UIKit)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            windowScene.windows.forEach { window in
-                window.overrideUserInterfaceStyle = .dark
-            }
-        }
-        #endif
-    }
-    
-    /// Forces the app to use light mode regardless of system setting
-    public static func forceLightMode() {
-        #if canImport(UIKit)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            windowScene.windows.forEach { window in
-                window.overrideUserInterfaceStyle = .light
-            }
-        }
-        #endif
-    }
-    
-    /// Allows the app to follow system appearance settings
-    public static func followSystemAppearance() {
-        #if canImport(UIKit)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            windowScene.windows.forEach { window in
-                window.overrideUserInterfaceStyle = .unspecified
-            }
-        }
-        #endif
-    }
-    
-    /// Checks if the app is currently in dark mode
-    public static var isDarkMode: Bool {
-        #if canImport(UIKit)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            return window.traitCollection.userInterfaceStyle == .dark
-        }
-        return false
-        #else
-        return false
-        #endif
-    }
-    
-    /// Gets the current color scheme
-    public static var currentColorScheme: ColorScheme? {
-        #if canImport(UIKit)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            switch window.traitCollection.userInterfaceStyle {
-            case .dark:
-                return .dark
-            case .light:
-                return .light
-            case .unspecified:
-                return nil
-            @unknown default:
-                return nil
-            }
-        }
-        return nil
-        #else
-        return nil
-        #endif
+    /// Note: Dark mode configuration utilities have been moved to UIKitBridge
+    /// Use `UIKitBridge.DesignSystemBridge` for UIKit-specific appearance configuration
+}
+
+// MARK: - Appearance Integration
+
+/// Environment key for accessing appearance preferences in design system components
+@available(iOS 26.0, *)
+private struct AppearancePreferenceKey: EnvironmentKey {
+    static let defaultValue: AppearancePreference = AppearancePreferenceLive()
+}
+
+@available(iOS 26.0, *)
+public extension EnvironmentValues {
+    var appearancePreference: AppearancePreference {
+        get { self[AppearancePreferenceKey.self] }
+        set { self[AppearancePreferenceKey.self] = newValue }
     }
 }
 
@@ -156,45 +93,31 @@ public struct ColorTokens: Sendable {
     #endif
     
     // MARK: - Status Colors (Adaptive for Dark Mode)
-    public static let success = Color(.systemGreen)
-    public static let warning = Color(.systemOrange)
-    public static let error = Color(.systemRed)
+    public static let success = DesignSystemBridge.systemGreen
+    public static let warning = DesignSystemBridge.systemOrange
+    public static let error = DesignSystemBridge.systemRed
     public static let info = Color("AgoraTertiary", bundle: .module)
     
+    // MARK: - Error Background Colors
+    #if canImport(UIKit)
+    public static let errorBackground = Color(UIColor.systemRed).opacity(0.1)
+    #else
+    public static let errorBackground = Color.red.opacity(0.1)
+    #endif
+    
     // MARK: - App-Specific Colors (Adaptive for Dark Mode)
-    public static let agoraBrand = Color("AgoraBrand", bundle: .module)
-    public static let agoraAccent = Color("AgoraAccent", bundle: .module)
+    public static let accentPrimary = Color("AgoraAccent", bundle: .module)
     #if canImport(UIKit)
     public static let agoraSurface = Color(UIColor.secondarySystemBackground)
     #else
     public static let agoraSurface = Color.gray.opacity(0.1)
     #endif
     
-    // MARK: - Custom Brand Colors (with Dark Mode variants)
+    // MARK: - Brand Colors (with Dark Mode variants)
     // These use custom colors from bundle resources with proper dark mode support
-    public static let agoraBrandCustom = Color("AgoraBrand", bundle: .module)
-    public static let agoraAccentCustom = Color("AgoraAccent", bundle: .module)
-    public static let agoraTertiaryCustom = Color("AgoraTertiary", bundle: .module)
-    
-    // MARK: - Dark Mode Optimized Colors
-    /// Primary brand color optimized for dark mode
-    public static let agoraBrandDark = Color("AgoraBrand", bundle: .module)
-    /// Accent color optimized for dark mode  
-    public static let agoraAccentDark = Color("AgoraAccent", bundle: .module)
-    /// Surface color for dark mode cards and panels
-    public static let agoraSurfaceDark = Color(UIColor.secondarySystemBackground)
-    /// Elevated surface for dark mode modals
-    public static let agoraElevatedSurface = Color(UIColor.tertiarySystemBackground)
-    
-    // MARK: - Light Mode Optimized Colors
-    /// Primary brand color optimized for light mode
-    public static let agoraBrandLight = Color("AgoraBrand", bundle: .module)
-    /// Accent color optimized for light mode
-    public static let agoraAccentLight = Color("AgoraAccent", bundle: .module)
-    /// Surface color for light mode cards and panels
-    public static let agoraSurfaceLight = Color(UIColor.secondarySystemBackground)
-    /// Elevated surface for light mode modals
-    public static let agoraElevatedSurfaceLight = Color(UIColor.tertiarySystemBackground)
+    public static let agoraBrand = Color("AgoraBrand", bundle: .module)
+    public static let agoraAccent = Color("AgoraAccent", bundle: .module)
+    public static let agoraTertiary = Color("AgoraTertiary", bundle: .module)
 }
 
 // MARK: - Color Extensions for Backward Compatibility
@@ -202,7 +125,7 @@ public struct ColorTokens: Sendable {
 public extension Color {
     static let agoraPrimary = ColorTokens.primary
     static let agoraSecondary = ColorTokens.secondaryText
-    static let agoraTertiary = ColorTokens.agoraTertiaryCustom
+    static let agoraTertiary = ColorTokens.agoraTertiary
     static let agoraBackground = ColorTokens.background
     static let agoraSurface = ColorTokens.agoraSurface
 }
@@ -463,7 +386,9 @@ public struct Shadow: Sendable {
 /// Animation tokens for consistent motion design.
 ///
 /// Provides standardized animation durations and curves
-/// following Apple's motion design principles.
+/// following Apple's motion design principles and respecting
+/// accessibility preferences like Reduce Motion.
+@available(iOS 26.0, *)
 public struct AnimationTokens {
     /// 0.1s - Instant feedback for micro-interactions
     public static let instant: Double = 0.1
@@ -491,6 +416,39 @@ public struct AnimationTokens {
     
     /// Ease in curve for disappearing elements
     public static let easeIn = Animation.easeIn(duration: standard)
+    
+    // MARK: - Accessibility-Aware Animations
+    
+    /// Animation that respects Reduce Motion setting
+    /// Returns instant animation if Reduce Motion is enabled
+    public static func accessible(_ duration: Double) -> Animation {
+        #if canImport(UIKit)
+        if UIAccessibility.isReduceMotionEnabled {
+            return .linear(duration: 0.1) // Minimal animation
+        }
+        #endif
+        return .easeInOut(duration: duration)
+    }
+    
+    /// Spring animation that respects Reduce Motion setting
+    public static var accessibleSpring: Animation {
+        #if canImport(UIKit)
+        if UIAccessibility.isReduceMotionEnabled {
+            return .linear(duration: 0.1)
+        }
+        #endif
+        return spring
+    }
+    
+    /// Color transition animation that respects Reduce Motion
+    public static var colorTransition: Animation {
+        accessible(standard)
+    }
+    
+    /// Shadow transition animation that respects Reduce Motion
+    public static var shadowTransition: Animation {
+        accessible(quick)
+    }
 }
 
 // MARK: - IconSizeTokens
@@ -568,6 +526,24 @@ public extension EnvironmentValues {
     }
 }
 
+// MARK: - Adaptive Shadow Modifier
+@available(iOS 26.0, *)
+struct AdaptiveShadowModifier: ViewModifier {
+    let lightShadow: Shadow
+    let darkShadow: Shadow
+    @Environment(\.colorScheme) private var colorScheme
+    
+    func body(content: Content) -> some View {
+        content
+            .shadow(
+                color: colorScheme == .dark ? darkShadow.color : lightShadow.color,
+                radius: colorScheme == .dark ? darkShadow.radius : lightShadow.radius,
+                x: colorScheme == .dark ? darkShadow.x : lightShadow.x,
+                y: colorScheme == .dark ? darkShadow.y : lightShadow.y
+            )
+    }
+}
+
 @available(iOS 26.0, *)
 public extension View {
     func liquidGlass(_ style: LiquidGlassModifier.LiquidGlassStyle) -> some View {
@@ -581,26 +557,98 @@ public extension View {
     
     /// Apply a subtle shadow for cards (adapts to color scheme)
     func agoraCardShadow() -> some View {
-        agoraShadow(DesignSystem.isDarkMode ? ShadowTokens.darkSubtle : ShadowTokens.subtle)
+        self.modifier(AdaptiveShadowModifier(lightShadow: ShadowTokens.subtle, darkShadow: ShadowTokens.darkSubtle))
     }
     
     /// Apply a standard shadow for buttons (adapts to color scheme)
     func agoraButtonShadow() -> some View {
-        agoraShadow(DesignSystem.isDarkMode ? ShadowTokens.darkStandard : ShadowTokens.standard)
+        self.modifier(AdaptiveShadowModifier(lightShadow: ShadowTokens.standard, darkShadow: ShadowTokens.darkStandard))
     }
     
     /// Apply a prominent shadow for modals (adapts to color scheme)
     func agoraModalShadow() -> some View {
-        agoraShadow(DesignSystem.isDarkMode ? ShadowTokens.darkProminent : ShadowTokens.prominent)
+        self.modifier(AdaptiveShadowModifier(lightShadow: ShadowTokens.prominent, darkShadow: ShadowTokens.darkProminent))
     }
     
     /// Apply a floating shadow for elevated elements (adapts to color scheme)
     func agoraFloatingShadow() -> some View {
-        agoraShadow(DesignSystem.isDarkMode ? ShadowTokens.darkFloating : ShadowTokens.floating)
+        self.modifier(AdaptiveShadowModifier(lightShadow: ShadowTokens.floating, darkShadow: ShadowTokens.darkFloating))
     }
     
     /// Apply a strong shadow for overlays (adapts to color scheme)
     func agoraStrongShadow() -> some View {
-        agoraShadow(DesignSystem.isDarkMode ? ShadowTokens.darkStrong : ShadowTokens.strong)
+        self.modifier(AdaptiveShadowModifier(lightShadow: ShadowTokens.strong, darkShadow: ShadowTokens.darkStrong))
+    }
+    
+    // MARK: - Accessibility Support
+    
+    /// Apply high contrast styling when High Contrast is enabled
+    func agoraHighContrast() -> some View {
+        Group {
+            #if canImport(UIKit)
+            if DesignSystemBridge.isDarkerSystemColorsEnabled {
+                self
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.primary, lineWidth: 2)
+                    )
+            } else {
+                self
+            }
+            #else
+            self
+            #endif
+        }
+    }
+    
+    /// Apply reduced motion styling when Reduce Motion is enabled
+    func agoraReducedMotion() -> some View {
+        Group {
+            #if canImport(UIKit)
+            if DesignSystemBridge.isReduceMotionEnabled {
+                self
+                    .animation(nil, value: UUID()) // Disable all animations
+            } else {
+                self
+            }
+            #else
+            self
+            #endif
+        }
+    }
+    
+    /// Apply both high contrast and reduced motion accessibility features
+    func agoraAccessible() -> some View {
+        self
+            .agoraHighContrast()
+            .agoraReducedMotion()
     }
 }
+
+// MARK: - Skeleton Loading System
+
+/// The skeleton loading system provides comprehensive loading state management
+/// with placeholder content that matches final layout geometry.
+///
+/// Key components available:
+/// - `SkeletonTheme` and `DefaultSkeletonTheme`: Design token integration
+/// - `SkeletonViewStyle`: Styling variants for skeleton components  
+/// - `.skeleton(isActive:)`: SwiftUI modifier for any view
+/// - `ShimmerView`: Animated gradient with accessibility support
+/// - `MotionPreferences`: Accessibility motion preference helpers
+/// - `SkeletonA11y`: VoiceOver and accessibility utilities
+/// - `SkeletonErrorView`: Error handling with retry functionality
+///
+/// The system automatically respects accessibility preferences including
+/// Reduce Motion, Increase Contrast, and VoiceOver navigation.
+
+// MARK: - Error Handling System
+
+/// Error handling components for skeleton loading failures.
+/// Provides inline error display with retry functionality for feed rows.
+///
+/// Key components:
+/// - `SkeletonErrorView`: Configurable error display with retry actions
+/// - Inline, full, and compact error styles
+/// - User-friendly error message translation
+/// - Accessibility support for error states

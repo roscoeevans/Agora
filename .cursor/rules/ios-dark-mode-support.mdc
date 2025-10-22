@@ -1,0 +1,366 @@
+---
+description: "When implementing dark/light mode support, designing appearance systems, handling light/dark mode transitions, or ensuring iOS 26 compliance for visual theming. Use this rule for color schemes, appearance preferences, system integration, and visual consistency across light and dark modes."
+---
+
+## iOS 26 Dark Mode Support
+
+### Overview
+
+This rule establishes the gold standard for implementing dark mode support in iOS 26+ apps, ensuring seamless system integration, smooth transitions, and Apple-native user experience. It covers appearance detection, user preferences, visual consistency, and modern iOS design patterns.
+
+### Core Principles
+
+#### System-First Approach
+1. **Default to System Setting**
+   - App should follow iOS system appearance by default on first launch
+   - Detect system setting using `UITraitCollection.current.userInterfaceStyle`
+   - Provide user override options in settings
+   - Never force a specific mode without user choice
+
+2. **Respect User Intent**
+   - Honor system changes when user has chosen "System" setting
+   - Persist user preferences when they override system
+   - Provide clear indication of current mode in settings
+   - Allow easy switching between System/Light/Dark
+
+#### Modern iOS 26 Patterns
+1. **Liquid Glass Integration**
+   - Use translucent materials that adapt to color scheme
+   - Apply `.glassEffect()` for floating panels and overlays
+   - Ensure glass effects work beautifully in both modes
+   - Use system-provided materials (`.ultraThinMaterial`, `.regularMaterial`)
+
+2. **Adaptive Visual Effects**
+   - Shadows that invert appropriately (dark shadows in light mode, light shadows in dark mode)
+   - Proper contrast ratios for accessibility
+   - Smooth transitions between appearance changes
+   - Respect Reduce Motion and High Contrast settings
+
+### Implementation Architecture
+
+#### Appearance Preference System
+```swift
+// MARK: - Appearance Mode Enum
+public enum AppearanceMode: String, Sendable, Codable {
+    case light
+    case dark
+    case system  // Follows iOS system setting
+}
+
+// MARK: - Appearance Preference Protocol
+public protocol AppearancePreference: Sendable {
+    var currentMode: AppearanceMode { get }
+    var effectiveMode: AppearanceMode { get }  // Resolves "system" to actual mode
+    func setMode(_ mode: AppearanceMode) async
+    func observeChanges() -> AsyncStream<AppearanceMode>
+}
+```
+
+#### System Detection Implementation
+```swift
+private var systemAppearanceMode: AppearanceMode {
+    #if canImport(UIKit)
+    if #available(iOS 13.0, *) {
+        switch UITraitCollection.current.userInterfaceStyle {
+        case .dark:
+            return .dark
+        case .light:
+            return .light
+        case .unspecified:
+            return .light
+        @unknown default:
+            return .light
+        }
+    } else {
+        return .light
+    }
+    #else
+    return .light
+    #endif
+}
+```
+
+#### Window Management
+```swift
+@MainActor
+private func applyToWindows(_ mode: AppearanceMode) {
+    #if canImport(UIKit)
+    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
+    for window in windowScene.windows {
+        switch mode {
+        case .light:
+            window.overrideUserInterfaceStyle = .light
+        case .dark:
+            window.overrideUserInterfaceStyle = .dark
+        case .system:
+            window.overrideUserInterfaceStyle = .unspecified  // Follows system
+        }
+    }
+    #endif
+}
+```
+
+### Design System Integration
+
+#### Color Token Strategy
+1. **Use Adaptive System Colors**
+   ```swift
+   // ✅ Excellent: Automatic adaptation
+   public static let background = Color(UIColor.systemBackground)
+   public static let primaryText = Color(UIColor.label)
+   public static let secondaryText = Color(UIColor.secondaryLabel)
+   ```
+
+2. **Custom Brand Colors with Variants**
+   ```swift
+   // ✅ Proper: Separate light/dark variants in .xcassets
+   public static let agoraBrand = Color("AgoraBrand", bundle: .module)
+   // AgoraBrand.colorset contains both light and dark variants
+   ```
+
+3. **Avoid Hardcoded Colors**
+   ```swift
+   // ❌ Bad: Hardcoded colors don't adapt
+   public static let background = Color.black
+   
+   // ✅ Good: Adaptive colors
+   public static let background = Color(UIColor.systemBackground)
+   ```
+
+#### Shadow System
+1. **Adaptive Shadow Tokens**
+   ```swift
+   // Light mode shadows
+   public static let subtle = Shadow(
+       color: .black.opacity(0.05),
+       radius: 2, x: 0, y: 1
+   )
+   
+   // Dark mode shadows (lighter, more visible)
+   public static let darkSubtle = Shadow(
+       color: .white.opacity(0.03),
+       radius: 2, x: 0, y: 1
+   )
+   ```
+
+2. **Automatic Shadow Application**
+   ```swift
+   // Apply appropriate shadow based on current mode
+   func agoraCardShadow() -> some View {
+       self.modifier(AdaptiveShadowModifier(
+           lightShadow: ShadowTokens.subtle,
+           darkShadow: ShadowTokens.darkSubtle
+       ))
+   }
+   ```
+
+### User Interface Components
+
+#### Settings Integration
+1. **Clear Mode Selection**
+   ```swift
+   Picker("Appearance", selection: $currentMode) {
+       Text("System").tag(AppearanceMode.system)
+       Text("Light").tag(AppearanceMode.light)
+       Text("Dark").tag(AppearanceMode.dark)
+   }
+   .pickerStyle(.menu)
+   ```
+
+2. **Descriptive Labels**
+   ```swift
+   private var modeDescription: String {
+       switch currentMode {
+       case .light: return "Light Mode"
+       case .dark: return "Dark Mode"
+       case .system: return "System Setting"
+       }
+   }
+   ```
+
+#### Visual Feedback
+1. **Immediate Response**
+   - Apply appearance changes instantly when user selects option
+   - Use smooth transitions between modes
+   - Provide visual confirmation of current setting
+
+2. **Consistent Theming**
+   - All UI components use design system tokens
+   - No hardcoded colors or styles
+   - Proper contrast ratios in both modes
+
+### Animation & Transitions
+
+#### Smooth Mode Switching
+1. **Color Transition Animations**
+   ```swift
+   // Animate color changes when switching modes
+   .animation(.easeInOut(duration: 0.3), value: appearanceMode)
+   ```
+
+2. **Respect User Preferences**
+   ```swift
+   // Check for Reduce Motion setting
+   if !UIAccessibility.isReduceMotionEnabled {
+       .animation(.easeInOut(duration: 0.3), value: appearanceMode)
+   }
+   ```
+
+#### Micro-Interactions
+1. **Subtle Feedback**
+   - Gentle haptic feedback when switching modes
+   - Smooth icon transitions in settings
+   - Visual confirmation of mode changes
+
+2. **Performance Considerations**
+   - Maintain 60 FPS during transitions
+   - Use efficient SwiftUI animation modifiers
+   - Avoid complex animations that cause frame drops
+
+### Accessibility & Inclusivity
+
+#### High Contrast Support
+1. **Enhanced Contrast Modes**
+   - Test with High Contrast enabled
+   - Ensure sufficient color contrast ratios
+   - Use system colors that adapt to accessibility settings
+
+2. **Dynamic Type Integration**
+   - All text scales properly with Dynamic Type
+   - Maintain readability in both light and dark modes
+   - Test with largest text sizes
+
+#### Reduce Motion Support
+1. **Respect Motion Preferences**
+   ```swift
+   if !UIAccessibility.isReduceMotionEnabled {
+       // Apply animations
+   } else {
+       // Use cross-fade transitions instead
+   }
+   ```
+
+2. **Alternative Feedback**
+   - Use color changes instead of motion
+   - Provide clear visual state changes
+   - Ensure interface remains functional
+
+### Testing & Quality Assurance
+
+#### Comprehensive Testing
+1. **Mode Switching Tests**
+   ```swift
+   func testAppearanceModeSwitching() {
+       let appearance = AppearancePreferenceLive()
+       
+       // Test system detection
+       XCTAssertEqual(appearance.effectiveMode, .system)
+       
+       // Test user override
+       await appearance.setMode(.dark)
+       XCTAssertEqual(appearance.currentMode, .dark)
+       XCTAssertEqual(appearance.effectiveMode, .dark)
+   }
+   ```
+
+2. **Visual Regression Testing**
+   - Screenshot tests for both light and dark modes
+   - Verify color changes between modes
+   - Test with different accessibility settings
+
+#### Real Device Testing
+1. **System Integration**
+   - Test with iOS system appearance changes
+   - Verify app follows system when set to "System"
+   - Test with different iOS versions
+
+2. **Performance Validation**
+   - Ensure smooth transitions on older devices
+   - Test with Reduce Motion enabled
+   - Verify no memory leaks during mode switching
+
+### Common Implementation Mistakes
+
+#### Critical Errors to Avoid
+1. **Hardcoded Colors**
+   ```swift
+   // ❌ Bad: Won't adapt to dark mode
+   Color.black
+   Color.white
+   
+   // ✅ Good: Adaptive colors
+   Color(UIColor.systemBackground)
+   Color(UIColor.label)
+   ```
+
+2. **Inconsistent Defaults**
+   ```swift
+   // ❌ Bad: Design system defaults to dark, but preference defaults to light
+   return .light // In AppearancePreferenceLive
+   
+   // ✅ Good: Consistent system-first approach
+   return .system // Default to system setting
+   ```
+
+3. **Missing System Integration**
+   ```swift
+   // ❌ Bad: Always overrides system
+   window.overrideUserInterfaceStyle = .dark
+   
+   // ✅ Good: Respects system when appropriate
+   window.overrideUserInterfaceStyle = mode == .system ? .unspecified : (mode == .dark ? .dark : .light)
+   ```
+
+#### Performance Pitfalls
+1. **Expensive Animations**
+   - Avoid complex animations during mode switching
+   - Use simple color transitions
+   - Test on older devices
+
+2. **Memory Leaks**
+   - Properly clean up observers
+   - Use weak references in closures
+   - Test mode switching repeatedly
+
+### Implementation Checklist
+
+#### Core Setup
+- [ ] Implement `AppearanceMode` enum with `.system` option
+- [ ] Create `AppearancePreference` protocol with `effectiveMode`
+- [ ] Add system appearance detection logic
+- [ ] Implement proper window management for all modes
+
+#### Design System
+- [ ] Use adaptive system colors throughout
+- [ ] Create custom color variants in `.xcassets`
+- [ ] Implement adaptive shadow system
+- [ ] Ensure all components use design tokens
+
+#### User Interface
+- [ ] Add appearance picker in settings
+- [ ] Provide clear mode descriptions
+- [ ] Implement smooth transitions
+- [ ] Add haptic feedback for mode changes
+
+#### Testing & Quality
+- [ ] Test system appearance detection
+- [ ] Verify mode switching works correctly
+- [ ] Test with accessibility settings
+- [ ] Validate performance on real devices
+
+#### Accessibility
+- [ ] Support High Contrast mode
+- [ ] Respect Reduce Motion setting
+- [ ] Ensure proper contrast ratios
+- [ ] Test with Dynamic Type
+
+### Best Practices Summary
+
+1. **System-First**: Default to system setting, provide user override
+2. **Adaptive Colors**: Use system colors, create proper variants for brand colors
+3. **Smooth Transitions**: Animate mode changes, respect accessibility settings
+4. **Comprehensive Testing**: Test all modes, accessibility settings, and edge cases
+5. **Performance**: Maintain 60 FPS, avoid expensive animations
+6. **User Control**: Clear settings UI, immediate feedback, easy switching
+
+This rule ensures your app provides a native, polished dark mode experience that feels like it was built by Apple themselves.

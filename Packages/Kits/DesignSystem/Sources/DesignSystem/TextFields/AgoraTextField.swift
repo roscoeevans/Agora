@@ -6,9 +6,7 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
+import UIKitBridge
 
 /// A standardized text field component for the Agora design system.
 ///
@@ -48,8 +46,8 @@ public struct AgoraTextField: View {
     let style: Style
     let validationState: ValidationState
     let isSecure: Bool
-    let keyboardType: UIKeyboardType
-    let textContentType: UITextContentType?
+    let keyboardType: DesignSystemBridge.KeyboardType
+    let contentType: DesignSystemBridge.TextContentType
     let onCommit: () -> Void
     
     /// Creates a new AgoraTextField.
@@ -69,8 +67,8 @@ public struct AgoraTextField: View {
         style: Style = .standard,
         validationState: ValidationState = .default,
         isSecure: Bool = false,
-        keyboardType: UIKeyboardType = .default,
-        textContentType: UITextContentType? = nil,
+        keyboardType: DesignSystemBridge.KeyboardType = .default,
+        contentType: DesignSystemBridge.TextContentType = .none,
         onCommit: @escaping () -> Void = {}
     ) {
         self.title = title
@@ -79,7 +77,7 @@ public struct AgoraTextField: View {
         self.validationState = validationState
         self.isSecure = isSecure
         self.keyboardType = keyboardType
-        self.textContentType = textContentType
+        self.contentType = contentType
         self.onCommit = onCommit
     }
     
@@ -91,16 +89,20 @@ public struct AgoraTextField: View {
                         style: style,
                         validationState: validationState
                     ))
-                    .keyboardType(keyboardType)
-                    .textContentType(textContentType)
+                    #if canImport(UIKit)
+                    .keyboardType(keyboardType.uiKeyboardType)
+                    .textContentType(contentType.uiTextContentType)
+                    #endif
             } else {
                 TextField(title, text: $text, onCommit: onCommit)
                     .textFieldStyle(AgoraTextFieldStyle(
                         style: style,
                         validationState: validationState
                     ))
-                    .keyboardType(keyboardType)
-                    .textContentType(textContentType)
+                    #if canImport(UIKit)
+                    .keyboardType(keyboardType.uiKeyboardType)
+                    .textContentType(contentType.uiTextContentType)
+                    #endif
             }
             
             // Validation message

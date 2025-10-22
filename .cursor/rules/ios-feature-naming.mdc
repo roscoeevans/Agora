@@ -1,0 +1,214 @@
+---
+description: "When creating new iOS features, naming Swift Package Manager modules, organizing feature packages, or establishing naming conventions for user-facing modules in the Packages/Features/ directory. Use this rule for SPM package structure, feature module naming, import statements, and maintaining consistency between directory names, Package.swift targets, and Swift type names."
+---
+
+## iOS Feature Naming and SPM Package Structure
+
+### Overview
+
+This rule defines naming conventions and package structure for iOS features in Swift Package Manager (SPM) based projects. It ensures consistency between directory names, Package.swift targets, Swift type names, and import statements while maintaining clean, Apple-like module organization.
+
+### Feature Package Structure
+
+#### Directory Organization
+Each feature is a Swift Package under `Packages/Features/{FeatureName}/` with this structure:
+
+```
+Packages/
+└── Features/
+    └── {FeatureName}/
+        ├── Package.swift
+        ├── Sources/
+        │   └── {FeatureName}/
+        │       ├── {FeatureName}View.swift
+        │       ├── {FeatureName}ViewModel.swift
+        │       └── {FeatureName}Model.swift
+        └── Tests/
+            └── {FeatureName}Tests/
+                └── {FeatureName}ViewModelTests.swift
+```
+
+#### Package.swift Configuration
+The Package.swift must match directory and target names exactly:
+
+```swift
+let package = Package(
+    name: "FeatureName",
+    products: [
+        .library(name: "FeatureName", targets: ["FeatureName"])
+    ],
+    targets: [
+        .target(name: "FeatureName"),
+        .testTarget(name: "FeatureNameTests", dependencies: ["FeatureName"])
+    ]
+)
+```
+
+### Naming Conventions
+
+#### 1. Feature Module Names
+- **Use PascalCase** for feature names
+- **Avoid "Feature" suffix** unless there's a naming conflict
+- **Use singular nouns** (Profile, Compose, Search) not plurals
+- **Avoid abbreviations** unless they're canonical (DMs, ID, URL)
+
+**Examples:**
+```swift
+// ✅ Preferred
+import Profile
+import Compose
+import HomeForYou
+import Search
+
+// ❌ Avoid
+import ProfileFeature
+import ComposeFeature
+import Profiles
+import ComposeFeatureModule
+```
+
+#### 2. When to Use "Feature" Suffix
+Only add "Feature" suffix when there's a naming conflict with external dependencies:
+
+```swift
+// ✅ When Supabase exports "Auth" module
+import Authentication  // Your feature
+import Auth            // Supabase's module
+
+// ❌ Don't use suffix unnecessarily
+import ProfileFeature  // Just use Profile
+```
+
+#### 3. Internal Type Naming
+All types within a feature should be prefixed with the feature name:
+
+```swift
+// Inside Profile feature
+public struct ProfileView: View { ... }
+final class ProfileViewModel: ObservableObject { ... }
+struct ProfileModel { ... }
+struct ProfileRoute { ... }
+```
+
+### Import and Module Behavior
+
+#### Clean Import Statements
+Features become clean, Apple-like imports:
+
+```swift
+// Clean, natural imports
+import Profile
+import Compose
+import HomeForYou
+import Search
+import Notifications
+```
+
+#### Module Boundaries
+Each feature creates a module boundary with explicit API surfaces:
+
+```swift
+// Public API (what other modules can import)
+public struct ProfileView: View { ... }
+public struct ProfileRoute { ... }
+public struct ProfileEnvironment { ... }
+
+// Internal (only visible within the feature)
+struct ProfileModel { ... }
+class ProfileService { ... }
+```
+
+### Best Practices
+
+#### 1. Feature vs Kit Naming
+- **Features**: User-facing modules (Profile, Compose, Search)
+- **Kits**: Capability-facing modules (Networking, DesignSystem, Persistence)
+
+```swift
+// ✅ Clear separation
+import Profile        // Feature
+import DesignSystem   // Kit
+import Networking     // Kit
+
+// ❌ Avoid confusion
+import Engagement     // Is this a feature or kit?
+```
+
+#### 2. Directory and Target Consistency
+The `Sources/{FeatureName}/` directory name must exactly match the target name in Package.swift:
+
+```swift
+// Package.swift
+.library(name: "Profile", targets: ["Profile"])
+
+// Directory structure
+Sources/
+└── Profile/  // Must match exactly
+    ├── ProfileView.swift
+    └── ProfileViewModel.swift
+```
+
+#### 3. Test Target Naming
+Test targets should mirror the main target with "Tests" suffix:
+
+```swift
+// Package.swift
+.testTarget(name: "ProfileTests", dependencies: ["Profile"])
+
+// Directory structure
+Tests/
+└── ProfileTests/  // Must match exactly
+    └── ProfileViewModelTests.swift
+```
+
+### Xcode Integration
+
+#### Module Display
+In Xcode, features appear as discrete modules:
+
+```
+Profile (Swift Package)
+  └── Sources/Profile/
+      ├── ProfileView.swift
+      ├── ProfileViewModel.swift
+      └── ProfileModel.swift
+```
+
+#### Import Recognition
+Xcode automatically recognizes these packages and their test targets when properly configured.
+
+### Mental Model
+
+#### Module Hierarchy
+- **Features**: Standalone UI flows or screen clusters
+- **Kits**: Reusable capabilities or systems  
+- **Shared**: Glue and protocols
+- **ThirdParty**: Wrapped SDKs
+
+```
+Features present, Kits enable, Shared connects, and ThirdParty bridges.
+```
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **"Target not found" errors**
+   - Ensure directory name matches target name exactly
+   - Check Package.swift target configuration
+
+2. **Import conflicts**
+   - Use "Feature" suffix only when necessary
+   - Check for naming collisions with external dependencies
+
+3. **Build failures**
+   - Verify Package.swift product and target names match
+   - Ensure test target dependencies are correct
+
+#### Validation Checklist
+- [ ] Directory name uses PascalCase
+- [ ] Package.swift target matches directory name
+- [ ] No unnecessary "Feature" suffix
+- [ ] Internal types prefixed with feature name
+- [ ] Test target follows naming convention
+- [ ] Public API is minimal and clear

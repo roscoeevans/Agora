@@ -23,11 +23,122 @@ public protocol ServiceFactory: Sendable {
     /// - Returns: API client implementation appropriate for current environment
     /// - Throws: ServiceFactoryError if service creation fails
     static func apiClient() throws -> any AgoraAPIClientProtocol
+    
+    /// Creates a comment composition service instance
+    /// - Returns: CommentCompositionProtocol implementation appropriate for current environment
+    /// - Throws: ServiceFactoryError if service creation fails
+    static func commentCompositionService() throws -> CommentCompositionProtocol
+    
+    /// Creates a media bundle service instance
+    /// - Returns: MediaBundleServiceProtocol implementation appropriate for current environment
+    /// - Throws: ServiceFactoryError if service creation fails
+    static func mediaBundleService() throws -> MediaBundleServiceProtocol
 }
 
 // MARK: - Forward declaration for Networking module types
 // This allows ServiceFactory to reference API client without creating circular dependency
 public protocol AgoraAPIClientProtocol: Sendable {}
+
+// MARK: - Media Bundle Service Protocol
+// This protocol is defined in AppFoundation to avoid circular dependencies
+
+/// Protocol for creating and managing media bundles
+public protocol MediaBundleServiceProtocol: Sendable {
+    /// Get media URLs from a bundle ID with caching
+    /// - Parameter bundleId: Media bundle ID
+    /// - Returns: MediaBundleInfo with type, URLs, and metadata
+    func getMediaBundleInfo(bundleId: String) async throws -> MediaBundleInfo
+    
+    /// Get media URLs from a bundle ID (legacy method for backward compatibility)
+    /// - Parameter bundleId: Media bundle ID
+    /// - Returns: Array of media URLs
+    func getMediaURLs(bundleId: String) async throws -> [String]
+    
+    /// Create a media bundle from image data
+    /// - Parameters:
+    ///   - imageDataArray: Array of image data (1-4 images)
+    ///   - userId: User ID for storage path
+    /// - Returns: Media bundle ID
+    func createImageBundle(imageDataArray: [Data], userId: String) async throws -> String
+    
+    /// Create a media bundle from a video
+    /// - Parameters:
+    ///   - videoURL: Local URL of video file
+    ///   - userId: User ID for storage path
+    /// - Returns: Media bundle ID
+    func createVideoBundle(videoURL: URL, userId: String) async throws -> String
+}
+
+/// Media bundle information returned by the service
+public struct MediaBundleInfo: Sendable {
+    public let id: String
+    public let type: MediaBundleType
+    public let urls: [String]
+    public let width: Int?
+    public let height: Int?
+    public let duration: TimeInterval?
+    
+    public init(
+        id: String,
+        type: MediaBundleType,
+        urls: [String],
+        width: Int? = nil,
+        height: Int? = nil,
+        duration: TimeInterval? = nil
+    ) {
+        self.id = id
+        self.type = type
+        self.urls = urls
+        self.width = width
+        self.height = height
+        self.duration = duration
+    }
+}
+
+/// Media bundle type enumeration
+public enum MediaBundleType: String, Sendable, Codable {
+    case image
+    case video
+}
+
+/// Media bundle errors
+public enum MediaBundleError: LocalizedError, Sendable {
+    case invalidImageCount
+    case creationFailed
+    case notFound
+    
+    public var errorDescription: String? {
+        switch self {
+        case .invalidImageCount:
+            return "Must provide 1-4 images for image bundle"
+        case .creationFailed:
+            return "Failed to create media bundle"
+        case .notFound:
+            return "Media bundle not found"
+        }
+    }
+}
+
+/// No-op implementation of MediaBundleServiceProtocol for testing and previews
+public final class NoOpMediaBundleService: MediaBundleServiceProtocol, Sendable {
+    public init() {}
+    
+    public func getMediaBundleInfo(bundleId: String) async throws -> MediaBundleInfo {
+        throw MediaBundleError.notFound
+    }
+    
+    public func getMediaURLs(bundleId: String) async throws -> [String] {
+        throw MediaBundleError.notFound
+    }
+    
+    public func createImageBundle(imageDataArray: [Data], userId: String) async throws -> String {
+        throw MediaBundleError.creationFailed
+    }
+    
+    public func createVideoBundle(videoURL: URL, userId: String) async throws -> String {
+        throw MediaBundleError.creationFailed
+    }
+}
 
 // MARK: - Default Service Factory
 
@@ -118,6 +229,20 @@ public struct DefaultServiceFactory: ServiceFactory {
         }
         
         return try provider()
+    }
+    
+    public static func commentCompositionService() throws -> CommentCompositionProtocol {
+        // For now, return a no-op implementation
+        // This will be replaced with real implementation when PostDetail module is available
+        print("[ServiceFactory] Creating comment composition service (no-op)")
+        return NoOpCommentCompositionService()
+    }
+    
+    public static func mediaBundleService() throws -> MediaBundleServiceProtocol {
+        // For now, return a no-op implementation
+        // This will be replaced with real implementation when Media module is available
+        print("[ServiceFactory] Creating media bundle service (no-op)")
+        return NoOpMediaBundleService()
     }
     
     // MARK: - Production Service Creation
@@ -264,6 +389,14 @@ public struct DebugServiceFactory: ServiceFactory {
         return DebugServiceFactory().createAPIClient()
     }
     
+    public static func commentCompositionService() throws -> CommentCompositionProtocol {
+        return DebugServiceFactory().createCommentCompositionService()
+    }
+    
+    public static func mediaBundleService() throws -> MediaBundleServiceProtocol {
+        return DebugServiceFactory().createMediaBundleService()
+    }
+    
     // MARK: - Debug Service Creation
     
     public func createAuthService() -> AuthServiceProtocol {
@@ -294,6 +427,26 @@ public struct DebugServiceFactory: ServiceFactory {
             return try DefaultServiceFactory.apiClient()
         } catch {
             fatalError("[DebugServiceFactory] Failed to create API client: \(error)")
+        }
+    }
+    
+    public func createCommentCompositionService() -> CommentCompositionProtocol {
+        // Debug factory uses the default implementation
+        // The actual mock/production switching is handled in PostDetail module
+        do {
+            return try DefaultServiceFactory.commentCompositionService()
+        } catch {
+            fatalError("[DebugServiceFactory] Failed to create comment composition service: \(error)")
+        }
+    }
+    
+    public func createMediaBundleService() -> MediaBundleServiceProtocol {
+        // Debug factory uses the default implementation
+        // The actual mock/production switching is handled in Media module
+        do {
+            return try DefaultServiceFactory.mediaBundleService()
+        } catch {
+            fatalError("[DebugServiceFactory] Failed to create media bundle service: \(error)")
         }
     }
 }

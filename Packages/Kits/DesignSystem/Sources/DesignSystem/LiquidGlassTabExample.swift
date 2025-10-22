@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKitBridge
 
 /// Example implementation of iOS 26 Liquid Glass Tab View
 /// Demonstrates tab view styling with modern iOS 26 features
@@ -52,7 +53,7 @@ private struct HomeTab: View {
                 .padding()
             }
             .navigationTitle("Home")
-            .background(Color(.systemGroupedBackground))
+            .background(DesignSystemBridge.systemGroupedBackground)
         }
     }
 }
@@ -85,7 +86,7 @@ private struct ExploreTab: View {
                 .padding()
             }
             .navigationTitle("Explore")
-            .background(Color(.systemGroupedBackground))
+            .background(DesignSystemBridge.systemGroupedBackground)
         }
     }
 }
@@ -157,7 +158,7 @@ private struct ProfileTab: View {
                 .padding(.vertical)
             }
             .navigationTitle("Profile")
-            .background(Color(.systemGroupedBackground))
+            .background(DesignSystemBridge.systemGroupedBackground)
         }
     }
 }

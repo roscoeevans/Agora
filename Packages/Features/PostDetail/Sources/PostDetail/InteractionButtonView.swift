@@ -14,12 +14,11 @@ struct InteractionButtonView: View {
     let count: Int
     let action: () -> Void
     @State private var isPressed = false
+    @State private var hapticTrigger = false
     
     var body: some View {
         Button(action: {
-            // Add haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            hapticTrigger.toggle()
             action()
         }) {
             HStack(spacing: SpacingTokens.xxs) {
@@ -44,6 +43,7 @@ struct InteractionButtonView: View {
         }, perform: {})
         .accessibilityLabel(accessibilityLabel)
         .accessibilityValue(accessibilityValue)
+        .sensoryFeedback(.selection, trigger: hapticTrigger)
     }
     
     private var accessibilityLabel: String {

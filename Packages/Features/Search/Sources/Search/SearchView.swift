@@ -35,7 +35,9 @@ public struct SearchView: View {
                     .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                 }
                 .navigationTitle("Search")
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.large)
+                #endif
                 .searchable(text: $searchText, prompt: "Search users and posts")
                 .onChange(of: searchText) { _, newValue in
                     Task {
@@ -131,6 +133,7 @@ struct SearchResultsList: View {
 struct SearchResultCard: View {
     let result: SearchResult
     @State private var isPressed = false
+    @State private var hapticTrigger = false
     @Environment(\.navigateToSearchResult) private var navigateToSearchResult
     
     var body: some View {
@@ -182,9 +185,7 @@ struct SearchResultCard: View {
         .scaleEffect(isPressed ? 0.98 : 1.0)
         .animation(.easeInOut(duration: 0.1), value: isPressed)
         .onTapGesture {
-            // Add haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            hapticTrigger.toggle()
             // Navigate to search result
             if let navigate = navigateToSearchResult, let uuid = UUID(uuidString: result.id) {
                 navigate.action(uuid)
@@ -197,6 +198,7 @@ struct SearchResultCard: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint("Double tap to view \(result.type == .user ? "profile" : "post")")
+        .sensoryFeedback(.selection, trigger: hapticTrigger)
     }
     
     private var accessibilityLabel: String {

@@ -7,14 +7,16 @@
 
 import SwiftUI
 import AppFoundation
+import DesignSystem
 import HomeForYou
 import HomeFollowing
 import Search
 import Notifications
 import Profile
-import DMs
+import DirectMessages
 import PostDetail
 import Compose
+import Authentication
 
 @available(iOS 26.0, *)
 struct ContentView: View {
@@ -95,6 +97,7 @@ struct ContentView: View {
                 Image(systemName: "person.crop.circle")
             }
         }
+        .tabBarMinimizeBehavior(.onScrollDown)
         .onChange(of: selection.wrappedValue) { oldValue, newValue in
             handleTabSelection(oldValue: oldValue, newValue: newValue)
         }
@@ -140,21 +143,35 @@ struct ContentView: View {
 
 private struct HomeFlow: View {
     @Binding var path: [HomeRoute]
-    @State private var selectedFeed: HomeFeedType = .forYou
+    @State private var selectedFeed: HomeFeedType = .following
     @State private var showingFeedSettings = false
     @State private var showingMessages = false
+    @State private var showingCompose = false
+    
+    // ========================================
+    // HARDCODED FEED TOGGLE
+    // ========================================
+    // To switch between feeds, change the value below:
+    // .following = Following feed (chronological)
+    // .forYou = Recommended feed (algorithmic)
+    // ========================================
+    private let defaultFeed: HomeFeedType = .following
     
     var body: some View {
         NavigationStack(path: $path) {
             Group {
                 switch selectedFeed {
                 case .forYou:
-                    HomeForYouView(onComposeAction: {})
+                    HomeForYouView(onComposeAction: {
+                        showingCompose = true
+                    })
                 case .following:
-                    HomeFollowingView()
+                    HomeFollowingView(onComposeAction: {
+                        showingCompose = true
+                    })
                 }
             }
-            .navigationTitle(selectedFeed.title)
+            .navigationTitle("αgorα")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -180,8 +197,11 @@ private struct HomeFlow: View {
             }
             .sheet(isPresented: $showingMessages) {
                 NavigationStack {
-                    DMThreadsView()
+                    DMsEntry(route: .list)
                 }
+            }
+            .sheet(isPresented: $showingCompose) {
+                ComposeView()
             }
             .environment(\.navigateToPost, NavigateToPost { postId in
                 Task { @MainActor in
@@ -203,6 +223,10 @@ private struct HomeFlow: View {
                     ComposeView(quotePostId: quotePostId)
                 case .editHistory(let postId, let currentText):
                     EditHistorySheet(postId: postId, currentText: currentText)
+                case .fullscreenVideo(let bundleId, let videoUrl):
+                    FullscreenVideoPlayer(videoUrl: videoUrl, bundleId: bundleId)
+                case .imageGallery(let urls, let initialIndex):
+                    ImageGalleryView(imageUrls: urls, initialIndex: initialIndex)
                 }
             }
         }
@@ -256,6 +280,8 @@ private struct NotificationsFlow: View {
 
 private struct ProfileFlow: View {
     @Binding var path: [ProfileRoute]
+    @Environment(\.deps) private var deps
+    @Environment(AuthStateManager.self) private var authManager
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -270,10 +296,36 @@ private struct ProfileFlow: View {
                         path.append(.profile(id: profileId))
                     }
                 })
+                .environment(\.navigateToEditProfile, NavigateToEditProfile {
+                    Task { @MainActor in
+                        path.append(.editProfile)
+                    }
+                })
                 .navigationDestination(for: ProfileRoute.self) { route in
                     switch route {
                     case .settings:
                         SettingsView()
+                    case .editProfile:
+                        if let currentUser = authManager.state.currentUser {
+                            EditProfileView(
+                                profile: UserProfile(
+                                    id: currentUser.id,
+                                    handle: currentUser.handle,
+                                    displayName: currentUser.displayName,
+                                    bio: currentUser.bio ?? "",
+                                    avatarUrl: currentUser.avatarUrl,
+                                    postCount: 0,
+                                    followingCount: 0,
+                                    followerCount: 0,
+                                    isCurrentUser: true,
+                                    isFollowing: false
+                                ),
+                                userId: currentUser.id,
+                                networking: deps.networking
+                            )
+                        } else {
+                            Text("Profile not available")
+                        }
                     case .followers:
                         // TODO: Implement followers view
                         Text("Followers")
@@ -294,10 +346,10 @@ private enum HomeFeedType: String, CaseIterable {
     case forYou = "forYou"
     case following = "following"
     
-    var title: String {
+    var selectionLabel: String {
         switch self {
         case .forYou:
-            return "For You"
+            return "Recommended"
         case .following:
             return "Following"
         }
@@ -319,7 +371,7 @@ private struct FeedSettingsView: View {
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(feedType.title)
+                                    Text(feedType.selectionLabel)
                                         .font(.body)
                                         .foregroundColor(.primary)
                                     
@@ -353,8 +405,10 @@ private struct FeedSettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "checkmark")
                     }
                 }
             }

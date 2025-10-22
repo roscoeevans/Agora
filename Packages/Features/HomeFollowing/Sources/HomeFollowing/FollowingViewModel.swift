@@ -70,12 +70,17 @@ public class FollowingViewModel {
             
             let response = try await networking.fetchFollowingFeed(cursor: cursor, limit: 20)
             
-            // Append new posts
-            self.posts.append(contentsOf: response.posts)
+            // Filter out any posts that already exist to prevent duplicates
+            let existingPostIds = Set(posts.map { $0.id })
+            let newPosts = response.posts.filter { !existingPostIds.contains($0.id) }
+            
+            // Append only new posts
+            self.posts.append(contentsOf: newPosts)
             self.nextCursor = response.nextCursor
             
             await analytics.track(event: "feed_load_more_completed", properties: [
-                "new_posts_count": response.posts.count
+                "new_posts_count": newPosts.count,
+                "total_posts_count": posts.count
             ])
         } catch {
             self.error = error
@@ -84,6 +89,11 @@ public class FollowingViewModel {
     }
     
     private var nextCursor: String?
+    
+    /// Public access to nextCursor for pagination skeleton support
+    public var hasNextPage: Bool {
+        return nextCursor != nil
+    }
 }
 
 // Note: Post is imported from Networking (which re-exports AppFoundation)

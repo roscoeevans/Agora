@@ -53,10 +53,18 @@ public final class PostEngagementState {
         isLikingInProgress = true
         error = nil
         
+        // Update cache immediately with optimistic state
+        await EngagementStateCache.shared.updateState(
+            for: postId,
+            isLiked: isLiked,
+            likeCount: likeCount,
+            isReposted: isReposted,
+            repostCount: repostCount
+        )
+        
         do {
-            // Call service (cast to EngagementService protocol)
-            // Note: We use any Sendable to avoid circular dependency with Engagement kit
-            guard let service = engagementService as? any EngagementServiceProtocol else {
+            // Call service (cast to EngagementService protocol from Engagement kit)
+            guard let service = engagementService as? any EngagementService else {
                 throw EngagementStateError.serviceNotAvailable
             }
             
@@ -65,11 +73,29 @@ public final class PostEngagementState {
             // Reconcile with server state
             isLiked = result.isLiked
             likeCount = max(0, result.likeCount)  // Clamp to 0
+            
+            // Update cache with final server state
+            await EngagementStateCache.shared.updateState(
+                for: postId,
+                isLiked: isLiked,
+                likeCount: likeCount,
+                isReposted: isReposted,
+                repostCount: repostCount
+            )
         } catch {
             // Rollback on error
             isLiked = previousLiked
             likeCount = previousCount
             self.error = error
+            
+            // Update cache with rolled back state
+            await EngagementStateCache.shared.updateState(
+                for: postId,
+                isLiked: isLiked,
+                likeCount: likeCount,
+                isReposted: isReposted,
+                repostCount: repostCount
+            )
         }
         
         isLikingInProgress = false
@@ -90,9 +116,18 @@ public final class PostEngagementState {
         isRepostingInProgress = true
         error = nil
         
+        // Update cache immediately with optimistic state
+        await EngagementStateCache.shared.updateState(
+            for: postId,
+            isLiked: isLiked,
+            likeCount: likeCount,
+            isReposted: isReposted,
+            repostCount: repostCount
+        )
+        
         do {
-            // Call service
-            guard let service = engagementService as? any EngagementServiceProtocol else {
+            // Call service (cast to EngagementService protocol from Engagement kit)
+            guard let service = engagementService as? any EngagementService else {
                 throw EngagementStateError.serviceNotAvailable
             }
             
@@ -101,11 +136,29 @@ public final class PostEngagementState {
             // Reconcile with server state
             isReposted = result.isReposted
             repostCount = max(0, result.repostCount)  // Clamp to 0
+            
+            // Update cache with final server state
+            await EngagementStateCache.shared.updateState(
+                for: postId,
+                isLiked: isLiked,
+                likeCount: likeCount,
+                isReposted: isReposted,
+                repostCount: repostCount
+            )
         } catch {
             // Rollback on error
             isReposted = previousReposted
             repostCount = previousCount
             self.error = error
+            
+            // Update cache with rolled back state
+            await EngagementStateCache.shared.updateState(
+                for: postId,
+                isLiked: isLiked,
+                likeCount: likeCount,
+                isReposted: isReposted,
+                repostCount: repostCount
+            )
         }
         
         isRepostingInProgress = false
@@ -121,37 +174,6 @@ public final class PostEngagementState {
         if !isRepostingInProgress {
             self.repostCount = repostCount
         }
-    }
-}
-
-// MARK: - Protocol Definition
-
-/// Protocol for engagement service (to avoid circular dependency)
-public protocol EngagementServiceProtocol: Sendable {
-    func toggleLike(postId: String) async throws -> LikeResult
-    func toggleRepost(postId: String) async throws -> RepostResult
-    func getShareURL(postId: String) async throws -> URL
-}
-
-/// Result of a like toggle operation
-public struct LikeResult: Sendable {
-    public let isLiked: Bool
-    public let likeCount: Int
-    
-    public init(isLiked: Bool, likeCount: Int) {
-        self.isLiked = isLiked
-        self.likeCount = likeCount
-    }
-}
-
-/// Result of a repost toggle operation
-public struct RepostResult: Sendable {
-    public let isReposted: Bool
-    public let repostCount: Int
-    
-    public init(isReposted: Bool, repostCount: Int) {
-        self.isReposted = isReposted
-        self.repostCount = repostCount
     }
 }
 

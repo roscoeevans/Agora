@@ -19,6 +19,11 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "Sources/agctl"
+        ),
+        .testTarget(
+            name: "agctlTests",
+            dependencies: ["agctl"],
+            path: "Tests/agctlTests"
         )
     ]
 )

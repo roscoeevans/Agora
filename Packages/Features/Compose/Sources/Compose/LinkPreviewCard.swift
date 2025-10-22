@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKitBridge
 import DesignSystem
 
 /// Link preview card component for compose
@@ -63,8 +64,7 @@ public struct LinkPreviewCard: View {
             // Remove button
             Button {
                 // Add haptic feedback
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
+                DesignSystemBridge.lightImpact()
                 
                 onRemove()
             } label: {

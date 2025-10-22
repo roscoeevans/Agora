@@ -45,13 +45,18 @@ CREATE POLICY reposts_select_all ON reposts
 
 -- Toggle like (idempotent, drift-proof)
 -- NOTE: Edge Function derives p_user_id from JWT (never from client body)
-CREATE OR REPLACE FUNCTION public.toggle_like(p_post_id BIGINT, p_user_id UUID)
+CREATE OR REPLACE FUNCTION public.toggle_like(p_post_id UUID, p_user_id UUID)
 RETURNS TABLE(is_liked BOOLEAN, like_count INTEGER) AS $$
 DECLARE
   v_like_exists BOOLEAN;
   v_like_count INTEGER;
 BEGIN
   SET search_path = public;  -- Prevent search_path hijacking
+  
+  -- Check if post exists first
+  IF NOT EXISTS (SELECT 1 FROM posts WHERE id = p_post_id) THEN
+    RAISE EXCEPTION 'Post not found';
+  END IF;
   
   -- Check if like exists
   SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = p_user_id AND post_id = p_post_id)
@@ -77,13 +82,18 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Toggle repost (idempotent, drift-proof)
-CREATE OR REPLACE FUNCTION public.toggle_repost(p_post_id BIGINT, p_user_id UUID)
+CREATE OR REPLACE FUNCTION public.toggle_repost(p_post_id UUID, p_user_id UUID)
 RETURNS TABLE(is_reposted BOOLEAN, repost_count INTEGER) AS $$
 DECLARE
   v_repost_exists BOOLEAN;
   v_repost_count INTEGER;
 BEGIN
   SET search_path = public;  -- Prevent search_path hijacking
+  
+  -- Check if post exists first
+  IF NOT EXISTS (SELECT 1 FROM posts WHERE id = p_post_id) THEN
+    RAISE EXCEPTION 'Post not found';
+  END IF;
   
   -- Check if repost exists
   SELECT EXISTS(SELECT 1 FROM reposts WHERE user_id = p_user_id AND post_id = p_post_id)

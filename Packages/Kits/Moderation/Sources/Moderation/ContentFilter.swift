@@ -52,10 +52,11 @@ public protocol FilterableContent {
 }
 
 /// Keyword muting engine for content filtering
-public final class ContentFilter: Sendable {
+@MainActor
+public final class ContentFilter: ObservableObject {
     public static let shared = ContentFilter()
     
-    private var config: FilterConfig
+    @Published private var config: FilterConfig
     private let userDefaults = UserDefaults.standard
     private let configKey = "agora.content_filter.config"
     

@@ -187,7 +187,7 @@ public extension AgoraEmptyStateView {
         AgoraEmptyStateView(
             icon: "checkmark.circle",
             title: "You're All Caught Up",
-            message: "You've seen all the latest posts. Why not share something with the community?",
+            message: "Ready to share something?",
             actionTitle: "Create a Post",
             action: action
         )
@@ -244,6 +244,42 @@ public extension AgoraEmptyStateView {
             message: "Check your internet connection and try again.",
             actionTitle: "Try Again",
             action: retryAction
+        )
+    }
+    
+    /// Creates an empty state for feed loading errors with guidance
+    static func feedLoadError(retryAction: @escaping () -> Void) -> AgoraEmptyStateView {
+        AgoraEmptyStateView(
+            icon: "exclamationmark.triangle",
+            title: "Couldn't Load Feed",
+            message: "Something went wrong while loading your feed. Please try again.",
+            actionTitle: "Retry",
+            action: retryAction,
+            style: .standard
+        )
+    }
+    
+    /// Creates an empty state for profile posts loading errors
+    static func profilePostsError(retryAction: @escaping () -> Void) -> AgoraEmptyStateView {
+        AgoraEmptyStateView(
+            icon: "person.crop.circle.badge.exclamationmark",
+            title: "Couldn't Load Posts",
+            message: "Unable to load posts for this profile. Please try again.",
+            actionTitle: "Retry",
+            action: retryAction,
+            style: .standard
+        )
+    }
+    
+    /// Creates an empty state for comments loading errors
+    static func commentsError(retryAction: @escaping () -> Void) -> AgoraEmptyStateView {
+        AgoraEmptyStateView(
+            icon: "bubble.left.and.exclamationmark.bubble.right",
+            title: "Couldn't Load Comments",
+            message: "Unable to load comments for this post. Please try again.",
+            actionTitle: "Retry",
+            action: retryAction,
+            style: .compact
         )
     }
 }

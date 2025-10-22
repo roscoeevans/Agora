@@ -74,7 +74,7 @@ public final class SafetyManager: Sendable {
     private func containsHateSpeech(_ text: String) -> Bool {
         // TODO: Implement more sophisticated hate speech detection
         // This is a very basic placeholder
-        let hateSpeechPatterns = [
+        let hateSpeechPatterns: [String] = [
             // Add patterns here - keeping minimal for placeholder
         ]
         

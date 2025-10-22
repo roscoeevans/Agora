@@ -18,7 +18,7 @@ let package = Package(
         .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.0.0"),
 
         // Supabase
-        .package(url: "https://github.com/supabase/supabase-swift", exact: "2.34.0"),
+        .package(url: "https://github.com/supabase/supabase-swift", from: "2.35.0"),
         
         // Push Notifications
         .package(url: "https://github.com/OneSignal/OneSignal-iOS-SDK", from: "5.0.0"),
@@ -29,7 +29,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
         
         // Local Feature Packages
-        .package(path: "Packages/Features/Auth"), // Exports as AuthFeature to avoid Supabase conflict
+        .package(path: "Packages/Features/Authentication"), // Authentication feature module
+        .package(path: "Packages/Features/Onboarding"),
         .package(path: "Packages/Features/HomeForYou"),
         .package(path: "Packages/Features/HomeFollowing"),
         .package(path: "Packages/Features/Compose"),
@@ -39,6 +40,7 @@ let package = Package(
         .package(path: "Packages/Features/Search"),
         .package(path: "Packages/Features/Notifications"),
         .package(path: "Packages/Features/DMs"),
+        .package(path: "Packages/Features/DirectMessages"),
         
         // Local Kit Packages
         .package(path: "Packages/Kits/DesignSystem"),
@@ -50,6 +52,8 @@ let package = Package(
         .package(path: "Packages/Kits/Verification"),
         .package(path: "Packages/Kits/Recommender"),
         .package(path: "Packages/Kits/Engagement"),
+        .package(path: "Packages/Kits/SupabaseKit"),
+        .package(path: "Packages/Kits/UIKitBridge"),
         
         // Local Shared Packages
         .package(path: "Packages/Shared/AppFoundation"),

@@ -6,7 +6,7 @@ let package = Package(
     name: "HomeFollowing",
     platforms: [
         .iOS(.v26),
-        .macOS(.v10_15)
+        .macOS(.v26)  // Required to satisfy SPM dependency resolution
     ],
     products: [
         .library(name: "HomeFollowing", targets: ["HomeFollowing"])
@@ -15,7 +15,8 @@ let package = Package(
         .package(path: "../../Kits/DesignSystem"),
         .package(path: "../../Kits/Networking"),
         .package(path: "../../Kits/Analytics"),
-        .package(path: "../../Shared/AppFoundation")
+        .package(path: "../../Shared/AppFoundation"),
+        .package(path: "../PostDetail")
     ],
     targets: [
         .target(
@@ -24,8 +25,10 @@ let package = Package(
                 "DesignSystem",
                 "Networking", 
                 "Analytics",
-                "AppFoundation"
+                "AppFoundation",
+                "PostDetail"
             ],
+            path: "Sources/HomeFollowing",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]
@@ -33,6 +36,7 @@ let package = Package(
         .testTarget(
             name: "HomeFollowingTests",
             dependencies: ["HomeFollowing"],
+            path: "Tests/HomeFollowingTests",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]

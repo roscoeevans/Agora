@@ -7,7 +7,8 @@ struct ValidateCommand: ParsableCommand {
         abstract: "Validate project structure and dependencies",
         subcommands: [
             ModulesCommand.self,
-            DependenciesCommand.self
+            DependenciesCommand.self,
+            PlatformsCommand.self
         ]
     )
 }
@@ -67,15 +68,22 @@ extension ValidateCommand {
         private func validateNaming(_ package: Package) -> [String] {
             var issues: [String] = []
             
-            // Features should end with "Feature"
-            if package.type == .feature && !package.name.hasSuffix("Feature") {
-                issues.append("\(package.displayName): Name should end with 'Feature' (got '\(package.name)')")
+            // Check for naming inconsistencies - package name should match directory name
+            let expectedName = package.path.lastPathComponent
+            if package.name != expectedName {
+                issues.append("\(package.displayName): Package name '\(package.name)' doesn't match directory '\(expectedName)'")
             }
             
-            // Check for naming inconsistencies
-            let expectedName = package.path.lastPathComponent
-            if package.name != expectedName && !package.name.hasSuffix("Feature") {
-                issues.append("\(package.displayName): Package name '\(package.name)' doesn't match directory '\(expectedName)'")
+            // Validate PascalCase naming for features
+            if package.type == .feature {
+                if !isPascalCase(package.name) {
+                    issues.append("\(package.displayName): Feature name '\(package.name)' should use PascalCase")
+                }
+                
+                // Check for unnecessary "Feature" suffix
+                if package.name.hasSuffix("Feature") && !hasNamingConflict(package.name) {
+                    issues.append("\(package.displayName): Feature name '\(package.name)' should not have 'Feature' suffix unless there's a naming conflict")
+                }
             }
             
             return issues
@@ -107,7 +115,7 @@ extension ValidateCommand {
             case .feature:
                 // Features should NOT depend on other Features
                 for dep in package.dependencies {
-                    if dep.hasSuffix("Feature") || isFeaturePackage(dep) {
+                    if isFeaturePackage(dep) {
                         issues.append("\(package.displayName): Feature should not depend on another Feature ('\(dep)')")
                     }
                 }
@@ -115,7 +123,7 @@ extension ValidateCommand {
             case .kit:
                 // Kits should only depend on Shared or other Kits
                 for dep in package.dependencies {
-                    if dep.hasSuffix("Feature") || isFeaturePackage(dep) {
+                    if isFeaturePackage(dep) {
                         issues.append("\(package.displayName): Kit should not depend on Features ('\(dep)')")
                     }
                 }
@@ -149,9 +157,11 @@ extension ValidateCommand {
         }
         
         private func isFeaturePackage(_ name: String) -> Bool {
-            let featureNames = ["Auth", "Home", "HomeForYou", "HomeFollowing", "Compose", "PostDetail",
-                              "Threading", "Profile", "Search", "Notifications", "DMs"]
-            return featureNames.contains(name)
+            // Check if this is a feature package by looking at the actual directory structure
+            // This is more reliable than hardcoded lists
+            let featuresPath = FileSystem.findRoot().appendingPathComponent("Packages/Features")
+            let featureDir = featuresPath.appendingPathComponent(name)
+            return FileManager.default.fileExists(atPath: featureDir.path)
         }
         
         private func isLocalPackage(_ name: String) -> Bool {
@@ -159,6 +169,20 @@ extension ValidateCommand {
             let localPackages = ["DesignSystem", "Networking", "Persistence", "Media", "Analytics",
                                "Moderation", "Verification", "Recommender", "AppFoundation", "TestSupport"]
             return localPackages.contains(name) || name.hasSuffix("Feature")
+        }
+        
+        private func isPascalCase(_ name: String) -> Bool {
+            // PascalCase: starts with uppercase, contains only letters and numbers, no underscores
+            let pattern = "^[A-Z][a-zA-Z0-9]*$"
+            let regex = try? NSRegularExpression(pattern: pattern)
+            let range = NSRange(location: 0, length: name.utf16.count)
+            return regex?.firstMatch(in: name, options: [], range: range) != nil
+        }
+        
+        private func hasNamingConflict(_ name: String) -> Bool {
+            // Check for known naming conflicts with external dependencies
+            // Currently only Auth has a conflict with Supabase
+            return name == "Auth"
         }
     }
 }
@@ -277,9 +301,116 @@ extension ValidateCommand {
         }
         
         private func isLocalPackage(_ name: String) -> Bool {
+            // Check if this is a known local package name
             let localPackages = ["DesignSystem", "Networking", "Persistence", "Media", "Analytics",
                                "Moderation", "Verification", "Recommender", "AppFoundation", "TestSupport"]
-            return localPackages.contains(name) || name.hasSuffix("Feature")
+            return localPackages.contains(name) || isFeaturePackage(name)
+        }
+        
+        private func isFeaturePackage(_ name: String) -> Bool {
+            // Check if this is a feature package by looking at the actual directory structure
+            // This is more reliable than hardcoded lists
+            let featuresPath = FileSystem.findRoot().appendingPathComponent("Packages/Features")
+            let featureDir = featuresPath.appendingPathComponent(name)
+            return FileManager.default.fileExists(atPath: featureDir.path)
+        }
+    }
+}
+
+// MARK: - Platform Validation
+
+extension ValidateCommand {
+    struct PlatformsCommand: ParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "platforms",
+            abstract: "Validate platform declarations (iOS + macOS) across all packages"
+        )
+        
+        @Flag(name: .shortAndLong, help: "Show verbose output")
+        var verbose = false
+        
+        func run() throws {
+            Logger.section("🍎 Validating Platform Declarations")
+            
+            let packages = try PackageResolver.allPackages()
+            Logger.info("Found \(packages.count) packages")
+            print("")
+            
+            var issues: [String] = []
+            
+            // Check each package for correct platform declarations
+            for package in packages.sorted(by: { $0.displayName < $1.displayName }) {
+                if verbose {
+                    Logger.info("Checking \(package.displayName) platform declarations...")
+                }
+                
+                issues += validatePlatformDeclarations(package)
+            }
+            
+            if issues.isEmpty {
+                Logger.success("All packages have correct platform declarations!")
+            } else {
+                print("")
+                Logger.error("Found \(issues.count) platform issue(s):")
+                for issue in issues {
+                    Logger.bullet(issue)
+                }
+                throw ExitCode.failure
+            }
+        }
+        
+        private func validatePlatformDeclarations(_ package: Package) -> [String] {
+            var issues: [String] = []
+            let packageSwift = package.path.appendingPathComponent("Package.swift")
+            
+            guard let content = try? String(contentsOf: packageSwift, encoding: .utf8) else {
+                issues.append("\(package.displayName): Cannot read Package.swift")
+                return issues
+            }
+            
+            // Check for platforms declaration
+            let platformPattern = #"platforms:\s*\[([^\]]+)\]"#
+            guard let regex = try? NSRegularExpression(pattern: platformPattern),
+                  let match = regex.firstMatch(in: content, range: NSRange(content.startIndex..., in: content)),
+                  let range = Range(match.range(at: 1), in: content) else {
+                issues.append("\(package.displayName): No platforms declaration found")
+                return issues
+            }
+            
+            let platformsString = String(content[range])
+            
+            // Check for iOS platform
+            let hasiOS = platformsString.contains(".iOS(")
+            if !hasiOS {
+                issues.append("\(package.displayName): Missing iOS platform declaration")
+            } else if !platformsString.contains(".iOS(.v26)") {
+                issues.append("\(package.displayName): Should use .iOS(.v26) for consistency (found different version)")
+            }
+            
+            // Check for macOS platform (required for agctl compatibility)
+            let hasMacOS = platformsString.contains(".macOS(")
+            if !hasMacOS {
+                issues.append("\(package.displayName): Missing macOS platform declaration (required for agctl build)")
+            } else if !platformsString.contains(".macOS(.v15)") {
+                issues.append("\(package.displayName): Should use .macOS(.v15) for consistency (found different version)")
+            }
+            
+            // Check for unwanted platforms
+            if platformsString.contains("watchOS") {
+                issues.append("\(package.displayName): Should not declare watchOS platform")
+            }
+            if platformsString.contains("tvOS") {
+                issues.append("\(package.displayName): Should not declare tvOS platform")
+            }
+            if platformsString.contains("visionOS") {
+                issues.append("\(package.displayName): Should not declare visionOS platform")
+            }
+            
+            if verbose && hasiOS && hasMacOS {
+                Logger.success("  ✓ \(package.displayName): iOS 26 + macOS 15")
+            }
+            
+            return issues
         }
     }
 }

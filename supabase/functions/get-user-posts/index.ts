@@ -169,8 +169,8 @@ serve(async (req) => {
       createdAt: new Date(post.created_at).toISOString(),
       editedAt: post.edited_at ? new Date(post.edited_at).toISOString() : null,
       selfDestructAt: post.self_destruct_at ? new Date(post.self_destruct_at).toISOString() : null,
-      isLikedByViewer: likedPostIds.has(post.id),
-      isRepostedByViewer: repostedPostIds.has(post.id),
+      isLikedByViewer: likedPostIds.has(post.id.toString()),
+      isRepostedByViewer: repostedPostIds.has(post.id.toString()),
     }));
 
     return new Response(JSON.stringify({

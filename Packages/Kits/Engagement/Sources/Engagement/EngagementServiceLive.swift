@@ -1,20 +1,22 @@
+//
+//  EngagementServiceLive.swift
+//  Engagement
+//
+//  Live implementation of engagement service using Supabase Edge Functions
+//
+
 import Foundation
 import AppFoundation
 
-/// Production implementation of EngagementService
-public actor EngagementServiceLive: EngagementService {
+/// Live implementation of EngagementService using Supabase Edge Functions
+public struct EngagementServiceLive: EngagementService {
     private let baseURL: URL
-    private let authTokenProvider: () async -> String?
+    private let authTokenProvider: @Sendable () async throws -> String?
     private let session: URLSession
     
-    /// Initialize engagement service
-    /// - Parameters:
-    ///   - baseURL: Base URL for Supabase Edge Functions
-    ///   - authTokenProvider: Closure that provides the current auth token
-    ///   - session: URLSession for networking (defaults to .shared)
     public init(
         baseURL: URL,
-        authTokenProvider: @escaping () async -> String?,
+        authTokenProvider: @escaping @Sendable () async throws -> String?,
         session: URLSession = .shared
     ) {
         self.baseURL = baseURL
@@ -24,68 +26,30 @@ public actor EngagementServiceLive: EngagementService {
     
     public func toggleLike(postId: String) async throws -> LikeResult {
         let endpoint = baseURL.appendingPathComponent("toggle-like")
+        let requestBody: [String: Any] = ["postId": postId]
         
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let response = try await makeRequest(to: endpoint, body: requestBody)
         
-        // Add authorization header
-        if let token = await authTokenProvider() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        guard let isLiked = response["isLiked"] as? Bool,
+              let likeCount = response["likeCount"] as? Int else {
+            throw EngagementError.serverError("Invalid response format")
         }
         
-        // Request body
-        let body = ["postId": postId]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        
-        // Make request
-        let (data, response) = try await session.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw EngagementError.networkError
-        }
-        
-        // Handle errors
-        if httpResponse.statusCode != 200 {
-            throw try mapHTTPError(statusCode: httpResponse.statusCode, data: data)
-        }
-        
-        // Parse success response
-        let result = try JSONDecoder().decode(LikeResultResponse.self, from: data)
-        return LikeResult(isLiked: result.isLiked, likeCount: result.likeCount)
+        return LikeResult(isLiked: isLiked, likeCount: likeCount)
     }
     
     public func toggleRepost(postId: String) async throws -> RepostResult {
         let endpoint = baseURL.appendingPathComponent("toggle-repost")
+        let requestBody: [String: Any] = ["postId": postId]
         
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let response = try await makeRequest(to: endpoint, body: requestBody)
         
-        // Add authorization header
-        if let token = await authTokenProvider() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        guard let isReposted = response["isReposted"] as? Bool,
+              let repostCount = response["repostCount"] as? Int else {
+            throw EngagementError.serverError("Invalid response format")
         }
         
-        // Request body
-        let body = ["postId": postId]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        
-        // Make request
-        let (data, response) = try await session.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw EngagementError.networkError
-        }
-        
-        // Handle errors
-        if httpResponse.statusCode != 200 {
-            throw try mapHTTPError(statusCode: httpResponse.statusCode, data: data)
-        }
-        
-        // Parse success response
-        let result = try JSONDecoder().decode(RepostResultResponse.self, from: data)
-        return RepostResult(isReposted: result.isReposted, repostCount: result.repostCount)
+        return RepostResult(isReposted: isReposted, repostCount: repostCount)
     }
     
     public func getShareURL(postId: String) async throws -> URL {
@@ -99,52 +63,47 @@ public actor EngagementServiceLive: EngagementService {
     
     // MARK: - Private Helpers
     
-    private func mapHTTPError(statusCode: Int, data: Data) throws -> EngagementError {
-        // Try to decode error response
-        if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-            switch errorResponse.code {
-            case "POST_NOT_FOUND":
-                return .postNotFound
-            case "UNAUTHORIZED":
-                return .unauthorized
-            case "RATE_LIMITED":
-                return .rateLimited
+    private func makeRequest(to endpoint: URL, body: [String: Any]) async throws -> [String: Any] {
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Add auth token if available
+        if let token = try? await authTokenProvider() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        // Encode body
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw EngagementError.networkError
+        }
+        
+        // Handle error responses
+        if httpResponse.statusCode != 200 {
+            let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let errorMessage = errorResponse?["message"] as? String ?? "Unknown error"
+            
+            switch httpResponse.statusCode {
+            case 404:
+                throw EngagementError.postNotFound
+            case 401:
+                throw EngagementError.unauthorized
+            case 429:
+                throw EngagementError.rateLimited
             default:
-                return .serverError(errorResponse.message)
+                throw EngagementError.serverError(errorMessage)
             }
         }
         
-        // Fallback based on status code
-        switch statusCode {
-        case 401:
-            return .unauthorized
-        case 404:
-            return .postNotFound
-        case 429:
-            return .rateLimited
-        case 500...599:
-            return .serverError("Server error")
-        default:
-            return .networkError
+        // Parse success response
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw EngagementError.serverError("Invalid response format")
         }
+        
+        return json
     }
 }
-
-// MARK: - Response Types
-
-private struct LikeResultResponse: Decodable {
-    let isLiked: Bool
-    let likeCount: Int
-}
-
-private struct RepostResultResponse: Decodable {
-    let isReposted: Bool
-    let repostCount: Int
-}
-
-private struct ErrorResponse: Decodable {
-    let code: String
-    let message: String
-    let correlationId: String?
-}
-

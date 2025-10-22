@@ -1,0 +1,804 @@
+---
+alwaysApply: true
+---
+
+## agctl Usage and Development
+
+### Overview
+
+This rule provides comprehensive guidance on using agctl (Agora Command Line Tool) for iOS development tasks, encouraging AI agents to leverage agctl for convenience and efficiency. It covers common usage patterns, troubleshooting, and how to modify agctl commands when they don't work as expected.
+
+### When to Use agctl
+
+**Use agctl for:**
+- Building individual packages or the entire project
+- Running tests on specific packages or all packages
+- Generating OpenAPI client code and mock data
+- Validating module structure and dependencies
+- Linting code with SwiftLint
+- Cleaning build artifacts and caches
+- Managing project configuration
+- Auto-fixing common build issues
+- Performance profiling and analytics
+
+**Prefer agctl over manual commands because:**
+- Provides better error messages with AI-powered analysis
+- Shows progress indicators and elapsed time
+- Handles dependency ordering automatically
+- Includes built-in validation and error recovery
+- Offers consistent interface across all development tasks
+
+### Core Commands
+
+#### Building
+```bash
+# Build specific package
+agctl build AuthFeature
+agctl build DesignSystem
+
+# Build all packages in dependency order
+agctl build
+
+# Build with options
+agctl build --verbose
+agctl build --release
+agctl build --profile
+```
+
+#### Testing
+```bash
+# Test specific package
+agctl test AuthFeature
+
+# Test all packages
+agctl test
+
+# Test with options
+agctl test --verbose
+agctl test --parallel
+```
+
+#### Code Generation
+```bash
+# Generate OpenAPI client
+agctl generate openapi
+
+# Generate mock data for previews
+agctl generate mocks
+```
+
+#### Validation
+```bash
+# Validate module structure
+agctl validate modules
+
+# Validate dependencies
+agctl validate dependencies
+
+# Validate platforms
+agctl validate platforms
+```
+
+#### Linting
+```bash
+# Lint specific package
+agctl lint AuthFeature
+
+# Lint all packages
+agctl lint
+
+# Lint with auto-fix
+agctl lint --fix
+agctl lint --strict
+```
+
+#### Cleaning
+```bash
+# Clean build artifacts
+agctl clean
+
+# Deep clean everything
+agctl clean all
+
+# Check what would be cleaned
+agctl clean --dry-run
+```
+
+### AI-Powered Features
+
+#### Auto-Fix Common Issues
+```bash
+# Auto-fix specific package
+agctl auto-fix AuthFeature
+
+# Auto-fix all packages
+agctl auto-fix
+```
+
+#### Performance Profiling
+```bash
+# Show build performance
+agctl profile show
+
+# Analyze performance trends
+agctl profile analyze
+
+# Clear performance data
+agctl profile clear
+```
+
+#### Error Analysis
+When builds fail, agctl provides:
+- AI-powered error analysis with specific suggestions
+- Automatic detection of common issues (imports, concurrency, Sendable)
+- Smart recommendations for fixing circular dependencies
+- Context-aware suggestions based on package type
+
+### Configuration Management
+
+#### Initialize Configuration
+```bash
+# Create .agctl.yml config file
+agctl config init
+
+# View current configuration
+agctl config show
+```
+
+#### Configuration Options
+Edit `.agctl.yml` to customize:
+```yaml
+build:
+  defaultConfiguration: debug
+  parallelJobs: 4
+  verbose: false
+
+validation:
+  strictNaming: true
+  allowFeatureDeps: false
+  enforceTests: false
+
+generate:
+  openapi:
+    specPath: OpenAPI/agora.yaml
+    outputPath: Packages/Kits/Networking/Sources/Networking/Generated
+
+lint:
+  autoFix: false
+  strict: false
+```
+
+### Troubleshooting and Modifying agctl
+
+#### When agctl Commands Don't Work
+
+1. **Check Installation**
+   ```bash
+   # Verify agctl is installed
+   which agctl
+   agctl --version
+   
+   # If not found, install from Tools/agctl-shim
+   cd Tools/agctl-shim
+   ./install.sh
+   ```
+
+2. **Clear Caches**
+   ```bash
+   # Clear build cache
+   agctl clean --all
+   
+   # Clear agctl build cache
+   rm -rf ~/.agctl/builds/*
+   ```
+
+3. **Check Dependencies**
+   ```bash
+   # Install required tools
+   brew install swiftlint
+   brew install mint
+   mint install apple/swift-openapi-generator
+   ```
+
+#### Modifying agctl Commands
+
+**Location**: `Tools/agctl/Sources/agctl/Commands/`
+
+**Common Modifications**:
+
+1. **Adding New Command Options**
+   - Edit the specific command file (e.g., `BuildCommand.swift`)
+   - Add new `@Flag` or `@Option` properties
+   - Update the `execute` method to handle new options
+
+2. **Modifying Build Logic**
+   - Edit `BuildCommand.swift`
+   - Update `buildPackage` or `buildAllPackages` methods
+   - Modify error handling in the `execute` method
+
+3. **Adding New Commands**
+   - Create new file in `Commands/` directory
+   - Implement `ParsableCommand` protocol
+   - Add to `AGCTLCommand.subcommands` array
+   - Add tests in `Tests/agctlTests/`
+
+4. **Updating Error Analysis**
+   - Edit `Core/AIErrorAnalyzer.swift`
+   - Modify error pattern recognition
+   - Update suggestion generation logic
+
+#### Development Workflow
+
+1. **Make Changes**
+   ```bash
+   # Edit agctl source code
+   vim Tools/agctl/Sources/agctl/Commands/BuildCommand.swift
+   ```
+
+2. **Test Changes**
+   ```bash
+   # The shim auto-rebuilds when sources change
+   agctl build AuthFeature
+   
+   # Or build manually
+   cd Tools/agctl
+   swift build -c release
+   ```
+
+3. **Debug Issues**
+   ```bash
+   # Run with verbose output
+   agctl build --verbose
+   
+   # Check agctl logs
+   agctl telemetry show
+   ```
+
+### Best Practices
+
+#### For AI Agents
+
+1. **Always Use agctl**
+   - Prefer `agctl build` over `swift build`
+   - Use `agctl test` instead of `swift test`
+   - Leverage `agctl validate` for structure checks
+
+2. **Leverage AI Features**
+   - Use `agctl auto-fix` when builds fail
+   - Check `agctl profile` for performance insights
+   - Utilize error analysis for debugging
+
+3. **Provide Context**
+   - Include package names when possible
+   - Use verbose flags for detailed output
+   - Mention specific error messages when troubleshooting
+
+#### For Development
+
+1. **Use Configuration**
+   - Create `.agctl.yml` for team settings
+   - Set appropriate parallel jobs for your machine
+   - Configure validation rules for your project
+
+2. **Regular Maintenance**
+   - Run `agctl clean` periodically
+   - Update agctl when new versions are available
+   - Monitor performance with `agctl profile`
+
+3. **Error Handling**
+   - Read AI error analysis carefully
+   - Try auto-fix before manual intervention
+   - Use verbose mode for detailed debugging
+
+### Common Issues and Solutions
+
+#### "agctl: command not found"
+```bash
+# Install the shim
+cd Tools/agctl-shim
+./install.sh
+
+# Verify installation
+which agctl
+```
+
+#### Build Failures
+```bash
+# Get AI-powered suggestions
+agctl build AuthFeature
+
+# Try auto-fix
+agctl auto-fix AuthFeature
+
+# Clean and retry
+agctl clean --all
+agctl build
+```
+
+#### OpenAPI Generation Fails
+```bash
+# Install required tools
+brew install mint
+mint install apple/swift-openapi-generator
+
+# Or use Homebrew
+brew install swift-openapi-generator
+```
+
+#### Slow Builds
+```bash
+# Check performance
+agctl profile show
+
+# Use more parallel jobs
+agctl build --parallel=8
+
+# Clean caches
+agctl clean --all
+```
+
+### Integration with Development Workflow
+
+#### Pre-commit Hooks
+```bash
+# Install git hooks
+agctl install-hooks
+
+# Hooks automatically:
+# - Validate module structure before commits
+# - Regenerate OpenAPI client after merges
+```
+
+#### CI/CD Integration
+```bash
+# Full validation pipeline
+agctl validate modules
+agctl validate dependencies
+agctl lint --strict
+agctl build --release
+agctl test
+```
+
+#### Shell Completions
+```bash
+# Install completions for better UX
+agctl completions zsh > ~/.zsh/completions/_agctl
+source ~/.zsh/completions/_agctl
+```
+
+### Advanced Usage
+
+#### Plugin System
+```bash
+# List available plugins
+agctl plugin list
+
+# Install custom plugin
+agctl plugin install https://github.com/team/agctl-plugin
+
+# Uninstall plugin
+agctl plugin uninstall plugin-name
+```
+
+#### Telemetry and Analytics
+```bash
+# View usage statistics
+agctl telemetry show
+
+# Enable/disable telemetry
+agctl telemetry enable
+agctl telemetry disable
+
+# Clear telemetry data
+agctl telemetry clear
+```
+
+### Summary
+
+agctl is the preferred tool for all iOS development tasks in the Agora project. It provides:
+
+- **Convenience**: Single command interface for all development tasks
+- **Intelligence**: AI-powered error analysis and auto-fix capabilities
+- **Reliability**: Built-in validation and error recovery
+- **Performance**: Optimized build processes and caching
+- **Extensibility**: Plugin system and configuration options
+
+Always prefer agctl over manual commands, and leverage its AI features for faster development and debugging.## agctl Usage and Development
+
+### Overview
+
+This rule provides comprehensive guidance on using agctl (Agora Command Line Tool) for iOS development tasks, encouraging AI agents to leverage agctl for convenience and efficiency. It covers common usage patterns, troubleshooting, and how to modify agctl commands when they don't work as expected.
+
+### When to Use agctl
+
+**Use agctl for:**
+- Building individual packages or the entire project
+- Running tests on specific packages or all packages
+- Generating OpenAPI client code and mock data
+- Validating module structure and dependencies
+- Linting code with SwiftLint
+- Cleaning build artifacts and caches
+- Managing project configuration
+- Auto-fixing common build issues
+- Performance profiling and analytics
+
+**Prefer agctl over manual commands because:**
+- Provides better error messages with AI-powered analysis
+- Shows progress indicators and elapsed time
+- Handles dependency ordering automatically
+- Includes built-in validation and error recovery
+- Offers consistent interface across all development tasks
+
+### Core Commands
+
+#### Building
+```bash
+# Build specific package
+agctl build AuthFeature
+agctl build DesignSystem
+
+# Build all packages in dependency order
+agctl build
+
+# Build with options
+agctl build --verbose
+agctl build --release
+agctl build --profile
+```
+
+#### Testing
+```bash
+# Test specific package
+agctl test AuthFeature
+
+# Test all packages
+agctl test
+
+# Test with options
+agctl test --verbose
+agctl test --parallel
+```
+
+#### Code Generation
+```bash
+# Generate OpenAPI client
+agctl generate openapi
+
+# Generate mock data for previews
+agctl generate mocks
+```
+
+#### Validation
+```bash
+# Validate module structure
+agctl validate modules
+
+# Validate dependencies
+agctl validate dependencies
+
+# Validate platforms
+agctl validate platforms
+```
+
+#### Linting
+```bash
+# Lint specific package
+agctl lint AuthFeature
+
+# Lint all packages
+agctl lint
+
+# Lint with auto-fix
+agctl lint --fix
+agctl lint --strict
+```
+
+#### Cleaning
+```bash
+# Clean build artifacts
+agctl clean
+
+# Deep clean everything
+agctl clean --all
+```
+
+### AI-Powered Features
+
+#### Auto-Fix Common Issues
+```bash
+# Auto-fix specific package
+agctl auto-fix AuthFeature
+
+# Auto-fix all packages
+agctl auto-fix
+```
+
+#### Performance Profiling
+```bash
+# Show build performance
+agctl profile show
+
+# Analyze performance trends
+agctl profile analyze
+
+# Clear performance data
+agctl profile clear
+```
+
+#### Error Analysis
+When builds fail, agctl provides:
+- AI-powered error analysis with specific suggestions
+- Automatic detection of common issues (imports, concurrency, Sendable)
+- Smart recommendations for fixing circular dependencies
+- Context-aware suggestions based on package type
+
+### Configuration Management
+
+#### Initialize Configuration
+```bash
+# Create .agctl.yml config file
+agctl config init
+
+# View current configuration
+agctl config show
+```
+
+#### Configuration Options
+Edit `.agctl.yml` to customize:
+```yaml
+build:
+  defaultConfiguration: debug
+  parallelJobs: 4
+  verbose: false
+
+validation:
+  strictNaming: true
+  allowFeatureDeps: false
+  enforceTests: false
+
+generate:
+  openapi:
+    specPath: OpenAPI/agora.yaml
+    outputPath: Packages/Kits/Networking/Sources/Networking/Generated
+
+lint:
+  autoFix: false
+  strict: false
+```
+
+### Troubleshooting and Modifying agctl
+
+#### When agctl Commands Don't Work
+
+1. **Check Installation**
+   ```bash
+   # Verify agctl is installed
+   which agctl
+   agctl --version
+   
+   # If not found, install from Tools/agctl-shim
+   cd Tools/agctl-shim
+   ./install.sh
+   ```
+
+2. **Clear Caches**
+   ```bash
+   # Clear build cache
+   agctl clean --all
+   
+   # Clear agctl build cache
+   rm -rf ~/.agctl/builds/*
+   ```
+
+3. **Check Dependencies**
+   ```bash
+   # Install required tools
+   brew install swiftlint
+   brew install mint
+   mint install apple/swift-openapi-generator
+   ```
+
+#### Modifying agctl Commands
+
+**Location**: `Tools/agctl/Sources/agctl/Commands/`
+
+**Common Modifications**:
+
+1. **Adding New Command Options**
+   - Edit the specific command file (e.g., `BuildCommand.swift`)
+   - Add new `@Flag` or `@Option` properties
+   - Update the `execute` method to handle new options
+
+2. **Modifying Build Logic**
+   - Edit `BuildCommand.swift`
+   - Update `buildPackage` or `buildAllPackages` methods
+   - Modify error handling in the `execute` method
+
+3. **Adding New Commands**
+   - Create new file in `Commands/` directory
+   - Implement `ParsableCommand` protocol
+   - Add to `AGCTLCommand.subcommands` array
+   - Add tests in `Tests/agctlTests/`
+
+4. **Updating Error Analysis**
+   - Edit `Core/AIErrorAnalyzer.swift`
+   - Modify error pattern recognition
+   - Update suggestion generation logic
+
+#### Development Workflow
+
+1. **Make Changes**
+   ```bash
+   # Edit agctl source code
+   vim Tools/agctl/Sources/agctl/Commands/BuildCommand.swift
+   ```
+
+2. **Test Changes**
+   ```bash
+   # The shim auto-rebuilds when sources change
+   agctl build AuthFeature
+   
+   # Or build manually
+   cd Tools/agctl
+   swift build -c release
+   ```
+
+3. **Debug Issues**
+   ```bash
+   # Run with verbose output
+   agctl build --verbose
+   
+   # Check agctl logs
+   agctl telemetry show
+   ```
+
+### Best Practices
+
+#### For AI Agents
+
+1. **Always Use agctl**
+   - Prefer `agctl build` over `swift build`
+   - Use `agctl test` instead of `swift test`
+   - Leverage `agctl validate` for structure checks
+
+2. **Leverage AI Features**
+   - Use `agctl auto-fix` when builds fail
+   - Check `agctl profile` for performance insights
+   - Utilize error analysis for debugging
+
+3. **Provide Context**
+   - Include package names when possible
+   - Use verbose flags for detailed output
+   - Mention specific error messages when troubleshooting
+
+#### For Development
+
+1. **Use Configuration**
+   - Create `.agctl.yml` for team settings
+   - Set appropriate parallel jobs for your machine
+   - Configure validation rules for your project
+
+2. **Regular Maintenance**
+   - Run `agctl clean` periodically
+   - Update agctl when new versions are available
+   - Monitor performance with `agctl profile`
+
+3. **Error Handling**
+   - Read AI error analysis carefully
+   - Try auto-fix before manual intervention
+   - Use verbose mode for detailed debugging
+
+### Common Issues and Solutions
+
+#### "agctl: command not found"
+```bash
+# Install the shim
+cd Tools/agctl-shim
+./install.sh
+
+# Verify installation
+which agctl
+```
+
+#### Build Failures
+```bash
+# Get AI-powered suggestions
+agctl build AuthFeature
+
+# Try auto-fix
+agctl auto-fix AuthFeature
+
+# Clean and retry
+agctl clean --all
+agctl build
+```
+
+#### OpenAPI Generation Fails
+```bash
+# Install required tools
+brew install mint
+mint install apple/swift-openapi-generator
+
+# Or use Homebrew
+brew install swift-openapi-generator
+```
+
+#### Slow Builds
+```bash
+# Check performance
+agctl profile show
+
+# Use more parallel jobs
+agctl build --parallel=8
+
+# Clean caches
+agctl clean --all
+```
+
+### Integration with Development Workflow
+
+#### Pre-commit Hooks
+```bash
+# Install git hooks
+agctl install-hooks
+
+# Hooks automatically:
+# - Validate module structure before commits
+# - Regenerate OpenAPI client after merges
+```
+
+#### CI/CD Integration
+```bash
+# Full validation pipeline
+agctl validate modules
+agctl validate dependencies
+agctl lint --strict
+agctl build --release
+agctl test
+```
+
+#### Shell Completions
+```bash
+# Install completions for better UX
+agctl completions zsh > ~/.zsh/completions/_agctl
+source ~/.zsh/completions/_agctl
+```
+
+### Advanced Usage
+
+#### Plugin System
+```bash
+# List available plugins
+agctl plugin list
+
+# Install custom plugin
+agctl plugin install https://github.com/team/agctl-plugin
+
+# Uninstall plugin
+agctl plugin uninstall plugin-name
+```
+
+#### Telemetry and Analytics
+```bash
+# View usage statistics
+agctl telemetry show
+
+# Enable/disable telemetry
+agctl telemetry enable
+agctl telemetry disable
+
+# Clear telemetry data
+agctl telemetry clear
+```
+
+### Summary
+
+agctl is the preferred tool for all iOS development tasks in the Agora project. It provides:
+
+- **Convenience**: Single command interface for all development tasks
+- **Intelligence**: AI-powered error analysis and auto-fix capabilities
+- **Reliability**: Built-in validation and error recovery
+- **Performance**: Optimized build processes and caching
+- **Extensibility**: Plugin system and configuration options
+
+Always prefer agctl over manual commands, and leverage its AI features for faster development and debugging.

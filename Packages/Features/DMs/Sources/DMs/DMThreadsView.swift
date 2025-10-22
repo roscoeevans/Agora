@@ -33,9 +33,8 @@ public struct DMThreadsView: View {
                     .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                 }
                 .navigationTitle("Messages")
-                .navigationBarTitleDisplayMode(.large)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    ToolbarItem(placement: .primaryAction) {
                         Button(action: {
                             // TODO: Start new conversation
                         }) {

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Execute shell commands
+/// Execute shell commands with guaranteed completion
 enum Shell {
     struct CommandError: LocalizedError {
         let command: String
@@ -19,13 +19,13 @@ enum Shell {
     /// - Returns: The command's stdout output
     @discardableResult
     static func run(_ command: String, at path: String? = nil, captureStderr: Bool = false) throws -> String {
+        // Use a simpler approach with bash directly instead of perl wrapper
+        let workingDir = path ?? FileManager.default.currentDirectoryPath
+        let fullCommand = "cd '\(workingDir)' && \(command)"
+        
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = ["-c", command]
-        
-        if let path = path {
-            process.currentDirectoryURL = URL(fileURLWithPath: path)
-        }
+        process.arguments = ["-c", fullCommand]
         
         let outputPipe = Pipe()
         let errorPipe = Pipe()
@@ -36,17 +36,31 @@ enum Shell {
         try process.run()
         process.waitUntilExit()
         
+        // Read output and close file handles to prevent hanging
         let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
         let output = String(data: outputData, encoding: .utf8) ?? ""
+        outputPipe.fileHandleForReading.closeFile()
         
         if process.terminationStatus != 0 {
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-            let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+            // Only read from errorPipe if we actually connected it to the process
+            let errorOutput: String
+            if captureStderr {
+                let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+                errorPipe.fileHandleForReading.closeFile()
+            } else {
+                errorOutput = ""
+            }
             throw CommandError(
                 command: command,
                 exitCode: process.terminationStatus,
                 output: output + errorOutput
             )
+        }
+        
+        // Close error pipe even on success if it was used
+        if captureStderr {
+            errorPipe.fileHandleForReading.closeFile()
         }
         
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -65,13 +79,13 @@ enum Shell {
     
     /// Run a command and stream output in real-time
     static func runWithLiveOutput(_ command: String, at path: String? = nil) throws {
+        // Use a simpler approach with bash directly
+        let workingDir = path ?? FileManager.default.currentDirectoryPath
+        let fullCommand = "cd '\(workingDir)' && \(command)"
+        
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = ["-c", command]
-        
-        if let path = path {
-            process.currentDirectoryURL = URL(fileURLWithPath: path)
-        }
+        process.arguments = ["-c", fullCommand]
         
         // Inherit stdout and stderr for real-time output
         process.standardOutput = FileHandle.standardOutput
@@ -89,4 +103,3 @@ enum Shell {
         }
     }
 }
-

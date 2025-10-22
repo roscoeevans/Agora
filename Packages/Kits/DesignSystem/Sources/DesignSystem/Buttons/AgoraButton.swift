@@ -100,7 +100,14 @@ public struct AgoraButton: View {
     }
     
     public var body: some View {
-        Button(action: action) {
+        Button(action: {
+            // Add haptic feedback
+            #if canImport(UIKit)
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+            #endif
+            action()
+        }) {
             Text(title)
                 .font(size.font)
                 .foregroundColor(foregroundColor)
@@ -182,13 +189,6 @@ private struct AgoraButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
-            .onTapGesture {
-                // Light haptic feedback on press
-                #if canImport(UIKit)
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
-                #endif
-            }
     }
 }
 

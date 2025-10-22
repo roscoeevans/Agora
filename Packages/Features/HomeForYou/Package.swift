@@ -6,7 +6,7 @@ let package = Package(
     name: "HomeForYou",
     platforms: [
         .iOS(.v26),
-        .macOS(.v10_15)
+        .macOS(.v26)  // Required to satisfy SPM dependency resolution
     ],
     products: [
         .library(name: "HomeForYou", targets: ["HomeForYou"])
@@ -15,7 +15,9 @@ let package = Package(
         .package(path: "../../Kits/DesignSystem"),
         .package(path: "../../Kits/Networking"),
         .package(path: "../../Kits/Analytics"),
-        .package(path: "../../Shared/AppFoundation")
+        .package(path: "../../Shared/AppFoundation"),
+        .package(path: "../../Shared/TestSupport"),
+        .package(path: "../PostDetail")
     ],
     targets: [
         .target(
@@ -24,15 +26,21 @@ let package = Package(
                 "DesignSystem",
                 "Networking", 
                 "Analytics",
-                "AppFoundation"
+                "AppFoundation",
+                "PostDetail"
             ],
+            path: "Sources/HomeForYou",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]
         ),
         .testTarget(
             name: "HomeForYouTests",
-            dependencies: ["HomeForYou"],
+            dependencies: [
+                "HomeForYou",
+                "TestSupport"
+            ],
+            path: "Tests/HomeForYouTests",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]

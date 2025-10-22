@@ -1,6 +1,10 @@
 import Foundation
-import Supabase
+import Security
+import SupabaseKit
 import AuthenticationServices
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Production authentication service using Supabase Auth
 @MainActor
@@ -39,12 +43,13 @@ public final class SupabaseAuthService: NSObject, AuthServiceProtocol, @unchecke
             throw AuthError.invalidCredentials
         }
         
+        // Generate nonce for Apple Sign In
+        let nonce = generateNonce()
+        
         // Sign in with Supabase using the Apple ID token
-        let session = try await supabaseClient.auth.signInWithIdToken(
-            credentials: .init(
-                provider: .apple,
-                idToken: identityToken
-            )
+        let session = try await supabaseClient.auth.signInWithApple(
+            idToken: identityToken,
+            nonce: nonce
         )
         
         // Extract user information
@@ -54,7 +59,7 @@ public final class SupabaseAuthService: NSObject, AuthServiceProtocol, @unchecke
         nameComponents.familyName = appleIDCredential.fullName?.familyName
         
         let authenticatedUser = AuthenticatedUser(
-            id: user.id.uuidString,
+            id: user.id,
             email: appleIDCredential.email ?? user.email,
             fullName: nameComponents
         )
@@ -69,7 +74,7 @@ public final class SupabaseAuthService: NSObject, AuthServiceProtocol, @unchecke
             user: authenticatedUser,
             accessToken: session.accessToken,
             refreshToken: session.refreshToken ?? "",
-            expiresAt: Date(timeIntervalSince1970: TimeInterval(session.expiresAt))
+            expiresAt: session.expiresAt
         )
     }
     
@@ -102,7 +107,7 @@ public final class SupabaseAuthService: NSObject, AuthServiceProtocol, @unchecke
 
     public func currentAccessToken() async throws -> String? {
         // Try to get from Supabase first
-        if let session = try? await supabaseClient.auth.session {
+        if let session = await supabaseClient.auth.session {
             return session.accessToken
         }
         
@@ -112,89 +117,76 @@ public final class SupabaseAuthService: NSObject, AuthServiceProtocol, @unchecke
 
     public var isAuthenticated: Bool {
         get async {
-            do {
-                return try await supabaseClient.auth.session != nil
-            } catch {
-                return false
-            }
+            return await supabaseClient.auth.session != nil
         }
     }
 
     // MARK: - Supabase-Specific Methods
 
-    /// Sign in with email and password (for development/testing)
-    public func signInWithEmail(email: String, password: String) async throws -> AuthResult {
-        let session = try await supabaseClient.auth.signIn(email: email, password: password)
-        
-        let user = session.user
-
-        let authenticatedUser = AuthenticatedUser(
-            id: user.id.uuidString,
-            email: user.email,
-            fullName: nil // Email auth doesn't provide name components
-        )
-
-        return AuthResult(
-            user: authenticatedUser,
-            accessToken: session.accessToken,
-            refreshToken: session.refreshToken ?? "",
-            expiresAt: Date(timeIntervalSince1970: session.expiresAt)
-        )
-    }
-
-    /// Sign up with email and password (for development/testing)
-    public func signUpWithEmail(email: String, password: String) async throws -> AuthResult {
-        let response = try await supabaseClient.auth.signUp(email: email, password: password)
-        
-        let user = response.user
-        
-        guard let session = response.session else {
+    /// Get current user session from Supabase
+    public func getSupabaseSession() async throws -> AuthSession {
+        guard let session = await supabaseClient.auth.session else {
             throw AuthError.invalidCredentials
         }
-
-        let authenticatedUser = AuthenticatedUser(
-            id: user.id.uuidString,
-            email: user.email,
-            fullName: nil // Email auth doesn't provide name components
-        )
-
-        return AuthResult(
-            user: authenticatedUser,
-            accessToken: session.accessToken,
-            refreshToken: session.refreshToken ?? "",
-            expiresAt: Date(timeIntervalSince1970: session.expiresAt)
-        )
+        return session
     }
-
-    /// Get current user session from Supabase
-    public func getSupabaseSession() async throws -> Auth.Session {
-        return try await supabaseClient.auth.session
+    
+    // MARK: - Helper Methods
+    
+    /// Generate a cryptographically secure nonce for Apple Sign In
+    private func generateNonce() -> String {
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        var result = ""
+        var remainingLength = 32
+        
+        while remainingLength > 0 {
+            let randoms: [UInt8] = (0 ..< 16).map { _ in
+                var random: UInt8 = 0
+                let errorCode = SecRandomCopyBytes(kSecRandomDefault, 1, &random)
+                if errorCode != errSecSuccess {
+                    fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+                }
+                return random
+            }
+            
+            randoms.forEach { random in
+                if remainingLength == 0 {
+                    return
+                }
+                
+                if random < charset.count {
+                    result.append(charset[Int(random)])
+                    remainingLength -= 1
+                }
+            }
+        }
+        
+        return result
     }
     
     // MARK: - Auth State Listener
     
     private func setupAuthStateListener() {
-        Task {
-            for await (event, session) in await supabaseClient.auth.authStateChanges {
-                await handleAuthStateChange(event, session: session)
-            }
-        }
+        // TODO: Implement auth state changes when SupabaseKit protocol is extended
+        // This requires adding authStateChanges to SupabaseAuthProtocol
+        Logger.auth.debug("Auth state listener setup - not yet implemented in SupabaseKit abstraction")
     }
     
-    private func handleAuthStateChange(_ event: AuthChangeEvent, session: Auth.Session?) async {
-        switch event {
-        case .signedIn:
-            Logger.auth.info("User signed in via Supabase Auth")
-        case .signedOut:
-            Logger.auth.info("User signed out via Supabase Auth")
-        case .userUpdated:
-            Logger.auth.info("User updated via Supabase Auth")
-        case .tokenRefreshed:
-            Logger.auth.debug("Token refreshed via Supabase Auth")
-        default:
-            break
-        }
-    }
+    // TODO: Re-implement when SupabaseKit supports auth state changes
+    // private func handleAuthStateChange(_ event: AuthChangeEvent, session: AuthSession?) async {
+    //     switch event {
+    //     case .signedIn:
+    //         Logger.auth.info("User signed in via Supabase Auth")
+    //     case .signedOut:
+    //         Logger.auth.info("User signed out via Supabase Auth")
+    //     case .userUpdated:
+    //         Logger.auth.info("User updated via Supabase Auth")
+    //     case .tokenRefreshed:
+    //         Logger.auth.debug("Token refreshed via Supabase Auth")
+    //     default:
+    //         break
+    //     }
+    // }
 }
 
 // MARK: - ASAuthorizationControllerDelegate
@@ -230,10 +222,14 @@ extension SupabaseAuthService: ASAuthorizationControllerDelegate {
 
 extension SupabaseAuthService: ASAuthorizationControllerPresentationContextProviding {
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        #if canImport(UIKit)
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first else {
             fatalError("No window available for Sign in with Apple presentation")
         }
         return window
+        #else
+        fatalError("Sign in with Apple is only available on iOS")
+        #endif
     }
 }

@@ -1,0 +1,46 @@
+#!/bin/bash
+# File watcher for agctl development
+# Run this in a separate terminal while developing agctl
+
+AGCTL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LAST_BUILD=0
+
+echo "👀 Watching agctl for changes..."
+echo "   Directory: $AGCTL_DIR"
+echo "   Press Ctrl+C to stop"
+echo ""
+
+while true; do
+    # Get the latest modification time of any Swift file
+    LATEST=$(find "$AGCTL_DIR/Sources" -name "*.swift" -type f -exec stat -f "%m" {} \; 2>/dev/null | sort -nr | head -1)
+    
+    if [ "$LATEST" != "$LAST_BUILD" ] && [ "$LATEST" != "" ]; then
+        LAST_BUILD=$LATEST
+        
+        echo "🔧 Change detected, rebuilding..."
+        cd "$AGCTL_DIR"
+        
+        if swift build --configuration release 2>&1 | tail -1 | grep -q "Build complete"; then
+            echo "✅ Build succeeded"
+            
+            # Try to install
+            if sudo cp -f .build/release/agctl /usr/local/bin/agctl 2>/dev/null; then
+                sudo chmod +x /usr/local/bin/agctl
+                echo "✅ Installed to /usr/local/bin"
+                echo "   Version: $(agctl --version)"
+            else
+                echo "⚠️  Could not install (needs sudo)"
+            fi
+        else
+            echo "❌ Build failed"
+        fi
+        
+        echo ""
+    fi
+    
+    sleep 2
+done
+
+
+
+

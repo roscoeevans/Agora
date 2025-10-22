@@ -5,7 +5,8 @@ import PackageDescription
 let package = Package(
     name: "PostDetail",
     platforms: [
-        .iOS(.v26)
+        .iOS(.v26),
+        .macOS(.v26)  // Required to satisfy SPM dependency resolution
     ],
     products: [
         .library(name: "PostDetail", targets: ["PostDetail"])
@@ -13,6 +14,9 @@ let package = Package(
     dependencies: [
         .package(path: "../../Kits/DesignSystem"),
         .package(path: "../../Kits/Networking"),
+        .package(path: "../../Kits/UIKitBridge"),
+        .package(path: "../../Kits/Verification"),
+        .package(path: "../../Kits/Engagement"),
         .package(path: "../../Shared/AppFoundation")
     ],
     targets: [
@@ -21,6 +25,9 @@ let package = Package(
             dependencies: [
                 "DesignSystem",
                 "Networking",
+                "UIKitBridge",
+                "Verification",
+                "Engagement",
                 "AppFoundation"
             ],
             swiftSettings: [

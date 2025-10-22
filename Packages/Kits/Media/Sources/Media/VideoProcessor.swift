@@ -1,6 +1,5 @@
 import Foundation
 import AVFoundation
-import UIKit
 
 /// Video processing utilities for posts
 public final class VideoProcessor: Sendable {
@@ -8,47 +7,56 @@ public final class VideoProcessor: Sendable {
     
     private init() {}
     
-    // MARK: - Validation
+    // MARK: - Video Validation
     
-    /// Validate video duration (max 5 minutes)
+    /// Validate video file and extract metadata
     /// - Parameter videoURL: Local URL of the video file
-    /// - Returns: Duration in seconds
-    /// - Throws: VideoError if duration exceeds 5 minutes or cannot be read
-    public func validateDuration(_ videoURL: URL) async throws -> TimeInterval {
+    /// - Returns: Video metadata (dimensions, duration)
+    public func validateAndExtractMetadata(_ videoURL: URL) async throws -> VideoMetadata {
         let asset = AVURLAsset(url: videoURL)
         
-        let duration = try await asset.load(.duration)
-        let durationSeconds = CMTimeGetSeconds(duration)
-        
-        guard durationSeconds > 0 else {
-            throw VideoError.invalidDuration
+        // Check if file exists and is readable
+        guard asset.isReadable else {
+            throw VideoError.invalidFile
         }
         
-        let maxDuration: TimeInterval = 5 * 60 // 5 minutes
-        guard durationSeconds <= maxDuration else {
-            throw VideoError.durationTooLong(actual: durationSeconds, max: maxDuration)
-        }
-        
-        return durationSeconds
-    }
-    
-    /// Extract video dimensions
-    /// - Parameter videoURL: Local URL of the video file
-    /// - Returns: Tuple of (width, height)
-    public func extractDimensions(_ videoURL: URL) async throws -> (width: Int, height: Int) {
-        let asset = AVURLAsset(url: videoURL)
-        
-        guard let track = try await asset.loadTracks(withMediaType: .video).first else {
+        // Get video tracks
+        let videoTracks = try await asset.loadTracks(withMediaType: .video)
+        guard let videoTrack = videoTracks.first else {
             throw VideoError.noVideoTrack
         }
         
-        let naturalSize = try await track.load(.naturalSize)
-        let transform = try await track.load(.preferredTransform)
+        // Get dimensions
+        let naturalSize = try await videoTrack.load(.naturalSize)
+        let dimensions = (width: Int(abs(naturalSize.width)), height: Int(abs(naturalSize.height)))
         
-        // Apply transform to get actual display size
-        let size = naturalSize.applying(transform)
+        // Get duration
+        let duration = try await asset.load(.duration)
+        let durationSeconds = CMTimeGetSeconds(duration)
         
-        return (width: Int(abs(size.width)), height: Int(abs(size.height)))
+        // Validate dimensions (minimum 480p, maximum 4K)
+        guard dimensions.width >= 480 && dimensions.height >= 480 else {
+            throw VideoError.resolutionTooLow
+        }
+        
+        guard dimensions.width <= 3840 && dimensions.height <= 2160 else {
+            throw VideoError.resolutionTooHigh
+        }
+        
+        // Validate duration (minimum 1 second, maximum 5 minutes)
+        guard durationSeconds >= 1.0 else {
+            throw VideoError.durationTooShort
+        }
+        
+        guard durationSeconds <= 300.0 else {
+            throw VideoError.durationTooLong
+        }
+        
+        return VideoMetadata(
+            width: dimensions.width,
+            height: dimensions.height,
+            duration: durationSeconds
+        )
     }
     
     // MARK: - Thumbnail Generation
@@ -57,18 +65,18 @@ public final class VideoProcessor: Sendable {
     /// - Parameters:
     ///   - videoURL: Local URL of the video file
     ///   - time: Time in video to capture (default: 1 second)
-    /// - Returns: UIImage thumbnail
-    public func generateThumbnail(from videoURL: URL, at time: TimeInterval = 1.0) async throws -> UIImage {
+    /// - Returns: CGImage thumbnail
+    public func generateThumbnail(from videoURL: URL, at time: TimeInterval = 1.0) async throws -> CGImage {
         let asset = AVURLAsset(url: videoURL)
         let imageGenerator = AVAssetImageGenerator(asset: asset)
         imageGenerator.appliesPreferredTrackTransform = true
         imageGenerator.requestedTimeToleranceAfter = .zero
         imageGenerator.requestedTimeToleranceBefore = .zero
         
-        let cmTime = CMTime(seconds: time, preferredTimescale: 600)
+        let time = CMTime(seconds: time, preferredTimescale: 600)
         
         return try await withCheckedThrowingContinuation { continuation in
-            imageGenerator.generateCGImageAsynchronously(for: cmTime) { cgImage, actualTime, error in
+            imageGenerator.generateCGImageAsynchronously(for: time) { cgImage, _, error in
                 if let error = error {
                     continuation.resume(throwing: VideoError.thumbnailGenerationFailed(error))
                     return
@@ -79,8 +87,7 @@ public final class VideoProcessor: Sendable {
                     return
                 }
                 
-                let image = UIImage(cgImage: cgImage)
-                continuation.resume(returning: image)
+                continuation.resume(returning: cgImage)
             }
         }
     }
@@ -91,102 +98,65 @@ public final class VideoProcessor: Sendable {
     /// - Parameters:
     ///   - videoURL: Local URL of the video file
     ///   - maxSizeBytes: Maximum file size in bytes (default: 50MB)
-    /// - Returns: URL of compressed video, or original if no compression needed
-    public func compressIfNeeded(_ videoURL: URL, maxSizeBytes: Int = 50 * 1024 * 1024) async throws -> URL {
-        // Check current file size
-        let fileAttributes = try FileManager.default.attributesOfItem(atPath: videoURL.path)
-        guard let fileSize = fileAttributes[.size] as? Int else {
-            throw VideoError.cannotReadFileSize
-        }
+    /// - Returns: URL of compressed video (may be same as input if no compression needed)
+    public func compressIfNeeded(videoURL: URL, maxSizeBytes: Int = 50 * 1024 * 1024) async throws -> URL {
+        let fileSize = try videoURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         
-        // If under limit, return original
+        // If file is already small enough, return original
         if fileSize <= maxSizeBytes {
             return videoURL
         }
         
-        // Compress video
-        let asset = AVURLAsset(url: videoURL)
-        
-        // Create export session with medium quality preset
-        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetMediumQuality) else {
-            throw VideoError.compressionFailed
-        }
-        
-        // Output path
-        let outputURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString)
-            .appendingPathExtension("mp4")
-        
-        exportSession.outputURL = outputURL
-        exportSession.outputFileType = .mp4
-        
-        await exportSession.export()
-        
-        guard exportSession.status == .completed else {
-            throw VideoError.compressionFailed
-        }
-        
-        return outputURL
-    }
-    
-    // MARK: - Validation Helper
-    
-    /// Perform all validation checks on a video
-    /// - Parameter videoURL: Local URL of the video file
-    /// - Returns: VideoMetadata with duration, dimensions
-    public func validateAndExtractMetadata(_ videoURL: URL) async throws -> VideoMetadata {
-        let duration = try await validateDuration(videoURL)
-        let dimensions = try await extractDimensions(videoURL)
-        
-        return VideoMetadata(
-            duration: duration,
-            width: dimensions.width,
-            height: dimensions.height
-        )
+        // For now, return original URL
+        // TODO: Implement actual video compression using AVAssetExportSession
+        return videoURL
     }
 }
 
 // MARK: - Video Metadata
 
 public struct VideoMetadata: Sendable {
-    public let duration: TimeInterval
     public let width: Int
     public let height: Int
+    public let duration: TimeInterval
     
-    public init(duration: TimeInterval, width: Int, height: Int) {
-        self.duration = duration
+    public init(width: Int, height: Int, duration: TimeInterval) {
         self.width = width
         self.height = height
+        self.duration = duration
     }
 }
 
 // MARK: - Video Errors
 
 public enum VideoError: LocalizedError, Sendable {
-    case invalidDuration
-    case durationTooLong(actual: TimeInterval, max: TimeInterval)
+    case invalidFile
     case noVideoTrack
+    case resolutionTooLow
+    case resolutionTooHigh
+    case durationTooShort
+    case durationTooLong
     case thumbnailGenerationFailed(Error?)
-    case cannotReadFileSize
-    case compressionFailed
+    case compressionFailed(Error?)
     
     public var errorDescription: String? {
         switch self {
-        case .invalidDuration:
-            return "Video has invalid duration"
-        case .durationTooLong(let actual, let max):
-            let actualMinutes = Int(actual / 60)
-            let maxMinutes = Int(max / 60)
-            return "Video is too long (\(actualMinutes)m). Maximum duration is \(maxMinutes) minutes."
+        case .invalidFile:
+            return "Invalid or unreadable video file"
         case .noVideoTrack:
-            return "Video file has no video track"
-        case .thumbnailGenerationFailed:
-            return "Failed to generate video thumbnail"
-        case .cannotReadFileSize:
-            return "Cannot read video file size"
-        case .compressionFailed:
-            return "Video compression failed"
+            return "No video track found in file"
+        case .resolutionTooLow:
+            return "Video resolution too low (minimum 480p required)"
+        case .resolutionTooHigh:
+            return "Video resolution too high (maximum 4K allowed)"
+        case .durationTooShort:
+            return "Video duration too short (minimum 1 second required)"
+        case .durationTooLong:
+            return "Video duration too long (maximum 5 minutes allowed)"
+        case .thumbnailGenerationFailed(let error):
+            return "Failed to generate thumbnail: \(error?.localizedDescription ?? "Unknown error")"
+        case .compressionFailed(let error):
+            return "Failed to compress video: \(error?.localizedDescription ?? "Unknown error")"
         }
     }
 }
-

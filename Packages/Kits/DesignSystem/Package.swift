@@ -4,17 +4,26 @@ import PackageDescription
 
 let package = Package(
     name: "DesignSystem",
-    platforms: [.iOS(.v26)],
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v26)  // High version to effectively disable macOS
+    ],
     products: [
         .library(name: "DesignSystem", targets: ["DesignSystem"])
     ],
     dependencies: [
-        .package(path: "../../Shared/AppFoundation")
+        .package(path: "../../Shared/AppFoundation"),
+        .package(path: "../UIKitBridge"),
+        .package(path: "../Engagement")
     ],
     targets: [
         .target(
             name: "DesignSystem",
-            dependencies: ["AppFoundation"],
+            dependencies: [
+                "AppFoundation",
+                "UIKitBridge",
+                "Engagement"
+            ],
             resources: [.process("Resources")],
             swiftSettings: [
                 // Ensure DEBUG is defined for this package in Debug config (needed for #if DEBUG blocks).

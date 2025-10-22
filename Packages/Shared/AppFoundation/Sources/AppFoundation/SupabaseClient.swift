@@ -1,27 +1,18 @@
 import Foundation
-import Supabase
+import SupabaseKit
 
 /// Centralized Supabase client configuration and access
-/// @unchecked Sendable: SupabaseClient is thread-safe in practice via its actor-based architecture
+/// @unchecked Sendable: SupabaseClientProtocol implementations are thread-safe
 public final class AgoraSupabaseClient: @unchecked Sendable {
     public static let shared = AgoraSupabaseClient()
 
-    public let client: SupabaseClient
+    public let client: SupabaseClientProtocol
 
     private init() {
-        self.client = SupabaseClient(
-            supabaseURL: AppConfig.supabaseURL,
-            supabaseKey: AppConfig.supabaseAnonKey,
-            options: SupabaseClientOptions(
-                auth: .init(
-                    redirectToURL: URL(string: "\(AppConfig.webShareBaseURL)/auth/callback")
-                ),
-                global: .init(
-                    headers: [
-                        "X-Client-Info": "agora-ios/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")"
-                    ]
-                )
-            )
+        // Create live implementation using SupabaseKit
+        self.client = SupabaseClientLive(
+            url: AppConfig.supabaseURL.absoluteString,
+            key: AppConfig.supabaseAnonKey
         )
 
         // Configure auth callback handling
@@ -29,18 +20,23 @@ public final class AgoraSupabaseClient: @unchecked Sendable {
     }
 
     /// Access to Supabase Auth
-    public var auth: AuthClient {
+    public var auth: SupabaseAuthProtocol {
         return client.auth
     }
 
     /// Access to Supabase Database
-    public var database: PostgrestClient {
+    public var database: SupabaseDatabaseProtocol {
         return client.database
     }
 
     /// Access to Supabase Storage  
-    public var storage: SupabaseStorageClient {
+    public var storage: SupabaseStorageProtocol {
         return client.storage
+    }
+
+    /// Access to Supabase Realtime
+    public var realtime: SupabaseRealtimeProtocol {
+        return client.realtime
     }
 
     /// Check if the client is properly configured
@@ -51,14 +47,9 @@ public final class AgoraSupabaseClient: @unchecked Sendable {
 
     /// Perform a health check on the Supabase connection
     public func performHealthCheck() async -> Bool {
-        do {
-            // Try to fetch current session to verify connection
-            _ = try await client.auth.session
-            return true
-        } catch {
-            print("[SupabaseClient] Health check failed: \(error)")
-            return false
-        }
+        // Try to fetch current session to verify connection
+        let session = await client.auth.session
+        return session != nil
     }
 
     // MARK: - Private Methods
@@ -71,19 +62,15 @@ public final class AgoraSupabaseClient: @unchecked Sendable {
 
 // MARK: - Convenience Extensions
 
-extension SupabaseClient {
+extension AgoraSupabaseClient {
     /// Convenience method to get current session safely
-    public func currentSession() async throws -> Auth.Session? {
-        return try await self.auth.session
+    public func currentSession() async -> AuthSession? {
+        return await self.auth.session
     }
 
     /// Convenience method to check if user is authenticated
     public func isAuthenticated() async -> Bool {
-        do {
-            return try await self.auth.session != nil
-        } catch {
-            return false
-        }
+        return await self.auth.session != nil
     }
 }
 

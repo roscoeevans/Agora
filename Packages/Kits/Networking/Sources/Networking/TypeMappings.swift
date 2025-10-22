@@ -1,5 +1,6 @@
 import Foundation
 import AppFoundation
+@_spi(Generated) import OpenAPIRuntime
 
 // MARK: - Type Mappings between Components.Schemas and AppFoundation
 
@@ -109,6 +110,7 @@ extension UpdateProfileRequest {
     /// Convert AppFoundation UpdateProfileRequest to generated UpdateProfileRequest
     func toComponentsSchemas() -> Components.Schemas.UpdateProfileRequest {
         Components.Schemas.UpdateProfileRequest(
+            handle: self.handle,
             displayHandle: self.displayHandle,
             displayName: self.displayName,
             bio: self.bio,

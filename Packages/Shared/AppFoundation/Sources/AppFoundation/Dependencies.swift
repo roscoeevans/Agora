@@ -1,4 +1,5 @@
 import Foundation
+import SupabaseKit
 
 // MARK: - API Client Protocol
 
@@ -340,12 +341,14 @@ public struct CheckHandleResponse: Sendable, Codable {
 }
 
 public struct UpdateProfileRequest: Sendable, Codable {
+    public let handle: String?
     public let displayHandle: String?
     public let displayName: String?
     public let bio: String?
     public let avatarUrl: String?
     
-    public init(displayHandle: String? = nil, displayName: String? = nil, bio: String? = nil, avatarUrl: String? = nil) {
+    public init(handle: String? = nil, displayHandle: String? = nil, displayName: String? = nil, bio: String? = nil, avatarUrl: String? = nil) {
+        self.handle = handle
         self.displayHandle = displayHandle
         self.displayName = displayName
         self.bio = bio
@@ -421,13 +424,16 @@ public struct Dependencies: Sendable {
     public let appearance: AppearancePreference
     
     /// Engagement service (likes, reposts, shares)
-    /// Note: Uses placeholder protocol until Engagement Kit is properly imported
-    /// For now, type-erased to avoid circular dependencies
-    public let engagement: (any Sendable)?
+    public let engagement: (any EngagementService)?
     
     /// Supabase client for real-time subscriptions and direct database access
-    /// Type-erased to avoid importing Supabase in AppFoundation
-    public let supabase: (any Sendable)?
+    public let supabase: (any SupabaseClientProtocol)?
+    
+    /// Comment composition service for creating comment sheets
+    public let commentComposition: CommentCompositionProtocol?
+    
+    /// Media bundle service for fetching and managing media bundles
+    public let mediaBundle: MediaBundleServiceProtocol?
     
     // MARK: - Initialization
     
@@ -437,8 +443,10 @@ public struct Dependencies: Sendable {
         analytics: any AnalyticsClient = NoOpAnalyticsClient(),
         environment: any EnvironmentConfig,
         appearance: AppearancePreference,
-        engagement: (any Sendable)? = nil,
-        supabase: (any Sendable)? = nil
+        engagement: (any EngagementService)? = nil,
+        supabase: (any SupabaseClientProtocol)? = nil,
+        commentComposition: CommentCompositionProtocol? = nil,
+        mediaBundle: MediaBundleServiceProtocol? = nil
     ) {
         self.networking = networking
         self.auth = auth
@@ -447,6 +455,8 @@ public struct Dependencies: Sendable {
         self.appearance = appearance
         self.engagement = engagement
         self.supabase = supabase
+        self.commentComposition = commentComposition
+        self.mediaBundle = mediaBundle
     }
 }
 
@@ -490,12 +500,32 @@ extension Dependencies {
         // Analytics defaults to no-op; will be replaced with real implementation
         // when set via .with Analytics() method
         
+        // Create comment composition service
+        let commentComposition: CommentCompositionProtocol
+        do {
+            commentComposition = try DefaultServiceFactory.commentCompositionService()
+        } catch {
+            print("[Dependencies] ⚠️ Failed to create comment composition service: \(error)")
+            commentComposition = NoOpCommentCompositionService()
+        }
+        
+        // Create media bundle service
+        let mediaBundle: MediaBundleServiceProtocol
+        do {
+            mediaBundle = try DefaultServiceFactory.mediaBundleService()
+        } catch {
+            print("[Dependencies] ⚠️ Failed to create media bundle service: \(error)")
+            mediaBundle = NoOpMediaBundleService()
+        }
+        
         return Dependencies(
             networking: networking,
             auth: auth,
             analytics: NoOpAnalyticsClient(),
             environment: EnvironmentConfigLive(),
-            appearance: AppearancePreferenceLive()
+            appearance: AppearancePreferenceLive(),
+            commentComposition: commentComposition,
+            mediaBundle: mediaBundle
         )
     }
     
@@ -513,14 +543,18 @@ extension Dependencies {
         auth: AuthServiceProtocol? = nil,
         analytics: (any AnalyticsClient)? = nil,
         environment: (any EnvironmentConfig)? = nil,
-        appearance: AppearancePreference? = nil
+        appearance: AppearancePreference? = nil,
+        commentComposition: CommentCompositionProtocol? = nil,
+        mediaBundle: MediaBundleServiceProtocol? = nil
     ) -> Dependencies {
         return Dependencies(
             networking: networking ?? PreviewStubClient(),
             auth: auth ?? MockAuthService(),
             analytics: analytics ?? NoOpAnalyticsClient(),
             environment: environment ?? EnvironmentConfigFake(),
-            appearance: appearance ?? AppearancePreferenceLive()
+            appearance: appearance ?? AppearancePreferenceLive(),
+            commentComposition: commentComposition ?? NoOpCommentCompositionService(),
+            mediaBundle: mediaBundle ?? NoOpMediaBundleService()
         )
     }
     #endif
@@ -539,13 +573,15 @@ extension Dependencies {
             environment: self.environment,
             appearance: self.appearance,
             engagement: self.engagement,
-            supabase: self.supabase
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: self.mediaBundle
         )
     }
     
     /// Returns a copy with updated engagement service
     /// This is useful for lazy initialization after Engagement module is loaded
-    public func withEngagement(_ engagement: any Sendable) -> Dependencies {
+    public func withEngagement(_ engagement: any EngagementService) -> Dependencies {
         Dependencies(
             networking: self.networking,
             auth: self.auth,
@@ -553,12 +589,14 @@ extension Dependencies {
             environment: self.environment,
             appearance: self.appearance,
             engagement: engagement,
-            supabase: self.supabase
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: self.mediaBundle
         )
     }
     
     /// Returns a copy with updated Supabase client
-    public func withSupabase(_ supabase: any Sendable) -> Dependencies {
+    public func withSupabase(_ supabase: any SupabaseClientProtocol) -> Dependencies {
         Dependencies(
             networking: self.networking,
             auth: self.auth,
@@ -566,7 +604,39 @@ extension Dependencies {
             environment: self.environment,
             appearance: self.appearance,
             engagement: self.engagement,
-            supabase: supabase
+            supabase: supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: self.mediaBundle
+        )
+    }
+    
+    /// Returns a copy with updated comment composition service
+    public func withCommentComposition(_ commentComposition: CommentCompositionProtocol) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase,
+            commentComposition: commentComposition,
+            mediaBundle: self.mediaBundle
+        )
+    }
+    
+    /// Returns a copy with updated media bundle service
+    public func withMediaBundle(_ mediaBundle: MediaBundleServiceProtocol) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: mediaBundle
         )
     }
 }

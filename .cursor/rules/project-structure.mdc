@@ -38,7 +38,7 @@ The `Packages/` directory is organized into **four main categories**:
 Features/
 ├── Auth/                      # Auth UI/UX + app-level state (services are in AppFoundation)
 ├── Compose/                   # Post composition and media upload
-├── DMs/                       # Direct messaging
+├── DirectMessages/            # Direct messaging (DMs)
 ├── HomeFollowing/             # Following feed (chronological)
 ├── HomeForYou/                # For You feed (recommendations)
 ├── Notifications/             # Push notifications and in-app alerts
@@ -54,7 +54,12 @@ Features/
 - Feature-level coordinators and state management
 - Dependencies on Kits and Shared modules
 
-**Important:** Feed switching (For You ↔ Following) lives in `Resources/ContentView.swift` at the app root level, not in a separate feature package. This is app-level orchestration, not feature-specific business logic. Features should be isolated and independent; avoid creating "coordinator" features that just combine other features.
+**Important:** Feed switching (For You ↔ Following) lives in `Resources/RootView.swift` at the app root level, not in a separate feature package. This is app-level orchestration, not feature-specific business logic. Features should be isolated and independent; avoid creating "coordinator" features that just combine other features.
+
+**Composition Rules:**
+- Composition lives at app root (`Resources/RootView.swift` and Root composition) or in AppFoundation Navigation
+- Features remain leaf packages
+- Features never push other Features directly. They emit intents/route requests (via AppFoundation types). App root (or Nav env) performs the cross-tab navigation.
 
 #### Kits (`Packages/Kits/`)
 **When to use:** Creating reusable functionality that provides specific capabilities
@@ -63,12 +68,13 @@ Features/
 Kits/
 ├── Analytics/                 # PostHog analytics wrapper
 ├── DesignSystem/              # UI components, colors, typography
+├── Engagement/                # Post engagement (likes, reposts, shares)
 ├── Media/                     # Image/video capture, processing, upload
 ├── Moderation/                # Content moderation and reporting
-├── Networking/                # API client and network layer
+├── Networking/                # API client and network layer (OpenAPI)
 ├── Persistence/               # SwiftData models and caching
 ├── Recommender/               # Recommendation engine client
-├── SupabaseKit/               # Supabase client integration
+├── SupabaseKit/               # Supabase services wrapper (auth, realtime, storage)
 └── Verification/              # Device attestation and anti-bot
 ```
 
@@ -77,6 +83,14 @@ Kits/
 - Reusable business logic
 - Third-party SDK wrappers
 - Dependencies on other Kits and Shared modules
+
+**Key Kit Guidelines:**
+- **SupabaseKit**: PostgREST/Realtime/Auth/Storage/Edge Functions for Supabase. Never host OpenAPI clients here.
+- **Networking**: OpenAPI client and non-Supabase HTTP/WS. Never import Supabase from here.
+- **DesignSystem**: UI components only - NO business logic dependencies
+  - **MUST NOT import:** SwiftData, SupabaseKit, or any business-logic Kit
+  - **Allowed imports:** SwiftUI, Combine (view concerns), AppFoundation (types/themes), TestSupport (tests only)
+- **Engagement**: Business logic for post interactions - protocols defined in AppFoundation (`ServiceProtocols.swift`)
 
 **Important:** Authentication services (Sign in with Apple, phone verification, session management) live in `AppFoundation`, not as a Kit. See "Why Auth is in AppFoundation" below.
 
@@ -94,11 +108,15 @@ Shared/
 - Dependency injection (`Dependencies.swift`, `Dependencies+Environment.swift`)
 - Navigation infrastructure (`Routes.swift`, `DeepLinkRouter.swift`, `NavigationEnvironment.swift`)
 - Appearance preferences (`AppearancePreference.swift`)
-- Service protocols (`ServiceProtocols.swift`)
+- **Service protocols** (`ServiceProtocols.swift`) - All service interfaces defined here
 - Auth services (`SupabaseAuthService.swift`, `SessionStore.swift`, `KeychainHelper.swift`)
 - Phone verification (`TwilioPhoneVerifier.swift`)
 - Mock implementations (`MockServices.swift`)
 - Service factories (`ServiceFactory.swift`)
+
+**Critical:** AppFoundation defines service protocols, but implementations live in their respective Kits. This prevents circular dependencies and enables clean testing.
+
+**Exception:** Auth implementations live in Shared/AppFoundation due to lifecycle coupling (bootstrap, session, environment). Any future candidate for AppFoundation implementation must be formally reviewed; the default is: implementations live in Kits.
 
 #### ThirdParty (`Packages/ThirdParty/`)
 **When to use:** Integrating third-party SDKs that need custom Swift Package wrappers
@@ -149,6 +167,30 @@ ThirdParty/
 - If available via SPM → Add to Package.swift dependencies
 - If needs custom wrapper → **ThirdParty** in `Packages/ThirdParty/`
 
+**Only create ThirdParty wrapper if:**
+- The SDK lacks SPM or needs binary vendoring
+- You need protocol abstraction to avoid leaking types
+- You must gate platform/features or inject config at init
+- If none apply, depend on the vendor package directly in the using Kit
+
+#### "I'm creating a service that other modules need"
+- Define protocol in **AppFoundation** (`ServiceProtocols.swift`)
+- Implement in appropriate **Kit** module
+- Register in **Dependencies** container
+- Example: `CommentCompositionProtocol` in AppFoundation, `CommentCompositionService` in PostDetail
+
+#### "I'm adding bookmarking/collections"
+→ **Kit** (domain logic) + small **Feature** for UI, protocols in AppFoundation
+
+#### "I'm adding local caching or persistence"
+→ **Persistence Kit**; define models here, expose read/write interfaces; do not put SwiftData code in Features.
+
+#### "I'm creating a Supabase wrapper"
+- Create new **SupabaseKit** module
+- Define protocols for Supabase services
+- Implement live and mock versions
+- Other modules can depend on SupabaseKit directly
+
 ### Package Structure Template
 
 Every Swift Package must follow this structure:
@@ -174,8 +216,8 @@ PackageName/
 - **Views:** `{Feature}View.swift` (e.g., `ComposeView.swift`)
 - **ViewModels:** `{Feature}ViewModel.swift` (e.g., `ComposeViewModel.swift`)
 - **Models:** `{Feature}.swift` or `{Feature}Model.swift`
-- **Services:** `{Service}Service.swift` (e.g., `AuthService.swift`)
-- **Service Implementations:** `{Service}ServiceLive.swift` (e.g., `NetworkingClientLive.swift`)
+- **Business Logic Services:** `{Service}Service.swift` / `{Service}ServiceLive.swift` / `{Service}ServiceMock.swift`
+- **Network Clients:** `{Client}Client.swift` / `{Client}ClientLive.swift` / `{Client}ClientMock.swift`
 - **Test Mocks:** `{Service}Mock.swift` or `{Service}Fake.swift`
 - **Factories:** `{Service}Factory.swift`
 - **Extensions:** `{Type}+{Purpose}.swift` (e.g., `String+Validation.swift`)
@@ -184,6 +226,17 @@ PackageName/
 - **Assets:** Use `.xcassets` bundles in package `Resources/` directory
 - **Strings:** `Localizable.strings`
 - **Configuration:** `.plist` files
+
+**SwiftPM Resource Declaration:**
+```swift
+// Package.swift
+target(
+  name: "DesignSystem",
+  resources: [.process("Resources")]
+)
+```
+- Asset catalogs live under `Sources/PackageName/Resources/*.xcassets`
+- No global asset lookups—each package owns its bundle via `Bundle.module`
 
 ### Module Dependency Rules
 
@@ -206,6 +259,40 @@ ThirdParty (isolated)
 
 **Never create circular dependencies:** If Kit A needs Kit B, then Kit B cannot depend on Kit A.
 
+#### Critical Dependency Rules
+
+**❌ FORBIDDEN: Feature-to-Feature Dependencies**
+- Features must NEVER depend on other Features directly
+- Use AppFoundation service protocols instead
+- Example: HomeForYou should NOT import PostDetail directly
+
+**✅ CORRECT: Protocol-Based Communication**
+```swift
+// ❌ WRONG: Feature importing another Feature
+import PostDetail
+CommentSheet(post: post)
+
+// ✅ CORRECT: Using AppFoundation service protocol
+@Environment(\.deps) private var deps
+deps.commentComposition?.createCommentSheet(for: post, ...)
+```
+
+**❌ FORBIDDEN: DesignSystem Business Logic Dependencies**
+- DesignSystem should only depend on AppFoundation
+- NO direct dependencies on Engagement, Networking, or other Kits
+- Business logic protocols defined in AppFoundation, implemented in respective Kits
+
+**✅ CORRECT: Kit Protocol Dependencies**
+```swift
+// ❌ WRONG: DesignSystem importing Engagement
+import Engagement
+EngagementService.toggleLike(...)
+
+// ✅ CORRECT: DesignSystem using AppFoundation protocol
+import AppFoundation
+deps.engagement?.toggleLike(...)
+```
+
 ### Why Auth is in AppFoundation (Not a Kit)
 
 Authentication services live in `Shared/AppFoundation` rather than a separate `AuthKit` because:
@@ -213,12 +300,21 @@ Authentication services live in `Shared/AppFoundation` rather than a separate `A
 1. **Foundation-Level Concern:** Auth is used by nearly every feature and kit
 2. **Tight Integration:** Auth services integrate deeply with environment config and app lifecycle
 3. **Avoid Circular Dependencies:** Many kits need auth services; having AuthKit would create dependency issues
-4. **Protocol First:** Service protocols belong in Shared; implementations stay with protocols
+4. **Protocol First:** Service protocols belong in Shared/AppFoundation. Implementations live in Kits.
+   **Exception:** Auth implementations live in Shared/AppFoundation due to lifecycle coupling (bootstrap, session, environment).
 5. **Simplicity:** One place for all auth code is clearer than splitting UI (Feature) and Services (Kit)
 
 **Auth Architecture:**
-- **Feature:** `Features/Auth/` - UI/UX and app-level state management
+- **Feature:** `Features/Authentication/` - UI/UX and app-level state management (exports as `Authentication` to avoid Supabase conflict)
 - **Services:** `Shared/AppFoundation/` - Service protocols, implementations, session management
+
+**Important:** The Authentication feature package exports its product as `Authentication` (not `Auth`) to avoid naming conflicts with the Supabase Swift package, which also exports an `Auth` target. Always import as `import Authentication` when using the authentication UI components.
+
+**Import Style Example:**
+```swift
+import Authentication
+// Use Authentication components
+```
 
 ### Why Navigation is in AppFoundation (Not a Kit)
 
@@ -283,6 +379,8 @@ Resources/
 | New reusable UI component | `Packages/Kits/DesignSystem/` | `agctl build DesignSystem` |
 | New API endpoint | `OpenAPI/agora.yaml` | `agctl generate openapi` |
 | New service/client | `Packages/Kits/{ServiceName}/` | `agctl build {ServiceName}` |
+| Service protocol | `Packages/Shared/AppFoundation/ServiceProtocols.swift` | `agctl build AppFoundation` |
+| Supabase wrapper | `Packages/Kits/SupabaseKit/` | `agctl build SupabaseKit` |
 | Auth-related service | `Packages/Shared/AppFoundation/` | `agctl build AppFoundation` |
 | App-wide utility | `Packages/Shared/AppFoundation/` | `agctl build AppFoundation` |
 | Test helper | `Packages/Shared/TestSupport/` | `agctl test TestSupport` |
@@ -290,6 +388,40 @@ Resources/
 | Environment config | `Resources/Configs/{Environment}.plist` | - |
 | Build automation tool | `Tools/agctl/` | `agctl --help` |
 | Database migration | `database/migrations/{number}_{name}.sql` | - |
+
+### Test Placement Strategy
+
+**Test Routing Table:**
+- **Per-package unit tests:** `Packages/*/Tests/` (live inside each package)
+- **Cross-module snapshot/UI tests:** `Tests/` (top-level)
+- **Legacy app-target tests:** `AgoraTests/`, `AgoraUITests/` (goal: migrate or keep minimal)
+- **New tests default:** Swift Testing; XCTest only where UI testing requires
+- **Snapshot baselines:** Live inside each Feature/Kit test target, but cross-feature snapshots belong in top-level `Tests/`
+
+### Enforceability: Machine-Checkable Rules
+
+**Forbidden Imports Matrix:**
+```
+# Allowed imports
+Feature → {Kit, Shared}
+Kit     → {Kit, Shared}
+Shared  → {}
+ThirdParty → {}
+
+# Forbidden
+Feature → Feature
+DesignSystem → {Engagement, Networking, SupabaseKit, Persistence}
+Kit → Feature
+```
+
+**Validation Checks (agctl validate modules):**
+- Bundle.resource presence for packages that ship UI
+- Target graph check: no cycles; Features depend only on Kits/Shared; Kits never depend on Features
+- Name checkers: {Service,Client}{Live,Mock}, {Type}+{Purpose}.swift extensions
+- Routes location check: Routes.swift only under Shared/AppFoundation
+- Auth exception: allow AppFoundation to contain Auth*Live.swift; block other *ServiceLive.swift there
+- No global singletons—all service access via @Environment(\.deps) or DI initializer
+- Service protocols defined in AppFoundation (`ServiceProtocols.swift`) with explicit path reference
 
 ### Related Rules
 

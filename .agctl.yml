@@ -1,0 +1,41 @@
+# agctl configuration file
+# Agora iOS project settings
+
+build:
+  # Default build configuration (debug or release)
+  defaultConfiguration: debug
+  
+  # Number of parallel build jobs
+  parallelJobs: 4
+  
+  # Show verbose output by default
+  verbose: false
+
+validation:
+  # Enforce strict naming conventions (Features must end with "Feature")
+  strictNaming: true
+  
+  # Allow Features to depend on other Features
+  allowFeatureDeps: false
+  
+  # Require all packages to have test directories
+  enforceTests: false
+
+generate:
+  openapi:
+    # Path to OpenAPI specification
+    specPath: OpenAPI/agora.yaml
+    
+    # Output path for generated code
+    outputPath: Packages/Kits/Networking/Sources/Networking/Generated
+
+lint:
+  # Automatically fix lint issues when possible
+  autoFix: false
+  
+  # Use strict mode (treat warnings as errors)
+  strict: false
+  
+  # Path to custom SwiftLint configuration (optional)
+  # configPath: .swiftlint.yml
+

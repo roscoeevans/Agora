@@ -33,7 +33,9 @@ public struct PostThreadView: View {
                     }
                 }
                 .navigationTitle("Thread")
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .refreshable {
                     await viewModel.refresh()
                 }
@@ -55,6 +57,8 @@ public struct PostThreadView: View {
 struct ThreadPostView: View {
     let post: ThreadPost
     let isLast: Bool
+    @Environment(\.deps) private var deps
+    @State private var engagementState: PostEngagementState?
     
     var body: some View {
         HStack(alignment: .top, spacing: SpacingTokens.sm) {
@@ -98,30 +102,86 @@ struct ThreadPostView: View {
                     .foregroundColor(ColorTokens.primaryText)
                 
                 HStack(spacing: SpacingTokens.lg) {
-                    InteractionButtonView(
-                        icon: "heart",
-                        count: post.likeCount,
-                        action: { /* TODO: Implement like */ }
-                    )
-                    
-                    InteractionButtonView(
-                        icon: "arrow.2.squarepath",
-                        count: post.repostCount,
-                        action: { /* TODO: Implement repost */ }
-                    )
-                    
-                    InteractionButtonView(
-                        icon: "bubble.right",
-                        count: 0,
-                        action: { /* TODO: Implement reply */ }
-                    )
-                    
-                    Spacer()
+                    // Engagement bar
+                    if let state = engagementState {
+                        EngagementBar(
+                            likeCount: state.likeCount,
+                            isLiked: state.isLiked,
+                            isLikeLoading: state.isLikingInProgress,
+                            repostCount: state.repostCount,
+                            isReposted: state.isReposted,
+                            isRepostLoading: state.isRepostingInProgress,
+                            replyCount: 0, // ThreadPost doesn't have reply count
+                            onLike: { Task { await state.toggleLike() } },
+                            onRepost: { Task { await state.toggleRepost() } },
+                            onReply: { /* TODO: Implement reply */ },
+                            onShare: { /* TODO: Implement share */ }
+                        )
+                    } else {
+                        // Fallback to static buttons while loading
+                        HStack(spacing: SpacingTokens.lg) {
+                            InteractionButtonView(
+                                icon: "heart",
+                                count: post.likeCount,
+                                action: { /* TODO: Implement like */ }
+                            )
+                            
+                            InteractionButtonView(
+                                icon: "arrow.2.squarepath",
+                                count: post.repostCount,
+                                action: { /* TODO: Implement repost */ }
+                            )
+                            
+                            InteractionButtonView(
+                                icon: "bubble.right",
+                                count: 0,
+                                action: { /* TODO: Implement reply */ }
+                            )
+                            
+                            Spacer()
+                        }
+                    }
                 }
                 .padding(.bottom, SpacingTokens.md)
             }
         }
         .padding(.horizontal, SpacingTokens.md)
+        .task {
+            // Initialize engagement state
+            if let engagement = deps.engagement {
+                // Convert ThreadPost to Post for engagement state
+                let postForEngagement = Post(
+                    id: post.id,
+                    authorId: post.author, // Using author as authorId for now
+                    authorDisplayHandle: post.authorDisplayHandle,
+                    text: post.text,
+                    likeCount: post.likeCount,
+                    repostCount: post.repostCount,
+                    replyCount: 0,
+                    createdAt: post.timestamp,
+                    authorDisplayName: post.author,
+                    isLikedByViewer: false, // Default to false for now
+                    isRepostedByViewer: false
+                )
+                
+                engagementState = PostEngagementState(
+                    post: postForEngagement,
+                    engagementService: engagement
+                )
+            }
+        }
+        .alert(
+            "Action Failed",
+            isPresented: Binding(
+                get: { engagementState?.error != nil },
+                set: { if !$0 { engagementState?.error = nil } }
+            ),
+            presenting: engagementState?.error
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { error in
+            Text(error.localizedDescription)
+        }
     }
 }
 

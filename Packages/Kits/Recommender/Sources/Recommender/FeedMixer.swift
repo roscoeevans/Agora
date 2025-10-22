@@ -103,7 +103,7 @@ public enum SeparatorType {
 }
 
 /// Feed mixing configuration
-public struct FeedMixingConfig {
+public struct FeedMixingConfig: Sendable {
     public let maxAdFrequency: Int // Max ads per N posts
     public let minPostsBetweenAds: Int
     public let suggestionFrequency: Int // Suggestions per N posts

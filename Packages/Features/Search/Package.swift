@@ -4,13 +4,17 @@ import PackageDescription
 
 let package = Package(
     name: "Search",
-    platforms: [.iOS(.v26), .macOS(.v15)],
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v26)  // Required to satisfy SPM dependency resolution
+    ],
     products: [
         .library(name: "Search", targets: ["Search"])
     ],
     dependencies: [
         .package(path: "../../Kits/DesignSystem"),
         .package(path: "../../Kits/Networking"),
+        .package(path: "../../Kits/UIKitBridge"),
         .package(path: "../../Shared/AppFoundation")
     ],
     targets: [
@@ -19,8 +23,10 @@ let package = Package(
             dependencies: [
                 "DesignSystem",
                 "Networking",
+                "UIKitBridge",
                 "AppFoundation"
             ],
+            path: "Sources/Search",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]
@@ -28,6 +34,7 @@ let package = Package(
         .testTarget(
             name: "SearchTests",
             dependencies: ["Search"],
+            path: "Tests/SearchTests",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]

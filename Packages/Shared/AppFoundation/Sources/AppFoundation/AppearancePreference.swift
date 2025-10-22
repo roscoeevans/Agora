@@ -7,12 +7,16 @@
 
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - AppearanceMode
 
 public enum AppearanceMode: String, Sendable, Codable {
     case light
     case dark
+    case system
 }
 
 // MARK: - AppearancePreference Protocol
@@ -26,6 +30,7 @@ public enum AppearanceMode: String, Sendable, Codable {
 /// - Provides async stream for observing changes
 public protocol AppearancePreference: Sendable {
     var currentMode: AppearanceMode { get }
+    var effectiveMode: AppearanceMode { get }
     func setMode(_ mode: AppearanceMode) async
     func observeChanges() -> AsyncStream<AppearanceMode>
 }
@@ -43,9 +48,38 @@ public final class AppearancePreferenceLive: AppearancePreference, @unchecked Se
     public var currentMode: AppearanceMode {
         guard let rawValue = userDefaults.string(forKey: key),
               let mode = AppearanceMode(rawValue: rawValue) else {
-            return .light // Default to light
+            return .system // Default to system appearance
         }
         return mode
+    }
+    
+    public var effectiveMode: AppearanceMode {
+        let mode = currentMode
+        if mode == .system {
+            return systemAppearanceMode
+        }
+        return mode
+    }
+    
+    private var systemAppearanceMode: AppearanceMode {
+        #if canImport(UIKit)
+        if #available(iOS 13.0, *) {
+            switch UITraitCollection.current.userInterfaceStyle {
+            case .dark:
+                return .dark
+            case .light:
+                return .light
+            case .unspecified:
+                return .light
+            @unknown default:
+                return .light
+            }
+        } else {
+            return .light
+        }
+        #else
+        return .light
+        #endif
     }
     
     public func setMode(_ mode: AppearanceMode) async {
@@ -62,10 +96,19 @@ public final class AppearancePreferenceLive: AppearancePreference, @unchecked Se
     
     @MainActor
     private func applyToWindows(_ mode: AppearanceMode) {
+        #if canImport(UIKit)
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
         for window in windowScene.windows {
-            window.overrideUserInterfaceStyle = mode == .dark ? .dark : .light
+            switch mode {
+            case .light:
+                window.overrideUserInterfaceStyle = .light
+            case .dark:
+                window.overrideUserInterfaceStyle = .dark
+            case .system:
+                window.overrideUserInterfaceStyle = .unspecified
+            }
         }
+        #endif
     }
 }
 

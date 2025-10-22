@@ -12,6 +12,8 @@ import AppFoundation
 public struct PostDetailScreen: View {
     @Environment(\.deps) private var deps
     @State private var viewModel: PostDetailViewModel?
+    @State private var showCommentSheet = false
+    @State private var replyToPost: Post?
     
     private let postId: String
     
@@ -23,18 +25,32 @@ public struct PostDetailScreen: View {
         Group {
             if let viewModel = viewModel {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: SpacingTokens.lg) {
+                    VStack(alignment: .leading, spacing: 0) {
                         if let post = viewModel.post {
+                            // Original post
                             PostDetailView(post: post)
+                                .padding(.bottom, SpacingTokens.lg)
                             
+                            // Replies section
                             if !viewModel.replies.isEmpty {
                                 Divider()
-                                    .padding(.horizontal, SpacingTokens.md)
                                 
-                                LazyVStack(spacing: SpacingTokens.md) {
-                                    ForEach(viewModel.replies, id: \.id) { reply in
-                                        ReplyView(reply: reply)
+                                ReplyListView(
+                                    replies: viewModel.replies,
+                                    onReplyToReply: { reply in
+                                        replyToPost = post
+                                        showCommentSheet = true
                                     }
+                                )
+                            } else if !viewModel.isLoadingReplies {
+                                // Empty state for no replies
+                                VStack(spacing: SpacingTokens.md) {
+                                    Divider()
+                                    
+                                    Text("No comments yet")
+                                        .font(TypographyScale.body)
+                                        .foregroundColor(ColorTokens.tertiaryText)
+                                        .padding(.vertical, SpacingTokens.xl)
                                 }
                             }
                         } else if viewModel.isLoading {
@@ -45,7 +61,23 @@ public struct PostDetailScreen: View {
                     }
                 }
                 .navigationTitle("Post")
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        if let post = viewModel.post {
+                            Button {
+                                replyToPost = post
+                                showCommentSheet = true
+                            } label: {
+                                Image(systemName: "bubble.right")
+                                    .font(.system(size: 18))
+                            }
+                            .accessibilityLabel("Add comment")
+                        }
+                    }
+                }
                 .refreshable {
                     await viewModel.refresh()
                 }
@@ -54,6 +86,11 @@ public struct PostDetailScreen: View {
                 }
             } else {
                 PostDetailLoadingView()
+            }
+        }
+        .sheet(isPresented: $showCommentSheet) {
+            if let post = replyToPost {
+                CommentSheetSkeleton(post: post)
             }
         }
         .task {

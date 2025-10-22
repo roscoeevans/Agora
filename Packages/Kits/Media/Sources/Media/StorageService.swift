@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 import AppFoundation
 import Supabase
 
@@ -16,26 +15,25 @@ public final class StorageService: Sendable {
     
     /// Upload a user's avatar image to Supabase Storage
     /// - Parameters:
-    ///   - image: The UIImage to upload
+    ///   - imageData: The image data to upload
     ///   - userId: The user's ID (used for folder organization)
     /// - Returns: The public URL of the uploaded image
-    public func uploadAvatar(image: UIImage, userId: String) async throws -> String {
-        // Resize image to reasonable size (max 512x512 for avatars)
-        guard let resizedImage = image.resized(to: CGSize(width: 512, height: 512)),
-              let imageData = resizedImage.jpegData(compressionQuality: 0.85) else {
-            throw StorageError.imageProcessingFailed
-        }
-        
+    public func uploadAvatar(imageData: Data, userId: String) async throws -> String {
         // Generate unique filename
         let fileExtension = "jpg"
         let fileName = "\(userId)/avatar-\(UUID().uuidString).\(fileExtension)"
         
+        // Get raw Supabase client for advanced storage operations
+        guard let rawClient = supabaseClient.client.rawClient as? SupabaseClient else {
+            throw StorageError.uploadFailed
+        }
+        
         // Upload to Supabase Storage
-        _ = try await supabaseClient.storage
+        _ = try await rawClient.storage
             .from("avatars")
             .upload(
-                path: fileName,
-                file: imageData,
+                fileName,
+                data: imageData,
                 options: FileOptions(
                     contentType: "image/jpeg",
                     upsert: false
@@ -43,7 +41,7 @@ public final class StorageService: Sendable {
             )
         
         // Get public URL using the file path we uploaded to
-        let publicURL = try supabaseClient.storage
+        let publicURL = try rawClient.storage
             .from("avatars")
             .getPublicURL(path: fileName)
         
@@ -59,7 +57,13 @@ public final class StorageService: Sendable {
             throw StorageError.invalidURL
         }
         
-        try await supabaseClient.storage
+        // Get raw Supabase client for advanced storage operations
+        guard let rawClient = supabaseClient.client.rawClient as? SupabaseClient else {
+            throw StorageError.uploadFailed
+        }
+        
+        // Delete from Supabase Storage
+        try await rawClient.storage
             .from("avatars")
             .remove(paths: [path])
     }
@@ -68,26 +72,25 @@ public final class StorageService: Sendable {
     
     /// Upload a single post image to Supabase Storage
     /// - Parameters:
-    ///   - image: The UIImage to upload
+    ///   - imageData: The image data to upload
     ///   - userId: The user's ID (used for folder organization)
     /// - Returns: The public URL of the uploaded image
-    public func uploadPostImage(image: UIImage, userId: String) async throws -> String {
-        // Resize image to reasonable size (max 2048x2048 for posts)
-        guard let resizedImage = image.resized(to: CGSize(width: 2048, height: 2048)),
-              let imageData = resizedImage.jpegData(compressionQuality: 0.85) else {
-            throw StorageError.imageProcessingFailed
-        }
-        
+    public func uploadPostImage(imageData: Data, userId: String) async throws -> String {
         // Generate unique filename
         let fileExtension = "jpg"
         let fileName = "\(userId)/post-\(UUID().uuidString).\(fileExtension)"
         
+        // Get raw Supabase client for advanced storage operations
+        guard let rawClient = supabaseClient.client.rawClient as? SupabaseClient else {
+            throw StorageError.uploadFailed
+        }
+        
         // Upload to Supabase Storage
-        _ = try await supabaseClient.storage
+        _ = try await rawClient.storage
             .from("post-media")
             .upload(
-                path: fileName,
-                file: imageData,
+                fileName,
+                data: imageData,
                 options: FileOptions(
                     contentType: "image/jpeg",
                     upsert: false
@@ -95,7 +98,7 @@ public final class StorageService: Sendable {
             )
         
         // Get public URL using the file path we uploaded to
-        let publicURL = try supabaseClient.storage
+        let publicURL = try rawClient.storage
             .from("post-media")
             .getPublicURL(path: fileName)
         
@@ -104,19 +107,21 @@ public final class StorageService: Sendable {
     
     /// Upload multiple post images to Supabase Storage
     /// - Parameters:
-    ///   - images: Array of UIImages to upload (max 4)
+    ///   - imageDataArray: Array of image data to upload (max 4)
     ///   - userId: The user's ID (used for folder organization)
     /// - Returns: Array of public URLs for uploaded images
-    public func uploadPostImages(images: [UIImage], userId: String) async throws -> [String] {
-        guard images.count <= 4 else {
+    public func uploadPostImages(imageDataArray: [Data], userId: String) async throws -> [String] {
+        guard imageDataArray.count <= 4 else {
             throw StorageError.tooManyImages
         }
         
         var urls: [String] = []
-        for image in images {
-            let url = try await uploadPostImage(image: image, userId: userId)
+        
+        for imageData in imageDataArray {
+            let url = try await uploadPostImage(imageData: imageData, userId: userId)
             urls.append(url)
         }
+        
         return urls
     }
     
@@ -137,75 +142,56 @@ public final class StorageService: Sendable {
             throw StorageError.videoTooLarge
         }
         
-        // Determine content type from file extension
-        let fileExtension = videoURL.pathExtension.lowercased()
-        let contentType: String
-        switch fileExtension {
-        case "mp4", "m4v":
-            contentType = "video/mp4"
-        case "mov":
-            contentType = "video/quicktime"
-        default:
-            contentType = "video/mp4"
-        }
-        
         // Generate unique filename
+        let fileExtension = "mp4"
         let fileName = "\(userId)/video-\(UUID().uuidString).\(fileExtension)"
         
+        // Get raw Supabase client for advanced storage operations
+        guard let rawClient = supabaseClient.client.rawClient as? SupabaseClient else {
+            throw StorageError.uploadFailed
+        }
+        
         // Upload to Supabase Storage
-        _ = try await supabaseClient.storage
+        _ = try await rawClient.storage
             .from("post-media")
             .upload(
-                path: fileName,
-                file: videoData,
+                fileName,
+                data: videoData,
                 options: FileOptions(
-                    contentType: contentType,
+                    contentType: "video/mp4",
                     upsert: false
                 )
             )
         
-        // Get public URL
-        let publicURL = try supabaseClient.storage
+        // Get public URL using the file path we uploaded to
+        let publicURL = try rawClient.storage
             .from("post-media")
             .getPublicURL(path: fileName)
         
         return publicURL.absoluteString
     }
     
-    /// Delete post media from storage
-    /// - Parameter urls: Array of media URLs to delete
-    public func deletePostMedia(urls: [String]) async throws {
-        var paths: [String] = []
-        
-        for urlString in urls {
-            guard let url = URL(string: urlString),
-                  let path = extractStoragePath(from: url, bucket: "post-media") else {
-                continue
-            }
-            paths.append(path)
-        }
-        
-        guard !paths.isEmpty else { return }
-        
-        try await supabaseClient.storage
-            .from("post-media")
-            .remove(paths: paths)
-    }
+    // MARK: - Helper Methods
     
-    // MARK: - Private Helpers
-    
-    /// Extract the storage path from a full Supabase storage URL
-    private func extractStoragePath(from url: URL, bucket: String = "avatars") -> String? {
-        // URL format: https://xxx.supabase.co/storage/v1/object/public/{bucket}/{path}
-        let components = url.pathComponents
-        guard let bucketIndex = components.firstIndex(of: bucket),
-              bucketIndex + 1 < components.count else {
+    /// Extract storage path from a public URL
+    /// - Parameter url: The public URL
+    /// - Returns: The storage path if valid
+    private func extractStoragePath(from url: URL) -> String? {
+        let pathComponents = url.pathComponents
+        
+        // Look for the pattern: /storage/v1/object/public/{bucket}/{path}
+        guard let storageIndex = pathComponents.firstIndex(of: "storage"),
+              storageIndex + 4 < pathComponents.count,
+              pathComponents[storageIndex + 1] == "v1",
+              pathComponents[storageIndex + 2] == "object",
+              pathComponents[storageIndex + 3] == "public" else {
             return nil
         }
         
-        // Get everything after "{bucket}/"
-        let pathComponents = Array(components[(bucketIndex + 1)...])
-        return pathComponents.joined(separator: "/")
+        // Extract everything after the bucket name
+        let bucketIndex = storageIndex + 4
+        let remainingComponents = Array(pathComponents.dropFirst(bucketIndex + 1))
+        return remainingComponents.joined(separator: "/")
     }
 }
 
@@ -213,55 +199,26 @@ public final class StorageService: Sendable {
 
 public enum StorageError: LocalizedError, Sendable {
     case imageProcessingFailed
-    case uploadFailed
-    case invalidURL
-    case deleteFailed
     case tooManyImages
     case videoReadFailed
     case videoTooLarge
+    case invalidURL
+    case uploadFailed
     
     public var errorDescription: String? {
         switch self {
         case .imageProcessingFailed:
-            return "Failed to process image for upload"
-        case .uploadFailed:
-            return "Failed to upload image to storage"
-        case .invalidURL:
-            return "Invalid storage URL"
-        case .deleteFailed:
-            return "Failed to delete image from storage"
+            return "Failed to process image data"
         case .tooManyImages:
-            return "Cannot upload more than 4 images per post"
+            return "Too many images provided (maximum 4 allowed)"
         case .videoReadFailed:
             return "Failed to read video file"
         case .videoTooLarge:
-            return "Video file exceeds 50MB limit"
+            return "Video file is too large (maximum 50MB allowed)"
+        case .invalidURL:
+            return "Invalid storage URL provided"
+        case .uploadFailed:
+            return "Failed to upload file to storage"
         }
     }
 }
-
-// MARK: - UIImage Helpers
-
-extension UIImage {
-    /// Resize image to fit within the specified size while maintaining aspect ratio
-    func resized(to targetSize: CGSize) -> UIImage? {
-        let size = self.size
-        
-        let widthRatio  = targetSize.width  / size.width
-        let heightRatio = targetSize.height / size.height
-        
-        // Use the smaller ratio to ensure the image fits within bounds
-        let scaleFactor = min(widthRatio, heightRatio)
-        
-        let scaledSize = CGSize(
-            width: size.width * scaleFactor,
-            height: size.height * scaleFactor
-        )
-        
-        let renderer = UIGraphicsImageRenderer(size: scaledSize)
-        return renderer.image { _ in
-            self.draw(in: CGRect(origin: .zero, size: scaledSize))
-        }
-    }
-}
-

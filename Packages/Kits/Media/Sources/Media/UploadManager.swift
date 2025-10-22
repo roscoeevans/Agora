@@ -1,6 +1,28 @@
 import Foundation
 import Networking
 
+/// Media type enumeration
+public enum MediaType: String, CaseIterable, Sendable {
+    case image = "image"
+    case video = "video"
+    case audio = "audio"
+}
+
+/// Processed media information
+public struct ProcessedMedia: Sendable {
+    public let data: Data
+    public let type: MediaType
+    public let mimeType: String
+    public let thumbnailData: Data?
+    
+    public init(data: Data, type: MediaType, mimeType: String, thumbnailData: Data? = nil) {
+        self.data = data
+        self.type = type
+        self.mimeType = mimeType
+        self.thumbnailData = thumbnailData
+    }
+}
+
 /// Upload progress information
 public struct UploadProgress {
     public let bytesUploaded: Int64
@@ -148,7 +170,7 @@ public final class UploadManager {
         let mimeType = getMimeType(for: processedMedia.type)
         
         return try await uploadMedia(
-            data: processedMedia.processedData,
+            data: processedMedia.data,
             type: processedMedia.type,
             mimeType: mimeType,
             progressHandler: progressHandler
@@ -219,8 +241,8 @@ public final class UploadManager {
             return "image/jpeg"
         case .video:
             return "video/mp4"
-        case .unknown:
-            return "application/octet-stream"
+        case .audio:
+            return "audio/mpeg"
         }
     }
 }

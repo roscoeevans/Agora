@@ -7,14 +7,19 @@
 
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+#endif
+
 /// Individual engagement button with count, state, and animations
-/// Provides haptic feedback, press animation, and state-based styling
+/// Uses optimistic UI updates - state changes immediately with haptic feedback
+/// Provides instant visual feedback following Apple's design principles
 public struct EngagementButton: View {
     let icon: String
     let iconFilled: String?  // e.g. "heart.fill" for active state
     let count: Int
     let isActive: Bool
-    let isLoading: Bool
+    let isLoading: Bool  // Kept for API compatibility but no longer shown
     let tintColor: Color?
     let action: () -> Void
     
@@ -26,7 +31,7 @@ public struct EngagementButton: View {
         iconFilled: String? = nil,
         count: Int,
         isActive: Bool = false,
-        isLoading: Bool = false,
+        isLoading: Bool = false,  // Deprecated - optimistic UI doesn't show loading
         tintColor: Color? = nil,
         action: @escaping () -> Void
     ) {
@@ -41,22 +46,20 @@ public struct EngagementButton: View {
     
     public var body: some View {
         Button(action: {
+            #if os(iOS)
             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
             impactFeedback.impactOccurred()
+            #endif
             animationTrigger.toggle()
             action()
         }) {
-            HStack(spacing: SpacingTokens.xxs) {
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                        .frame(width: 16, height: 16)
-                } else {
-                    Image(systemName: isActive ? (iconFilled ?? icon) : icon)
-                        .font(.system(size: 16, weight: .regular))
-                        .symbolEffect(.bounce, value: animationTrigger)  // iOS 26 animation
-                        .contentTransition(.symbolEffect(.replace))
-                }
+            HStack(alignment: .center, spacing: SpacingTokens.xxs) {
+                // Always show icon with animation - no loading spinner for optimistic UI
+                // The state updates immediately, and if there's an error, it rolls back
+                Image(systemName: isActive ? (iconFilled ?? icon) : icon)
+                    .font(.system(size: 16, weight: .regular))
+                    .symbolEffect(.bounce, value: animationTrigger)  // iOS 26 animation
+                    .contentTransition(.symbolEffect(.replace))
                 
                 if count > 0 {
                     Text("\(count)")
@@ -66,7 +69,7 @@ public struct EngagementButton: View {
             }
             .foregroundColor(foregroundColor)
         }
-        .frame(minWidth: 44, minHeight: 44) // Ensure 44pt touch target
+        .frame(minWidth: 44, alignment: .leading) // Natural height, 44pt min width for iOS touch target
         .scaleEffect(isPressed ? 0.9 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isActive)
@@ -153,15 +156,6 @@ public struct EngagementButton: View {
             tintColor: .green
         ) {
             print("Repost tapped")
-        }
-        
-        // Loading state
-        EngagementButton(
-            icon: "heart",
-            count: 42,
-            isLoading: true
-        ) {
-            print("Loading")
         }
         
         // Comment button

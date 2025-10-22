@@ -588,6 +588,91 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /create-reply:
+    post:
+      summary: Create a reply to a post
+      tags: [Posts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - parentPostId
+                - text
+              properties:
+                parentPostId:
+                  type: string
+                  description: Root post ID being replied to
+                replyToCommentId:
+                  type: string
+                  nullable: true
+                  description: Optional specific comment ID being replied to (for nested replies)
+                text:
+                  type: string
+                  maxLength: 280
+                  description: Reply text content (1-280 characters)
+                attestation:
+                  type: string
+                  nullable: true
+                  description: Device attestation token
+      responses:
+        '201':
+          description: Reply created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Parent post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /get-replies:
+    get:
+      summary: Get all replies for a post
+      tags: [Posts]
+      parameters:
+        - name: postId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Post ID to fetch replies for
+      responses:
+        '200':
+          description: Replies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - replies
+                properties:
+                  replies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Post'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -703,10 +788,16 @@ components:
     UpdateProfileRequest:
       type: object
       properties:
+        handle:
+          type: string
+          minLength: 3
+          maxLength: 30
+          pattern: '^[a-z0-9._]{3,30}$'
+          description: Lowercase handle (validated server-side with 30-day change limit)
         displayHandle:
           type: string
           minLength: 3
-          maxLength: 15
+          maxLength: 30
           description: User's preferred capitalization of handle
         displayName:
           type: string
@@ -718,6 +809,8 @@ components:
         avatarUrl:
           type: string
           format: uri
+          nullable: true
+          description: Avatar URL from Supabase Storage, or null to remove avatar
 
     CheckHandleResponse:
       type: object

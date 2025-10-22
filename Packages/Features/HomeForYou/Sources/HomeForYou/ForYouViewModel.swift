@@ -21,6 +21,11 @@ public class ForYouViewModel {
     private let analytics: AnalyticsClient
     private var nextCursor: String?
     
+    /// Public access to nextCursor for pagination skeleton support
+    public var hasNextPage: Bool {
+        return nextCursor != nil
+    }
+    
     /// Initialize ForYouViewModel with explicit dependencies
     /// 
     /// Following the DI rule:
@@ -34,10 +39,8 @@ public class ForYouViewModel {
         self.networking = networking
         self.analytics = analytics
         
-        // Load initial data on init
-        Task {
-            await refresh()
-        }
+        // Don't load data automatically - let the view control when to load
+        // This prevents duplicate API calls
     }
     
     public func refresh() async {

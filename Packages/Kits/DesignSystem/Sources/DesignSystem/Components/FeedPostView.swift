@@ -13,9 +13,9 @@ import AppFoundation
 public struct FeedPostView: View {
     let post: Post
     let onAuthorTap: () -> Void
+    let onReply: () -> Void
     
     @State private var engagementState: PostEngagementState?
-    @State private var showCommentSheet = false
     @State private var showShareMenu = false
     @State private var shareURL: URL?
     
@@ -23,10 +23,12 @@ public struct FeedPostView: View {
     
     public init(
         post: Post,
-        onAuthorTap: @escaping () -> Void = {}
+        onAuthorTap: @escaping () -> Void = {},
+        onReply: @escaping () -> Void = {}
     ) {
         self.post = post
         self.onAuthorTap = onAuthorTap
+        self.onReply = onReply
     }
     
     public var body: some View {
@@ -57,11 +59,11 @@ public struct FeedPostView: View {
             .frame(width: 44, height: 44) // Ensure 44pt touch target
             
             // Right column: All content
-            VStack(alignment: .leading, spacing: SpacingTokens.sm) {
+            VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                 // Header row: Handle, timestamp, edited indicator
-                HStack(alignment: .firstTextBaseline, spacing: SpacingTokens.xxs) {
+                HStack(alignment: .top, spacing: SpacingTokens.xxs) {
                     Text("@\(post.authorDisplayHandle)")
-                        .font(TypographyScale.callout)
+                        .font(TypographyScale.body)
                         .fontWeight(.semibold)
                         .foregroundColor(ColorTokens.primaryText)
                     
@@ -90,15 +92,54 @@ public struct FeedPostView: View {
                     Spacer()
                 }
                 
-                // Post text
-                Text(post.text)
-                    .font(TypographyScale.body)
-                    .foregroundColor(ColorTokens.primaryText)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Post text with rich content (mentions, links)
+                RichTextView(
+                    text: post.text,
+                    onMentionTap: { handle in
+                        // Navigate to profile using handle
+                        // TODO: Implement profile navigation
+                        print("Mention tapped: @\(handle)")
+                    },
+                    onLinkTap: { url in
+                        // Open in Safari
+                        #if os(iOS)
+                        UIApplication.shared.open(url)
+                        #endif
+                    }
+                )
                 
-                // TODO: Add media display when ImageGridView is ready
-                // TODO: Add link preview when LinkPreviewDisplayCard is ready
-                // TODO: Add quoted post when QuotedPostCard is ready
+                // Media content (images/videos)
+                if let mediaBundleId = post.mediaBundleId {
+                    MediaContentView(
+                        bundleId: mediaBundleId,
+                        onImageTap: { index in
+                            // Navigate to image gallery
+                            // TODO: Get image URLs from bundle and navigate
+                            print("Image tapped: \(index)")
+                        },
+                        onVideoTap: {
+                            // Navigate to fullscreen video player
+                            // TODO: Get video URL from bundle and navigate
+                            print("Video tapped")
+                        }
+                    )
+                }
+                
+                // Link preview
+                if let linkUrl = post.linkUrl {
+                    LinkPreviewDisplayCard(url: linkUrl)
+                }
+                
+                // Quoted post
+                if let quotePostId = post.quotePostId {
+                    QuotedPostCard(
+                        postId: quotePostId,
+                        onPostTap: {
+                            // TODO: Navigate to quoted post
+                            print("Quoted post tapped")
+                        }
+                    )
+                }
                 
                 // Engagement bar
                 if let state = engagementState {
@@ -112,7 +153,7 @@ public struct FeedPostView: View {
                         replyCount: post.replyCount,
                         onLike: { Task { await state.toggleLike() } },
                         onRepost: { Task { await state.toggleRepost() } },
-                        onReply: { showCommentSheet = true },
+                        onReply: onReply,
                         onShare: { Task { await handleShare() } }
                     )
                 }
@@ -121,16 +162,13 @@ public struct FeedPostView: View {
         .padding(SpacingTokens.md)
         .background(ColorTokens.background)
         .task {
-            // Initialize engagement state
+            // Initialize engagement state using cache for persistence
             if let engagement = deps.engagement {
-                engagementState = PostEngagementState(
-                    post: post,
+                engagementState = await EngagementStateCache.shared.getOrCreateState(
+                    for: post,
                     engagementService: engagement
                 )
             }
-        }
-        .sheet(isPresented: $showCommentSheet) {
-            CommentSheet(post: post, onDismiss: { showCommentSheet = false })
         }
         .sheet(isPresented: $showShareMenu) {
             if let shareURL {
@@ -158,7 +196,7 @@ public struct FeedPostView: View {
     
     @MainActor
     private func handleShare() async {
-        guard let service = deps.engagement as? any EngagementServiceProtocol else {
+        guard let service = deps.engagement else {
             return
         }
         
@@ -207,7 +245,7 @@ public struct FeedPostView: View {
 
 #if DEBUG
 #Preview("Short Post - Light") {
-    PreviewDeps.scoped {
+    DesignSystemPreviewDeps.withEngagement {
         ScrollView {
             FeedPostView(post: PreviewFixtures.shortPost)
                 .padding()
@@ -215,51 +253,50 @@ public struct FeedPostView: View {
         .background(ColorTokens.background)
     }
 }
-//
-//#Preview("Long Post - Light") {
-//    PreviewDeps.scoped {
-//        ScrollView {
-//            FeedPostView(post: PreviewFixtures.longPost)
-//                .padding()
-//        }
-//        .background(ColorTokens.background)
-//    }
-//}
-//
-//#Preview("Popular Post - Dark") {
-//    PreviewDeps.scopedDark {
-//        ScrollView {
-//            FeedPostView(post: PreviewFixtures.popularPost)
-//                .padding()
-//        }
-//        .background(ColorTokens.background)
-//    }
-//}
-//
-//#Preview("Recent Post - Minimal Engagement") {
-//    PreviewDeps.scoped {
-//        ScrollView {
-//            FeedPostView(post: PreviewFixtures.recentPost)
-//                .padding()
-//        }
-//        .background(ColorTokens.background)
-//    }
-//}
-//
-//#Preview("Multiple Posts in Feed") {
-//    PreviewDeps.scoped {
-//        ScrollView {
-//            LazyVStack(spacing: SpacingTokens.md) {
-//                FeedPostView(post: PreviewFixtures.shortPost)
-//                FeedPostView(post: PreviewFixtures.longPost)
-//                FeedPostView(post: PreviewFixtures.popularPost)
-//                FeedPostView(post: PreviewFixtures.recentPost)
-//            }
-//            .padding()
-//        }
-//        .background(ColorTokens.background)
-//    }
-//}
+#Preview("Long Post - Light") {
+    DesignSystemPreviewDeps.withEngagement {
+        ScrollView {
+            FeedPostView(post: PreviewFixtures.longPost)
+                .padding()
+        }
+        .background(ColorTokens.background)
+    }
+}
+
+#Preview("Popular Post - Dark") {
+    DesignSystemPreviewDeps.withEngagementDark {
+        ScrollView {
+            FeedPostView(post: PreviewFixtures.popularPost)
+                .padding()
+        }
+        .background(ColorTokens.background)
+    }
+}
+
+#Preview("Recent Post - Minimal Engagement") {
+    DesignSystemPreviewDeps.withEngagement {
+        ScrollView {
+            FeedPostView(post: PreviewFixtures.recentPost)
+                .padding()
+        }
+        .background(ColorTokens.background)
+    }
+}
+
+#Preview("Multiple Posts in Feed") {
+    DesignSystemPreviewDeps.withEngagement {
+        ScrollView {
+            LazyVStack(spacing: SpacingTokens.md) {
+                FeedPostView(post: PreviewFixtures.shortPost)
+                FeedPostView(post: PreviewFixtures.longPost)
+                FeedPostView(post: PreviewFixtures.popularPost)
+                FeedPostView(post: PreviewFixtures.recentPost)
+            }
+            .padding()
+        }
+        .background(ColorTokens.background)
+    }
+}
 #endif
 
 

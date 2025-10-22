@@ -14,18 +14,21 @@ This module handles:
 ## Components
 
 ### MediaPicker
-SwiftUI wrapper for the system photo picker.
+**Note:** MediaPicker has been moved to `UIKitBridge` package for better organization.
+Use `UIKitBridge.MediaPickerBridge` instead.
 
 ```swift
+import UIKitBridge
+
 @State private var selectedMedia: [SelectedMedia] = []
 
 var body: some View {
-    MediaPicker(selectedMedia: $selectedMedia, maxSelectionCount: 4)
+    MediaPickerBridge(selectedMedia: $selectedMedia, maxSelectionCount: 4)
 }
 
 // Convenience methods
-MediaPicker.photosPicker(selectedMedia: $selectedMedia)
-MediaPicker.videosPicker(selectedMedia: $selectedMedia, maxSelectionCount: 1)
+MediaPickerBridge.photosPicker(selectedMedia: $selectedMedia)
+MediaPickerBridge.videosPicker(selectedMedia: $selectedMedia, maxSelectionCount: 1)
 ```
 
 ### MediaProcessor

@@ -1,16 +1,19 @@
 //
 //  ImageGridView.swift
-//  Agora
+//  DesignSystem
 //
-//  Smart grid layout for 1-4 images
+//  Image carousel with magnetic snapping using native SwiftUI TabView
 //
 
 import SwiftUI
+import UIKitBridge
 
-/// Smart image grid that adapts layout based on image count
+/// Image carousel that uses native TabView with magnetic snapping
 public struct ImageGridView: View {
     let imageUrls: [String]
     let onImageTap: (Int) -> Void
+    
+    @State private var currentIndex = 0
     
     public init(imageUrls: [String], onImageTap: @escaping (Int) -> Void = { _ in }) {
         self.imageUrls = imageUrls
@@ -22,12 +25,8 @@ public struct ImageGridView: View {
             switch imageUrls.count {
             case 1:
                 singleImageLayout
-            case 2:
-                twoImageLayout
-            case 3:
-                threeImageLayout
-            case 4:
-                fourImageLayout
+            case 2...4:
+                carouselLayout
             default:
                 EmptyView()
             }
@@ -43,49 +42,37 @@ public struct ImageGridView: View {
             .clipShape(RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
     }
     
-    // MARK: - Two Image Layout (Side by Side)
+    // MARK: - Carousel Layout (2-4 images)
     
-    private var twoImageLayout: some View {
-        HStack(spacing: 2) {
-            ImageCell(url: imageUrls[0], index: 0, onTap: onImageTap)
-            ImageCell(url: imageUrls[1], index: 1, onTap: onImageTap)
-        }
-        .frame(height: 250)
-        .clipShape(RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
-    }
-    
-    // MARK: - Three Image Layout (1 large + 2 stacked)
-    
-    private var threeImageLayout: some View {
-        HStack(spacing: 2) {
-            // Large left image
-            ImageCell(url: imageUrls[0], index: 0, onTap: onImageTap)
+    private var carouselLayout: some View {
+        VStack(spacing: SpacingTokens.xs) {
+            TabView(selection: $currentIndex) {
+                ForEach(Array(imageUrls.enumerated()), id: \.offset) { index, url in
+                    ImageCell(url: url, index: index, onTap: onImageTap)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 250)
+                        .clipShape(RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
+                        .tag(index)
+                }
+            }
+            #if os(iOS)
+            .tabViewStyle(.page(indexDisplayMode: .automatic))
+            #endif
+            .frame(height: 250)
             
-            // Two stacked right images
-            VStack(spacing: 2) {
-                ImageCell(url: imageUrls[1], index: 1, onTap: onImageTap)
-                ImageCell(url: imageUrls[2], index: 2, onTap: onImageTap)
+            // Custom page indicators for better control
+            if imageUrls.count > 1 {
+                HStack(spacing: SpacingTokens.xxs) {
+                    ForEach(0..<imageUrls.count, id: \.self) { index in
+                        Circle()
+                            .fill(index == currentIndex ? ColorTokens.agoraBrand : ColorTokens.separator)
+                            .frame(width: 6, height: 6)
+                            .animation(.easeInOut(duration: 0.2), value: currentIndex)
+                    }
+                }
+                .padding(.top, SpacingTokens.xs)
             }
         }
-        .frame(height: 250)
-        .clipShape(RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
-    }
-    
-    // MARK: - Four Image Layout (2x2 Grid)
-    
-    private var fourImageLayout: some View {
-        VStack(spacing: 2) {
-            HStack(spacing: 2) {
-                ImageCell(url: imageUrls[0], index: 0, onTap: onImageTap)
-                ImageCell(url: imageUrls[1], index: 1, onTap: onImageTap)
-            }
-            HStack(spacing: 2) {
-                ImageCell(url: imageUrls[2], index: 2, onTap: onImageTap)
-                ImageCell(url: imageUrls[3], index: 3, onTap: onImageTap)
-            }
-        }
-        .frame(height: 250)
-        .clipShape(RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
     }
 }
 
@@ -99,8 +86,7 @@ struct ImageCell: View {
     
     var body: some View {
         Button {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            DesignSystemBridge.lightImpact()
             onTap(index)
         } label: {
             AsyncImage(url: URL(string: url)) { phase in
@@ -145,6 +131,7 @@ struct ImageCell: View {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview("Single Image") {
     ImageGridView(imageUrls: [
         "https://picsum.photos/800/600"
@@ -152,7 +139,7 @@ struct ImageCell: View {
     .padding()
 }
 
-#Preview("Two Images") {
+#Preview("Two Images Carousel") {
     ImageGridView(imageUrls: [
         "https://picsum.photos/800/600",
         "https://picsum.photos/800/601"
@@ -160,7 +147,7 @@ struct ImageCell: View {
     .padding()
 }
 
-#Preview("Three Images") {
+#Preview("Three Images Carousel") {
     ImageGridView(imageUrls: [
         "https://picsum.photos/800/600",
         "https://picsum.photos/800/601",
@@ -169,7 +156,7 @@ struct ImageCell: View {
     .padding()
 }
 
-#Preview("Four Images") {
+#Preview("Four Images Carousel") {
     ImageGridView(imageUrls: [
         "https://picsum.photos/800/600",
         "https://picsum.photos/800/601",
@@ -178,4 +165,4 @@ struct ImageCell: View {
     ])
     .padding()
 }
-
+#endif

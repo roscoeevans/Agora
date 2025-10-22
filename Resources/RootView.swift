@@ -6,44 +6,49 @@
 //
 
 import SwiftUI
-import AuthFeature
+import Authentication
+import Onboarding
 import Observation
 
 /// Root view that handles authentication-gated routing
-/// Shows different views based on authentication state
+/// Shows app onboarding first (pre-auth), then authentication flow
 struct RootView: View {
     @Environment(AuthStateManager.self) private var authManager
     
     var body: some View {
-        Group {
-            switch authManager.state {
-            case .initializing:
-                ZStack {
-                    Color.black
-                        .ignoresSafeArea()
-                    ProgressView()
-                        .controlSize(.large)
-                        .tint(.white)
+        // App onboarding shown first (pre-authentication)
+        OnboardingGate {
+            // After onboarding, show auth flow
+            Group {
+                switch authManager.state {
+                case .initializing:
+                    ZStack {
+                        Color.black
+                            .ignoresSafeArea()
+                        ProgressView()
+                            .controlSize(.large)
+                            .tint(.white)
+                    }
+                    .transition(.opacity)
+                    
+                case .unauthenticated:
+                    WelcomeView()
+                        .transition(.opacity)
+                    
+                case .authenticatedNoProfile:
+                    OnboardingView()
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                    
+                case .authenticated:
+                    ContentView()
+                        .transition(.opacity)
                 }
-                .transition(.opacity)
-                
-            case .unauthenticated:
-                WelcomeView()
-                    .transition(.opacity)
-                
-            case .authenticatedNoProfile:
-                OnboardingView()
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
-                
-            case .authenticated:
-                ContentView()
-                    .transition(.opacity)
             }
+            .animation(.easeInOut(duration: 0.3), value: authManager.state)
         }
-        .animation(.easeInOut(duration: 0.3), value: authManager.state)
     }
 }
 

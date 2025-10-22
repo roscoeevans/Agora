@@ -3,41 +3,42 @@ import Foundation
 
 public enum MockPosts {
     public static let shortText = Post(
-        id: UUID(),
-        authorID: MockProfiles.alice.id,
-        content: "Just shipped a new feature! 🚀",
-        mediaURLs: [],
-        createdAt: Date(),
+        id: UUID().uuidString,
+        authorId: MockProfiles.alice.id.uuidString,
+        authorDisplayHandle: MockProfiles.alice.handle,
+        text: "Just shipped a new feature! 🚀",
         likeCount: 42,
+        repostCount: 8,
         replyCount: 5,
-        repostCount: 8
+        createdAt: Date()
     )
     
     public static let longText = Post(
-        id: UUID(),
-        authorID: MockProfiles.bob.id,
-        content: """
+        id: UUID().uuidString,
+        authorId: MockProfiles.bob.id.uuidString,
+        authorDisplayHandle: MockProfiles.bob.handle,
+        text: """
             Today I learned something interesting about Swift concurrency. 
             When you use async/await, the compiler actually transforms your 
             code into a state machine. This is why you can't capture inout 
             parameters across suspension points!
             """,
-        mediaURLs: [],
-        createdAt: Date().addingTimeInterval(-3600),
         likeCount: 156,
+        repostCount: 34,
         replyCount: 23,
-        repostCount: 34
+        createdAt: Date().addingTimeInterval(-3600)
     )
     
     public static let withLink = Post(
-        id: UUID(),
-        authorID: MockProfiles.charlie.id,
-        content: "Check out this awesome article: https://example.com/swift-tips",
-        mediaURLs: [],
-        createdAt: Date().addingTimeInterval(-7200),
+        id: UUID().uuidString,
+        authorId: MockProfiles.charlie.id.uuidString,
+        authorDisplayHandle: MockProfiles.charlie.handle,
+        text: "Check out this awesome article: https://example.com/swift-tips",
+        linkUrl: "https://example.com/swift-tips",
         likeCount: 89,
+        repostCount: 15,
         replyCount: 12,
-        repostCount: 15
+        createdAt: Date().addingTimeInterval(-7200)
     )
     
     public static let all = [shortText, longText, withLink]

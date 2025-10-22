@@ -17,6 +17,8 @@ public enum HomeRoute: Hashable, Codable {
     case profile(id: UUID)
     case compose(quotePostId: String? = nil)
     case editHistory(postId: String, currentText: String)
+    case fullscreenVideo(bundleId: String, videoUrl: String)
+    case imageGallery(urls: [String], initialIndex: Int)
 }
 
 public enum SearchRoute: Hashable, Codable {
@@ -33,8 +35,14 @@ public enum NotificationsRoute: Hashable, Codable {
 
 public enum ProfileRoute: Hashable, Codable {
     case settings
+    case editProfile
     case followers
     case post(id: UUID)
     case profile(id: UUID)
+}
+
+public enum DMsRoute: Hashable, Codable {
+    case list
+    case conversation(id: UUID)
 }
 

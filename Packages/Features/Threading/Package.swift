@@ -4,7 +4,10 @@ import PackageDescription
 
 let package = Package(
     name: "Threading",
-    platforms: [.iOS(.v26)],
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v26)  // Required to satisfy SPM dependency resolution
+    ],
     products: [
         .library(name: "Threading", targets: ["Threading"])
     ],
@@ -21,6 +24,7 @@ let package = Package(
                 "Networking",
                 "AppFoundation"
             ],
+            path: "Sources/Threading",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]
@@ -28,6 +32,7 @@ let package = Package(
         .testTarget(
             name: "ThreadingTests",
             dependencies: ["Threading"],
+            path: "Tests/ThreadingTests",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]

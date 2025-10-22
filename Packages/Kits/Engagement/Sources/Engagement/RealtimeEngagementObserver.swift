@@ -1,16 +1,24 @@
 import Foundation
 import AppFoundation
 import Supabase
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Observes real-time engagement count updates via Supabase Realtime
-/// Uses a SINGLE channel per feed (not per post) with debounced visible post tracking
+/// Uses server-side filtering with `in` operator (max 100 IDs per channel)
+/// For >100 visible posts, creates multiple chunked subscriptions
+/// NOTE: Postgres Changes doesn't scale as well as Broadcast; consider migrating at scale
 public actor RealtimeEngagementObserver {
     private let supabase: SupabaseClient
-    private var subscription: RealtimeChannel?
+    private var subscriptions: [RealtimeChannelV2] = []
     private var visiblePostIds: Set<String> = []
     private var updateDebounceTask: Task<Void, Never>?
     
-    /// Stream of engagement updates (postId, likeCount, repostCount)
+    /// Maximum post IDs per subscription (Supabase limit for `in` operator)
+    private let maxPostIdsPerChannel = 100
+    
+    /// Stream of engagement updates (postId, likeCount, repostCount, replyCount)
     public let updates: AsyncStream<EngagementUpdate>
     private let continuation: AsyncStream<EngagementUpdate>.Continuation
     
@@ -29,6 +37,7 @@ public actor RealtimeEngagementObserver {
         (self.updates, self.continuation) = AsyncStream.makeStream()
         
         // Listen for app lifecycle events
+        #if canImport(UIKit)
         Task { @MainActor in
             NotificationCenter.default.addObserver(
                 forName: UIApplication.didEnterBackgroundNotification,
@@ -46,6 +55,7 @@ public actor RealtimeEngagementObserver {
                 Task { await self?.resumeObserving() }
             }
         }
+        #endif
     }
     
     /// Update visible posts and resubscribe with new filter
@@ -79,8 +89,10 @@ public actor RealtimeEngagementObserver {
     
     /// Pause observing (called on background)
     private func pauseObserving() async {
-        await subscription?.unsubscribe()
-        subscription = nil
+        for subscription in subscriptions {
+            await subscription.unsubscribe()
+        }
+        subscriptions.removeAll()
     }
     
     /// Resume observing (called on foreground)
@@ -89,66 +101,78 @@ public actor RealtimeEngagementObserver {
     }
     
     /// Resubscribe with current visible posts
+    /// Chunks post IDs into batches of ≤100 and creates one channel per batch
     private func resubscribe() async {
-        // Unsubscribe existing
-        await subscription?.unsubscribe()
-        subscription = nil
+        // Unsubscribe existing channels
+        for subscription in subscriptions {
+            await subscription.unsubscribe()
+        }
+        subscriptions.removeAll()
         
         guard !visiblePostIds.isEmpty else { return }
         
-        // Build properly quoted filter for UUIDs/BigInts
-        // For BigInt post IDs, we don't need quotes
-        let postIdList = visiblePostIds.joined(separator: ",")
-        let filter = "id=in.(\(postIdList))"
+        // Chunk post IDs into batches of max 100 (Supabase `in` operator limit)
+        let postIdChunks = Array(visiblePostIds).chunked(into: maxPostIdsPerChannel)
         
-        // Single channel for all visible posts
-        let channelId = "engagement_\(UUID().uuidString)"
-        
-        do {
-            subscription = supabase.channel(channelId)
+        // Create one subscription per chunk
+        for (index, chunk) in postIdChunks.enumerated() {
+            let channelId = "engagement_\(UUID().uuidString)_\(index)"
+            let channel = supabase.channel(channelId)
             
-            // Subscribe to post updates
-            let changeStream = await subscription!.postgresChange(
-                InsertAction.self,
+            // Build server-side filter: id=in.(uuid1,uuid2,uuid3)
+            // Note: UUIDs work unquoted; no spaces in the list
+            let postIdsFilter = chunk.joined(separator: ",")
+            let filter = "id=in.(\(postIdsFilter))"
+            
+            // Subscribe to UPDATE events on posts table with server-side filtering
+            let updates = channel.postgresChange(
+                UpdateAction.self,
                 schema: "public",
                 table: "posts",
-                filter: filter
+                filter: filter  // ✅ Server-side filtering (max 100 IDs)
             )
             
-            // Listen to changes
-            Task {
-                for await change in changeStream {
-                    await handleChange(change)
+            // Subscribe to the channel
+            await channel.subscribe()
+            subscriptions.append(channel)
+            
+            // Listen to updates in background task
+            Task { [weak self] in
+                for await update in updates {
+                    await self?.handleUpdate(update)
                 }
             }
-            
-            // Subscribe to the channel
-            await subscription!.subscribe()
-        } catch {
-            print("[RealtimeEngagementObserver] Failed to subscribe: \(error)")
         }
     }
     
     /// Stop observing updates
     public func stopObserving() async {
         updateDebounceTask?.cancel()
-        await subscription?.unsubscribe()
-        subscription = nil
+        for subscription in subscriptions {
+            await subscription.unsubscribe()
+        }
+        subscriptions.removeAll()
     }
     
-    private func handleChange(_ change: any PostgresAction) {
-        // Extract post data from the change
-        guard let record = change.record,
-              let postId = record["id"] as? String,
+    private func handleUpdate(_ action: UpdateAction) {
+        // Extract new record data from the update action
+        let record = action.record
+        
+        guard let postId = record["id"] as? String,
               let likeCount = record["like_count"] as? Int,
-              let repostCount = record["repost_count"] as? Int else {
+              let repostCount = record["repost_count"] as? Int,
+              let replyCount = record["reply_count"] as? Int else {
             return
         }
+        
+        // Server-side filter ensures we only get updates for visible posts
+        // No need for client-side filtering anymore!
         
         let update = EngagementUpdate(
             postId: postId,
             likeCount: likeCount,
-            repostCount: repostCount
+            repostCount: repostCount,
+            replyCount: replyCount
         )
         
         // If action in progress, buffer the update
@@ -179,11 +203,25 @@ public struct EngagementUpdate: Sendable {
     public let postId: String
     public let likeCount: Int
     public let repostCount: Int
+    public let replyCount: Int
     
-    public init(postId: String, likeCount: Int, repostCount: Int) {
+    public init(postId: String, likeCount: Int, repostCount: Int, replyCount: Int) {
         self.postId = postId
         self.likeCount = likeCount
         self.repostCount = repostCount
+        self.replyCount = replyCount
+    }
+}
+
+// MARK: - Array Chunking Helper
+
+private extension Array {
+    /// Splits array into chunks of specified size
+    /// Used for splitting post IDs into batches of ≤100 for Supabase `in` filter limit
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: count, by: size).map {
+            Array(self[$0 ..< Swift.min($0 + size, count)])
+        }
     }
 }
 

@@ -1,101 +1,232 @@
-# agctl Quick Start
+# agctl 1.1.0 Quick Start Guide
 
-## Installation
+## 🚀 Install in 3 Steps
+
+### 1. Install agctl
 
 ```bash
-cd Tools/agctl
+cd /Users/roscoeevans/Developer/Agora/Tools/agctl
 ./install.sh
-agctl install-hooks
 ```
 
-## Essential Commands
+### 2. Install Shell Completions (Optional but Recommended)
 
-### OpenAPI Generation
+**For Zsh** (macOS default):
 ```bash
-agctl generate openapi              # Regenerate API client
-agctl generate openapi -v           # Verbose output
+agctl completions zsh > ~/.zsh/completions/_agctl
+# Add to ~/.zshrc if not already there:
+fpath=(~/.zsh/completions $fpath)
+autoload -Uz compinit && compinit
+# Then restart shell or:
+source ~/.zshrc
 ```
 
-### Building
+**For Bash**:
 ```bash
-agctl build                         # Build all packages
-agctl build AuthFeature             # Build specific package
-agctl build --release               # Release build
-agctl build -v                      # Verbose output
+agctl completions bash > /usr/local/etc/bash_completion.d/agctl
+source /usr/local/etc/bash_completion.d/agctl
 ```
 
-### Testing
+**For Fish**:
 ```bash
-agctl test                          # Test all packages
-agctl test AuthFeature              # Test specific package
-agctl test --parallel               # Parallel testing
+agctl completions fish > ~/.config/fish/completions/agctl.fish
 ```
 
-### Validation
+### 3. Verify Installation
+
 ```bash
-agctl validate modules              # Check module structure
-agctl validate dependencies         # Check dependency graph
+agctl --version
+# Should show: agctl 1.1.0
+
+agctl config show
+# Should display current configuration
 ```
 
-### Cleaning
+---
+
+## ✨ Try New Features
+
+### Shell Completions
 ```bash
-agctl clean                        # Clean build artifacts
-agctl clean --all                  # Deep clean (includes DerivedData)
-agctl clean -v                     # Verbose output
+agctl <TAB><TAB>
+# Shows: build, clean, completions, config, generate, install-hooks, lint, test, validate
+
+agctl build --<TAB><TAB>
+# Shows: --verbose, --release, --help
 ```
 
-### Git Hooks
+### Configuration Management
 ```bash
-agctl install-hooks                 # Install git hooks
-agctl install-hooks --force         # Force reinstall
+# Config already created at project root: .agctl.yml
+agctl config show
+
+# To customize:
+vim .agctl.yml
 ```
 
-## Common Workflows
+### Progress Indicators
+```bash
+# Single package build with spinner
+agctl build AuthFeature
+# ⠋ Building AuthFeature (2.3s)
+# ✅ Build succeeded (2.4s)
+
+# All packages with progress bar
+agctl build
+# Building: [████████████████████░░░░] 85% (12/14) - PostDetailFeature
+```
+
+### Code Linting
+```bash
+# Check if SwiftLint is installed
+which swiftlint
+# If not: brew install swiftlint
+
+# Lint a package
+agctl lint AuthFeature
+
+# Lint all packages
+agctl lint
+
+# Auto-fix issues
+agctl lint --fix
+
+# Strict mode (CI)
+agctl lint --strict
+```
+
+---
+
+## 📝 Common Workflows
 
 ### Daily Development
 ```bash
+# Build what you're working on (with nice spinner!)
 agctl build AuthFeature
+
+# Lint and fix your code
+agctl lint AuthFeature --fix
+
+# Test your changes
 agctl test AuthFeature
-git commit -m "feat: add login"     # pre-commit hook runs automatically
-```
 
-### After OpenAPI Changes
-```bash
-vim OpenAPI/agora.yaml
-agctl generate openapi
-agctl build Networking
-```
-
-### Before Pushing
-```bash
+# Before commit: validate everything
 agctl validate modules
 agctl build
+```
+
+### Code Review Preparation
+```bash
+# Make sure everything is clean
+agctl clean
+agctl build --release
+agctl lint --fix
+agctl test
+agctl validate modules
+```
+
+### CI/CD
+```bash
+agctl validate modules
+agctl validate dependencies
+agctl lint --strict
+agctl build --release
 agctl test
 ```
 
-## Getting Help
+---
 
-```bash
-agctl --help                        # All commands
-agctl generate --help               # Generate subcommands
-agctl build --help                  # Build options
+## 🎯 What's New in 1.1.0
+
+1. **Shell Completions** - Tab completion for all commands
+2. **Config File** - Team-wide settings in `.agctl.yml`
+3. **Progress Bars** - Beautiful progress indicators
+4. **Lint Command** - `agctl lint` with auto-fix
+5. **Test Suite** - Unit tests for core functionality
+
+---
+
+## 💡 Pro Tips
+
+### Use Config for Team Settings
+Edit `.agctl.yml` to set team defaults:
+```yaml
+lint:
+  autoFix: true    # Always auto-fix
+  strict: true     # CI mode
+
+validation:
+  strictNaming: true
+  enforceTests: true
 ```
 
-## Troubleshooting
+### Combine Commands
+```bash
+# Clean, build, lint, test - all in one go
+agctl clean && agctl build && agctl lint --fix && agctl test
+```
 
-**Command not found**: Run `cd Tools/agctl && ./install.sh`
+### Create Aliases
+Add to your `.zshrc`:
+```bash
+alias agb='agctl build'
+alias agl='agctl lint --fix'
+alias agt='agctl test'
+alias agv='agctl validate modules'
+```
 
-**OpenAPI fails**: Install generator with `brew install mint && mint install apple/swift-openapi-generator`
+### Use in Git Hooks
+The tool is already set up for git hooks:
+```bash
+agctl install-hooks
+```
 
-**Package not found**: Use `agctl build` to list available packages
+---
 
-**Build issues**: Try `agctl clean` or `agctl clean --all` to remove stale artifacts
+## 🆘 Troubleshooting
 
-**Skip git hook**: Use `git commit --no-verify`
+### Command Not Found
+```bash
+# Make sure it's in PATH
+which agctl
 
-## Documentation
+# If not, reinstall:
+cd Tools/agctl && ./install.sh
+```
 
-- Tool README: `Tools/agctl/README.md`
-- Full Guide: `docs/AGCTL_GUIDE.md`
-- Git Hooks: `.githooks/README.md`
+### Tab Completion Not Working
+```bash
+# For Zsh, make sure fpath includes completions dir
+echo $fpath | grep zsh/completions
 
+# Add to ~/.zshrc if missing:
+fpath=(~/.zsh/completions $fpath)
+autoload -Uz compinit && compinit
+```
+
+### SwiftLint Not Found
+```bash
+brew install swiftlint
+# Verify:
+which swiftlint
+```
+
+### Progress Bar Looks Weird
+Progress bars work best in modern terminals. If you see issues in CI, use:
+```bash
+agctl build --verbose  # Disables progress bar
+```
+
+---
+
+## 📚 More Info
+
+- Full docs: `Tools/agctl/README.md`
+- Implementation details: `AGCTL_TIER1_IMPROVEMENTS.md`
+- Help: `agctl --help` or `agctl <command> --help`
+
+---
+
+## 🎉 Enjoy!
+
+You now have a world-class CLI tool for Agora development. Happy coding!

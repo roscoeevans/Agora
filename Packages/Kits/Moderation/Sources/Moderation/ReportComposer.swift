@@ -120,6 +120,7 @@ public final class ReportComposer: ObservableObject {
     public init() {}
     
     /// Submits a content report
+    @MainActor
     public func submitReport(
         contentId: String,
         contentType: ContentType,
@@ -200,15 +201,17 @@ public struct ReportComposerView: View {
                 }
             }
             .navigationTitle("Report Content")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Submit") {
                         Task {
                             guard let reportType = composer.selectedReportType else { return }

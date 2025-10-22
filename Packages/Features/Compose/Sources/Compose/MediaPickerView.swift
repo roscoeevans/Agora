@@ -10,6 +10,10 @@ import PhotosUI
 import DesignSystem
 import Media
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 public struct MediaPickerView: View {
     @State private var selectedItems: [PhotosPickerItem] = []
     let onMediaSelected: ([MediaItem]) -> Void
@@ -50,18 +54,36 @@ public struct MediaPickerView: View {
         for item in items {
             if let data = try? await item.loadTransferable(type: Data.self) {
                 // Determine media type based on the item
-                let mediaType: MediaType = item.supportedContentTypes.contains(.movie) ? .video : .photo
+                let isVideo = item.supportedContentTypes.contains(.movie)
                 
-                // Create MediaItem (in a real implementation, you'd upload the data and get URLs)
-                let mediaItem = MediaItem(
-                    type: mediaType,
-                    url: nil, // Would be set after upload
-                    thumbnailURL: nil, // Would be generated
-                    width: nil, // Would be extracted from image/video
-                    height: nil // Would be extracted from image/video
-                )
-                
-                mediaItems.append(mediaItem)
+                if isVideo {
+                    // For videos, we'd need to get the video URL
+                    // This is simplified - real implementation would use VideoTransferable
+                    let mediaItem = MediaItem(
+                        type: .video,
+                        videoURL: nil // Would be set after processing
+                    )
+                    mediaItems.append(mediaItem)
+                } else {
+                    // For photos, store the image data
+                    #if canImport(UIKit)
+                    if let uiImage = UIImage(data: data) {
+                        let mediaItem = MediaItem(
+                            type: .photo,
+                            imageData: data,
+                            width: Int(uiImage.size.width),
+                            height: Int(uiImage.size.height)
+                        )
+                        mediaItems.append(mediaItem)
+                    }
+                    #else
+                    let mediaItem = MediaItem(
+                        type: .photo,
+                        imageData: data
+                    )
+                    mediaItems.append(mediaItem)
+                    #endif
+                }
             }
         }
         

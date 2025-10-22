@@ -51,8 +51,8 @@ Provides image upload functionality with the following features:
 ### 3. Auth Integration
 
 **Modified Files:**
-- `Packages/Features/Auth/Sources/Auth/AuthStateManager.swift`
-- `Packages/Features/Auth/Sources/Auth/OnboardingView.swift`
+- `Packages/Features/Authentication/Sources/Authentication/AuthStateManager.swift`
+- `Packages/Features/Authentication/Sources/Authentication/OnboardingView.swift`
 
 **Changes:**
 
@@ -183,8 +183,8 @@ This column stores the full public URL to the user's avatar in Supabase Storage.
 - `Packages/Shared/AppFoundation/Sources/AppFoundation/StorageService.swift` - Image upload service
 
 ### Modified Files
-- `Packages/Features/Auth/Sources/Auth/AuthStateManager.swift` - Avatar upload integration
-- `Packages/Features/Auth/Sources/Auth/OnboardingView.swift` - Pass image to create profile
+- `Packages/Features/Authentication/Sources/Authentication/AuthStateManager.swift` - Avatar upload integration
+- `Packages/Features/Authentication/Sources/Authentication/OnboardingView.swift` - Pass image to create profile
 - `OpenAPI/agora.yaml` - Added avatarUrl to CreateProfileRequest
 - `supabase/functions/create-profile/index.ts` - Save avatar URL to database
 - `Packages/Kits/Networking/Sources/Networking/Generated/Types.swift` - Regenerated from OpenAPI

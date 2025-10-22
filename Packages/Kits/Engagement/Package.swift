@@ -1,33 +1,35 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
 import PackageDescription
 
 let package = Package(
     name: "Engagement",
-    platforms: [.iOS(.v18)],
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v26)
+    ],
     products: [
-        .library(name: "Engagement", targets: ["Engagement"]),
+        .library(
+            name: "Engagement",
+            targets: ["Engagement"]
+        ),
     ],
     dependencies: [
-        .package(path: "../Networking"),
-        .package(path: "../Analytics"),
-        .package(path: "../../Shared/AppFoundation"),
+        .package(name: "AppFoundation", path: "../../Shared/AppFoundation"),
+        .package(url: "https://github.com/supabase/supabase-swift", from: "2.35.0"),
     ],
     targets: [
         .target(
             name: "Engagement",
             dependencies: [
-                "Networking",
-                "Analytics",
-                "AppFoundation"
+                "AppFoundation",
+                .product(name: "Supabase", package: "supabase-swift"),
             ],
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency")
+                .define("DEBUG", .when(configuration: .debug)),
+                .enableExperimentalFeature("StrictConcurrency")
             ]
-        ),
-        .testTarget(
-            name: "EngagementTests",
-            dependencies: ["Engagement"]
         ),
     ]
 )
-

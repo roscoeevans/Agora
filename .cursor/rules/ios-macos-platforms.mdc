@@ -1,0 +1,284 @@
+---
+description: When configuring Xcode targets, writing Package.swift platform declarations, adding platform-specific imports or conditional compilation, setting up CI test runners, or deciding whether to reference macOS in an iOS-only app. Use this when working with SUPPORTS_MACCATALYST settings, platform arrays in SPM manifests, if os() conditionals, or determining if macOS support is appropriate for the current module.
+---
+
+## iOS-Only Platform Purity (Pragmatic Approach)
+
+### Overview
+
+Agora is an iOS-only app. While we don't ship for macOS, we need to be pragmatic about platform declarations to work with Swift Package Manager and external dependencies.
+
+Both versions shoud be .v26
+
+### Core Principle
+
+**Short answer:** Declare iOS-only for UI packages, but add macOS support for shared packages when external dependencies require it.
+
+**Why:** SPM tries to resolve dependencies for all platforms, even iOS-only packages. External dependencies often declare macOS support, causing version conflicts. The pragmatic solution is to declare macOS support where needed to satisfy SPM, while keeping the actual app iOS-only.
+
+### Implementation Guidelines
+
+#### 1. Xcode Target Settings
+
+**Do:**
+- Set **iOS only** as the deployment target
+- **Deployment Info** → Uncheck "Mac Catalyst"
+- Set build setting `SUPPORTS_MACCATALYST = NO`
+
+**Optional (iPad-on-Mac opt-out):**
+- If distributing an iPad app and you don't want it appearing on Apple Silicon Macs via the iOS App Store, opt out in App Store Connect under "Make this iPad app available on Mac"
+- Note: This is a store/distribution toggle, not a code setting
+
+**Avoid:**
+- Adding any macOS or Catalyst destinations, schemes, or test plans if you're not shipping them
+
+#### 2. Package.swift (SPM) - Pragmatic Approach
+
+**UI Packages (Features, DesignSystem, etc.):**
+```swift
+// Declare iOS-only for UI packages
+platforms: [
+  .iOS(.v26)
+]
+```
+
+**Shared Packages (AppFoundation, SupabaseKit, etc.):**
+```swift
+// Declare both iOS and macOS to satisfy external dependencies
+platforms: [
+  .iOS(.v26),
+  .macOS(.v15)  // Match what external dependencies require
+]
+```
+
+**Why this approach:**
+- UI packages stay iOS-only (no macOS code paths)
+- Shared packages declare macOS support to avoid SPM version conflicts
+- External dependencies (Supabase, OpenAPI, etc.) often require macOS 10.15+
+- SPM tries to resolve for all platforms, so we need to be compatible
+
+**The Reality:**
+- Your app is still iOS-only in practice
+- macOS declarations are just to satisfy SPM's dependency resolution
+- No macOS-specific code is written or shipped
+
+#### 3. Imports & Conditionals in Code
+
+**Do (iOS-only UI):**
+
+```swift
+import SwiftUI
+
+#if os(iOS)
+import UIKit
+#endif
+```
+
+- Only import `UIKit` where it's actually needed (e.g., `UIViewRepresentable` implementations)
+
+**Avoid:**
+- `#if os(macOS)` branches inside iOS app modules
+- This adds noise and drift for code you'll never ship
+
+**Bridge Pattern:**
+
+```swift
+// Keep UIKit representables in a small folder/module
+// Example: UIKitBridge, so you can rip/replace later
+
+#if os(iOS)
+import UIKit
+
+struct CameraView: UIViewControllerRepresentable {
+    // iOS-specific camera implementation
+}
+#endif
+```
+
+#### 4. Info.plist & Entitlements
+
+**Do:**
+- Keep standard iOS `Info.plist` keys
+- Use iOS-appropriate entitlements
+
+**Avoid:**
+- Catalyst/macOS entitlements or keys unless you're actually using them
+
+#### 5. CI & Tests
+
+**Do:**
+- Use iOS simulators only
+- Configure test runners for iOS destinations
+
+**Avoid:**
+- macOS test runners
+- macOS snapshot baselines
+
+### Portability Without Commitment (The Win–Win)
+
+You can keep your core code portable without declaring macOS support:
+
+#### Layer Strategy
+
+1. **Domain/Services/Models:**
+   - Foundation-only
+   - No UI frameworks
+   - Platform-agnostic by default
+
+2. **View Models:**
+   - SwiftUI Observation + Foundation
+   - No UIKit dependencies
+
+3. **UI Layers:**
+   - iOS-only SwiftUI packages
+   - Import SwiftUI (and UIKit via representables only where necessary)
+
+#### Conditionals at the Edges Only
+
+```swift
+// ✅ Good: Isolate platform-specific code to system view wrappers
+#if os(iOS)
+import UIKit
+
+struct CameraView: UIViewControllerRepresentable {
+    // Camera implementation
+}
+#endif
+
+// ❌ Bad: Don't sprinkle #if os(macOS) everywhere
+#if os(macOS)
+struct CameraView: NSViewRepresentable {
+    // This is noise if you're not shipping macOS
+}
+#endif
+```
+
+#### Benefits
+
+This approach gives you two things:
+
+1. **Focus:** Your current codebase stays lean and iOS-first
+2. **Option value:** If you ever decide to add Catalyst or a real macOS target, your core stays reusable; you only create a new UI target and swap representables (`NSViewRepresentable` vs `UIViewRepresentable`)
+
+### When You Would Reference macOS
+
+Only reference macOS if one of these becomes true:
+
+1. **Catalyst Build:** You plan a Mac Catalyst build (same codebase, Mac UI polish)
+2. **Native macOS App:** You plan a native macOS app (AppKit-specific affordances)
+3. **Cross-Platform UI Kit:** You're building a shared UI kit specifically meant to compile on both platforms (then you'd maintain `#if os(iOS)` / `#if os(macOS)` view wrappers in a dedicated cross-platform UI package)
+
+Until then, keep macOS out of the iOS app modules.
+
+### Simple Rules of Thumb (Updated)
+
+| Layer | Platform Declaration | macOS References | Why |
+|-------|---------------------|------------------|-----|
+| App targets & UI packages | iOS-only | ❌ Never | Keep UI focused on iOS |
+| Shared packages with external deps | iOS + macOS 15.0 | ❌ No macOS code | Satisfy SPM dependency resolution |
+| System bridges (Camera, TextView, etc.) | iOS-only with `#if os(iOS)` | ❌ No macOS branches | Keep platform-specific code clean |
+| Domain/Services/Models | Foundation-only (portable) | ❌ Not applicable | Pure logic, no platform concerns |
+
+### Quick Checklist (Pragmatic)
+
+When creating or modifying packages/targets:
+
+- [ ] Is this a UI package (Features, DesignSystem)? → Declare iOS-only
+- [ ] Is this a shared package with external dependencies? → Declare iOS + macOS 15.0
+- [ ] Does this need UIKit? → Import within `#if os(iOS)` only
+- [ ] Are you getting SPM version conflicts? → Add macOS 15.0 to shared packages
+- [ ] Are you adding system view wrappers? → Isolate in bridge pattern
+- [ ] Are you setting up tests? → iOS simulators only
+- [ ] Remember: macOS declarations are just for SPM - no macOS code is written
+
+### Examples
+
+#### ✅ Good: UI Package (iOS-Only)
+
+```swift
+// Package.swift for DesignSystem or any UI package
+let package = Package(
+    name: "DesignSystem",
+    platforms: [
+        .iOS(.v26)  // UI packages stay iOS-only
+    ],
+    products: [
+        .library(name: "DesignSystem", targets: ["DesignSystem"])
+    ],
+    dependencies: [],
+    targets: [
+        .target(name: "DesignSystem")
+    ]
+)
+```
+
+#### ✅ Good: Shared Package (iOS + macOS for SPM)
+
+```swift
+// Package.swift for AppFoundation, SupabaseKit, etc.
+let package = Package(
+    name: "AppFoundation",
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v15)  // Required to satisfy external dependencies
+    ],
+    products: [
+        .library(name: "AppFoundation", targets: ["AppFoundation"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/supabase/supabase-swift", from: "2.35.0")
+    ],
+    targets: [
+        .target(name: "AppFoundation", dependencies: ["SupabaseKit"])
+    ]
+)
+```
+
+#### ✅ Good: Portable Domain Logic
+
+```swift
+// UserService.swift - no platform imports needed
+import Foundation
+
+public actor UserService {
+    public func fetchUser(id: UUID) async throws -> User {
+        // Pure Foundation code
+    }
+}
+```
+
+#### ✅ Good: iOS-Specific Bridge
+
+```swift
+// UIKitBridge/CameraView.swift
+import SwiftUI
+
+#if os(iOS)
+import UIKit
+
+struct CameraView: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        // iOS camera implementation
+    }
+}
+#endif
+```
+
+#### ❌ Bad: Unnecessary macOS References
+
+```swift
+// Don't do this in an iOS-only app
+import SwiftUI
+
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit  // ❌ Why? You're not shipping on Mac
+#endif
+```
+
+### Related Documentation
+
+- Xcode configuration: See `ios-configuration.mdc`
+- Package structure: See `ios-module-standards.mdc`
+- Project organization: See `project-structure.mdc`

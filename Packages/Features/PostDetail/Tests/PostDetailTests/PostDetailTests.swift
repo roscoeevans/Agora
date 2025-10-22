@@ -1,5 +1,5 @@
 import XCTest
-@testable import PostDetail
+@testable import PostDetailFeature
 
 final class PostDetailTests: XCTestCase {
     func testPostDetailViewModelInitialization() {

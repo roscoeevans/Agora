@@ -8,10 +8,12 @@
 import SwiftUI
 import AppFoundation
 import DesignSystem
-import AuthFeature
+import Authentication
 import Networking
 import Analytics
 import Engagement
+import PostDetail
+import SupabaseKit
 import Observation
 
 @main
@@ -50,7 +52,9 @@ struct AgoraApp: App {
         baseDeps = baseDeps.withAnalytics(analyticsClient)
         
         // Wire up Supabase client for realtime and direct database access
-        let supabaseClient = AgoraSupabaseClient.shared.client
+        let supabaseURL = AppConfig.supabaseURL.absoluteString
+        let supabaseKey = AppConfig.supabaseAnonKey
+        let supabaseClient = SupabaseClientLive(url: supabaseURL, key: supabaseKey)
         baseDeps = baseDeps.withSupabase(supabaseClient)
         
         // Wire up engagement service
@@ -64,6 +68,10 @@ struct AgoraApp: App {
             session: .shared
         )
         baseDeps = baseDeps.withEngagement(engagementService)
+        
+        // Wire up comment composition service
+        let commentCompositionService = CommentCompositionService()
+        baseDeps = baseDeps.withCommentComposition(commentCompositionService)
         
         self.deps = baseDeps
         
@@ -101,10 +109,17 @@ struct AgoraApp: App {
     private func setupAppearance() {
         // Apply saved appearance preference on launch
         Task { @MainActor in
-            let mode = deps.appearance.currentMode
+            let mode = deps.appearance.effectiveMode
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
                 for window in windowScene.windows {
-                    window.overrideUserInterfaceStyle = mode == .dark ? .dark : .light
+                    switch mode {
+                    case .light:
+                        window.overrideUserInterfaceStyle = .light
+                    case .dark:
+                        window.overrideUserInterfaceStyle = .dark
+                    case .system:
+                        window.overrideUserInterfaceStyle = .unspecified
+                    }
                 }
             }
         }

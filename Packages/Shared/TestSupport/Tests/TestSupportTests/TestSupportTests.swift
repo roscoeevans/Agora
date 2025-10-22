@@ -1,6 +1,5 @@
 import XCTest
 @testable import TestSupport
-import AppFoundation
 
 final class TestSupportTests: XCTestCase {
     
