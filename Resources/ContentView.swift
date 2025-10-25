@@ -32,12 +32,14 @@ struct ContentView: View {
     // Persisted paths (serialized)
     @SceneStorage("nav.path.home") private var homePathData: Data?
     @SceneStorage("nav.path.search") private var searchPathData: Data?
+    @SceneStorage("nav.path.messages") private var messagesPathData: Data?
     @SceneStorage("nav.path.notifications") private var notificationsPathData: Data?
     @SceneStorage("nav.path.profile") private var profilePathData: Data?
     
     // Live paths
     @State private var homePath: [HomeRoute] = []
     @State private var searchPath: [SearchRoute] = []
+    @State private var messagesPath: [DMsRoute] = []
     @State private var notificationsPath: [NotificationsRoute] = []
     @State private var profilePath: [ProfileRoute] = []
     
@@ -53,11 +55,13 @@ struct ContentView: View {
             .task {
                 homePath = decode(homePathData) ?? []
                 searchPath = decode(searchPathData) ?? []
+                messagesPath = decode(messagesPathData) ?? []
                 notificationsPath = decode(notificationsPathData) ?? []
                 profilePath = decode(profilePathData) ?? []
             }
             .onChange(of: homePath) { _, newValue in homePathData = encode(newValue) }
             .onChange(of: searchPath) { _, newValue in searchPathData = encode(newValue) }
+            .onChange(of: messagesPath) { _, newValue in messagesPathData = encode(newValue) }
             .onChange(of: notificationsPath) { _, newValue in notificationsPathData = encode(newValue) }
             .onChange(of: profilePath) { _, newValue in profilePathData = encode(newValue) }
             .onOpenURL(perform: handleDeepLink)
@@ -83,6 +87,12 @@ struct ContentView: View {
                 Image(systemName: "square.and.pencil")
                     .fontWeight(.semibold)
                     .environment(\.symbolVariants, .none)
+            }
+            
+            Tab(value: AppTab.messages) {
+                MessagesFlow(path: $messagesPath)
+            } label: {
+                Image(systemName: "message.fill")
             }
             
             Tab(value: AppTab.notifications) {
@@ -131,6 +141,8 @@ struct ContentView: View {
         case .compose:
             // Open compose sheet for deep link
             showingCompose = true
+        case .messages:
+            messagesPath = (newPath as? [DMsRoute]) ?? []
         case .notifications:
             notificationsPath = (newPath as? [NotificationsRoute]) ?? []
         case .profile:
@@ -145,7 +157,6 @@ private struct HomeFlow: View {
     @Binding var path: [HomeRoute]
     @State private var selectedFeed: HomeFeedType = .following
     @State private var showingFeedSettings = false
-    @State private var showingMessages = false
     @State private var showingCompose = false
     
     // ========================================
@@ -182,23 +193,9 @@ private struct HomeFlow: View {
                     }
                     .accessibilityLabel("Feed settings")
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingMessages = true
-                    } label: {
-                        Image(systemName: "message")
-                    }
-                    .accessibilityLabel("Messages")
-                }
             }
             .sheet(isPresented: $showingFeedSettings) {
                 FeedSettingsView(selectedFeed: $selectedFeed)
-            }
-            .sheet(isPresented: $showingMessages) {
-                NavigationStack {
-                    DMsEntry(route: .list)
-                }
             }
             .sheet(isPresented: $showingCompose) {
                 ComposeView()
@@ -254,7 +251,23 @@ private struct SearchFlow: View {
     }
 }
 
-// MessagesFlow removed - DMs now accessible via HomeView toolbar
+private struct MessagesFlow: View {
+    @Binding var path: [DMsRoute]
+    
+    var body: some View {
+        NavigationStack(path: $path) {
+            DMsEntry(route: .list)
+                .navigationDestination(for: DMsRoute.self) { route in
+                    switch route {
+                    case .list:
+                        DMsEntry(route: .list)
+                    case .conversation(let id):
+                        DMsEntry(route: .conversation(id: id))
+                    }
+                }
+        }
+    }
+}
 
 private struct NotificationsFlow: View {
     @Binding var path: [NotificationsRoute]

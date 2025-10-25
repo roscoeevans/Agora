@@ -137,3 +137,5 @@ The profile image picker now works correctly with:
 - Seamless integration with existing profile system
 
 Users can now successfully select, crop, and upload profile pictures without any issues.
+
+

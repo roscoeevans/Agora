@@ -1,5 +1,4 @@
 import Foundation
-import AppFoundation
 
 /// Live implementation of AnalyticsClient using PostHog
 /// 

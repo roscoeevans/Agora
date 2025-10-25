@@ -1,5 +1,4 @@
 import Foundation
-import AppFoundation
 
 /// Type-safe event definitions
 public enum AnalyticsEvent {
@@ -42,6 +41,17 @@ public enum AnalyticsEvent {
     case skeletonFPSDrop(currentFPS: Double, threshold: Double)
     case skeletonMemoryThreshold(memoryUsageMB: Int64, thresholdMB: Int)
     
+    // Direct messaging events
+    case dmOpenList
+    case dmOpenConversation(conversationId: String)
+    case dmSend(hasMedia: Bool, characterCount: Int)
+    case dmReceive
+    case dmTypingStart(conversationId: String)
+    case dmTypingStop(conversationId: String)
+    case dmRead(conversationId: String, messageCount: Int)
+    case dmMediaUpload(type: String, sizeBytes: Int64)
+    case dmConversationCreated(participantCount: Int)
+    
     /// Event name for tracking
     public var name: String {
         switch self {
@@ -68,6 +78,15 @@ public enum AnalyticsEvent {
         case .skeletonError: return "skeleton_error"
         case .skeletonFPSDrop: return "skeleton_fps_drop"
         case .skeletonMemoryThreshold: return "skeleton_memory_threshold"
+        case .dmOpenList: return "dm_open_list"
+        case .dmOpenConversation: return "dm_open_conversation"
+        case .dmSend: return "dm_send"
+        case .dmReceive: return "dm_receive"
+        case .dmTypingStart: return "dm_typing_start"
+        case .dmTypingStop: return "dm_typing_stop"
+        case .dmRead: return "dm_read"
+        case .dmMediaUpload: return "dm_media_upload"
+        case .dmConversationCreated: return "dm_conversation_created"
         }
     }
     
@@ -129,6 +148,24 @@ public enum AnalyticsEvent {
             return ["current_fps": currentFPS, "threshold": threshold]
         case .skeletonMemoryThreshold(let memoryUsageMB, let thresholdMB):
             return ["memory_usage_mb": memoryUsageMB, "threshold_mb": thresholdMB]
+        case .dmOpenList:
+            return [:]
+        case .dmOpenConversation(let conversationId):
+            return ["conversation_id": conversationId]
+        case .dmSend(let hasMedia, let characterCount):
+            return ["has_media": hasMedia, "character_count": characterCount]
+        case .dmReceive:
+            return [:]
+        case .dmTypingStart(let conversationId):
+            return ["conversation_id": conversationId]
+        case .dmTypingStop(let conversationId):
+            return ["conversation_id": conversationId]
+        case .dmRead(let conversationId, let messageCount):
+            return ["conversation_id": conversationId, "message_count": messageCount]
+        case .dmMediaUpload(let type, let sizeBytes):
+            return ["type": type, "size_bytes": sizeBytes]
+        case .dmConversationCreated(let participantCount):
+            return ["participant_count": participantCount]
         }
     }
 }

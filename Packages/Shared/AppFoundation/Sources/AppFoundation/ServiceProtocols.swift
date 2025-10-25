@@ -658,6 +658,79 @@ public struct MediaPick: Sendable {
     }
 }
 
+// MARK: - Push Notification Service Protocol
+
+/// Protocol for push notification services
+public protocol PushNotificationServiceProtocol: Sendable {
+    /// Registers for push notifications and returns device token
+    /// - Returns: Device token string if successful
+    /// - Throws: NotificationError if registration fails
+    func registerForNotifications() async throws -> String?
+    
+    /// Handles incoming notification when app is in foreground
+    /// - Parameter notification: The notification payload
+    func handleForegroundNotification(_ notification: [AnyHashable: Any]) async
+    
+    /// Handles notification tap when app is launched or brought to foreground
+    /// - Parameter notification: The notification payload
+    func handleNotificationTap(_ notification: [AnyHashable: Any]) async
+    
+    /// Sets notification categories for different types of notifications
+    func setupNotificationCategories() async
+    
+    /// Updates notification settings for a conversation
+    /// - Parameters:
+    ///   - conversationId: The conversation ID
+    ///   - enabled: Whether notifications are enabled for this conversation
+    func updateConversationNotifications(conversationId: UUID, enabled: Bool) async throws
+}
+
+/// Push notification errors
+public enum NotificationError: LocalizedError, Sendable {
+    case permissionDenied
+    case registrationFailed
+    case invalidPayload
+    case serviceUnavailable
+    
+    public var errorDescription: String? {
+        switch self {
+        case .permissionDenied:
+            return "Notification permission was denied"
+        case .registrationFailed:
+            return "Failed to register for push notifications"
+        case .invalidPayload:
+            return "Invalid notification payload"
+        case .serviceUnavailable:
+            return "Push notification service is unavailable"
+        }
+    }
+}
+
+/// No-op implementation of PushNotificationServiceProtocol for testing and previews
+public final class NoOpPushNotificationService: PushNotificationServiceProtocol {
+    public init() {}
+    
+    public func registerForNotifications() async throws -> String? {
+        return nil
+    }
+    
+    public func handleForegroundNotification(_ notification: [AnyHashable: Any]) async {
+        // No-op
+    }
+    
+    public func handleNotificationTap(_ notification: [AnyHashable: Any]) async {
+        // No-op
+    }
+    
+    public func setupNotificationCategories() async {
+        // No-op
+    }
+    
+    public func updateConversationNotifications(conversationId: UUID, enabled: Bool) async throws {
+        // No-op
+    }
+}
+
 /// Messaging errors
 public enum MessagingError: LocalizedError, Sendable {
     case conversationNotFound
@@ -691,5 +764,99 @@ public enum MessagingError: LocalizedError, Sendable {
         case .rateLimited:
             return "You're sending messages too quickly. Please wait a moment."
         }
+    }
+}
+
+// MARK: - No-Op Messaging Service Implementations
+
+/// No-op implementation of MessagingServiceProtocol for testing and previews
+public final class NoOpMessagingService: MessagingServiceProtocol {
+    public init() {}
+    
+    public func createConversation(participantIds: [UUID]) async throws -> Conversation {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func leaveConversation(id: UUID) async throws {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func setMuted(_ muted: Bool, for id: UUID) async throws {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func setArchived(_ archived: Bool, for id: UUID) async throws {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func pin(_ pinned: Bool, for id: UUID) async throws {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func fetchConversations(page: Int, pageSize: Int) async throws -> [Conversation] {
+        return []
+    }
+    
+    public func fetchMessages(conversationId: UUID, before: Date?, limit: Int) async throws -> [Message] {
+        return []
+    }
+    
+    public func send(text: String, in conversationId: UUID) async throws -> Message {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func send(attachment: Attachment, in conversationId: UUID) async throws -> Message {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func markDelivered(conversationId: UUID, messageId: UUID) async throws {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func markReadRange(conversationId: UUID, upTo messageId: UUID) async throws {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+}
+
+/// No-op implementation of MessagingRealtimeProtocol for testing and previews
+public final class NoOpMessagingRealtimeService: MessagingRealtimeProtocol {
+    public init() {}
+    
+    public func subscribeConversationList() async throws -> MessagingSubscription {
+        return NoOpMessagingSubscription()
+    }
+    
+    public func subscribe(conversationId: UUID) async throws -> MessagingSubscription {
+        return NoOpMessagingSubscription()
+    }
+    
+    public func setTyping(conversationId: UUID, isTyping: Bool) async {
+        // No-op
+    }
+    
+    public var events: AsyncStream<MessagingEvent> {
+        AsyncStream { _ in }
+    }
+}
+
+/// No-op implementation of MessagingMediaProtocol for testing and previews
+public final class NoOpMessagingMediaService: MessagingMediaProtocol {
+    public init() {}
+    
+    public func prepareAttachment(_ pick: MediaPick) async throws -> Attachment {
+        throw MessagingError.serverError("Messaging media service not available")
+    }
+}
+
+/// No-op implementation of MessagingSubscription for testing and previews
+public final class NoOpMessagingSubscription: MessagingSubscription {
+    public init() {}
+    
+    public func cancel() async {
+        // No-op
+    }
+    
+    public var isActive: Bool {
+        get async { false }
     }
 }

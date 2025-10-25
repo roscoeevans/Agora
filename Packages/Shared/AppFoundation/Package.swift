@@ -15,13 +15,15 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../../Kits/SupabaseKit")
+        .package(path: "../../Kits/SupabaseKit"),
+        .package(path: "../../Kits/Analytics")
     ],
     targets: [
         .target(
             name: "AppFoundation",
             dependencies: [
-                "SupabaseKit"
+                "SupabaseKit",
+                "Analytics"
             ],
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))

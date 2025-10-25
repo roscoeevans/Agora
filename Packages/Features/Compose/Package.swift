@@ -18,7 +18,7 @@ let package = Package(
         .package(path: "../../Kits/UIKitBridge"),
         .package(path: "../../Kits/Verification"),
         .package(path: "../../Shared/AppFoundation"),
-        .package(path: "../AuthFeature")
+        .package(path: "../Authentication")
     ],
     targets: [
         .target(
@@ -30,7 +30,7 @@ let package = Package(
                 "UIKitBridge",
                 "Verification",
                 "AppFoundation",
-                "AuthFeature"
+                "Authentication"
             ],
             path: "Sources/Compose",
             swiftSettings: [

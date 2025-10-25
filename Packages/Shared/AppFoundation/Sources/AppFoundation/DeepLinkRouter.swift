@@ -38,6 +38,14 @@ public enum DeepLinkRouter {
             // Compose tab opens sheet, no path needed
             return (.compose, [])
             
+        case "messages":
+            if url.pathComponents.contains("conversation"),
+               let idString = url.pathComponents.last,
+               let id = UUID(uuidString: idString) {
+                return (.messages, [DMsRoute.conversation(id: id)])
+            }
+            return (.messages, [DMsRoute.list])
+            
         case "notifications":
             if url.pathComponents.contains("detail"),
                let idString = url.pathComponents.last,

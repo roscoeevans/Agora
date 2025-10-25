@@ -4,23 +4,33 @@
 import PackageDescription
 
 let package = Package(
-    name: "Analytics",
+    name: "Messaging",
     platforms: [
         .iOS(.v26),
         .macOS(.v26)
     ],
     products: [
         .library(
-            name: "Analytics",
-            targets: ["Analytics"]
+            name: "Messaging",
+            targets: ["Messaging"]
         ),
     ],
     dependencies: [
+        .package(path: "../Networking"),
+        .package(path: "../../Shared/AppFoundation"),
+        .package(path: "../SupabaseKit"),
+        .package(path: "../Media"),
+        .package(url: "https://github.com/supabase/supabase-swift", from: "2.35.0")
     ],
     targets: [
         .target(
-            name: "Analytics",
+            name: "Messaging",
             dependencies: [
+                "Networking",
+                "AppFoundation",
+                "SupabaseKit",
+                "Media",
+                .product(name: "Supabase", package: "supabase-swift")
             ],
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug)),
@@ -28,8 +38,8 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "AnalyticsTests",
-            dependencies: ["Analytics"],
+            name: "MessagingTests",
+            dependencies: ["Messaging"],
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
             ]

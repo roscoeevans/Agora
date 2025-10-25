@@ -1,8 +1,29 @@
 import Foundation
-import AppFoundation
 
-// Re-export AnalyticsClient protocol from AppFoundation
-// This allows the Analytics module to use the protocol without circular dependencies
+// MARK: - Analytics Protocol
+
+/// Protocol for analytics tracking
+/// 
+/// This protocol is defined in the Analytics package to avoid circular dependencies.
+/// AppFoundation and other modules can import Analytics to use this protocol.
+public protocol AnalyticsClient: Sendable {
+    func track(event: String, properties: [String: Any]) async
+    func identify(userId: String, properties: [String: Any]) async
+    func setUserProperties(_ properties: [String: Any]) async
+    func reset() async
+    func flush() async
+}
+
+/// No-op analytics client for when analytics is disabled or not yet initialized
+public struct NoOpAnalyticsClient: AnalyticsClient {
+    public init() {}
+    
+    public func track(event: String, properties: [String: Any]) async {}
+    public func identify(userId: String, properties: [String: Any]) async {}
+    public func setUserProperties(_ properties: [String: Any]) async {}
+    public func reset() async {}
+    public func flush() async {}
+}
 
 // MARK: - Type Aliases
 

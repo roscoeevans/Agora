@@ -153,6 +153,7 @@ public enum MediaError: LocalizedError, Sendable {
     case invalidImageData
     case imageProcessingFailed
     case unsupportedFormat
+    case invalidData
     
     public var errorDescription: String? {
         switch self {
@@ -162,6 +163,8 @@ public enum MediaError: LocalizedError, Sendable {
             return "Failed to process image"
         case .unsupportedFormat:
             return "Unsupported image format"
+        case .invalidData:
+            return "Invalid data"
         }
     }
 }

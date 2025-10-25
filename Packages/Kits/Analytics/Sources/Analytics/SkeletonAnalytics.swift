@@ -1,5 +1,4 @@
 import Foundation
-import AppFoundation
 import QuartzCore
 
 #if canImport(Darwin)

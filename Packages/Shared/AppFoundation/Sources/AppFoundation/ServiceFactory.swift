@@ -33,6 +33,21 @@ public protocol ServiceFactory: Sendable {
     /// - Returns: MediaBundleServiceProtocol implementation appropriate for current environment
     /// - Throws: ServiceFactoryError if service creation fails
     static func mediaBundleService() throws -> MediaBundleServiceProtocol
+    
+    /// Creates a messaging service instance
+    /// - Returns: MessagingServiceProtocol implementation appropriate for current environment
+    /// - Throws: ServiceFactoryError if service creation fails
+    static func messagingService() throws -> MessagingServiceProtocol
+    
+    /// Creates a messaging realtime service instance
+    /// - Returns: MessagingRealtimeProtocol implementation appropriate for current environment
+    /// - Throws: ServiceFactoryError if service creation fails
+    static func messagingRealtimeService() throws -> MessagingRealtimeProtocol
+    
+    /// Creates a messaging media service instance
+    /// - Returns: MessagingMediaProtocol implementation appropriate for current environment
+    /// - Throws: ServiceFactoryError if service creation fails
+    static func messagingMediaService() throws -> MessagingMediaProtocol
 }
 
 // MARK: - Forward declaration for Networking module types
@@ -245,6 +260,27 @@ public struct DefaultServiceFactory: ServiceFactory {
         return NoOpMediaBundleService()
     }
     
+    public static func messagingService() throws -> MessagingServiceProtocol {
+        // For now, return a no-op implementation
+        // This will be replaced with real implementation when Messaging module is available
+        print("[ServiceFactory] Creating messaging service (no-op)")
+        return NoOpMessagingService()
+    }
+    
+    public static func messagingRealtimeService() throws -> MessagingRealtimeProtocol {
+        // For now, return a no-op implementation
+        // This will be replaced with real implementation when Messaging module is available
+        print("[ServiceFactory] Creating messaging realtime service (no-op)")
+        return NoOpMessagingRealtimeService()
+    }
+    
+    public static func messagingMediaService() throws -> MessagingMediaProtocol {
+        // For now, return a no-op implementation
+        // This will be replaced with real implementation when Messaging module is available
+        print("[ServiceFactory] Creating messaging media service (no-op)")
+        return NoOpMessagingMediaService()
+    }
+    
     // MARK: - Production Service Creation
     
     private static func createProductionAuthService() throws -> AuthServiceProtocol {
@@ -397,6 +433,18 @@ public struct DebugServiceFactory: ServiceFactory {
         return DebugServiceFactory().createMediaBundleService()
     }
     
+    public static func messagingService() throws -> MessagingServiceProtocol {
+        return DebugServiceFactory().createMessagingService()
+    }
+    
+    public static func messagingRealtimeService() throws -> MessagingRealtimeProtocol {
+        return DebugServiceFactory().createMessagingRealtimeService()
+    }
+    
+    public static func messagingMediaService() throws -> MessagingMediaProtocol {
+        return DebugServiceFactory().createMessagingMediaService()
+    }
+    
     // MARK: - Debug Service Creation
     
     public func createAuthService() -> AuthServiceProtocol {
@@ -447,6 +495,36 @@ public struct DebugServiceFactory: ServiceFactory {
             return try DefaultServiceFactory.mediaBundleService()
         } catch {
             fatalError("[DebugServiceFactory] Failed to create media bundle service: \(error)")
+        }
+    }
+    
+    public func createMessagingService() -> MessagingServiceProtocol {
+        // Debug factory uses the default implementation
+        // The actual mock/production switching is handled in Messaging module
+        do {
+            return try DefaultServiceFactory.messagingService()
+        } catch {
+            fatalError("[DebugServiceFactory] Failed to create messaging service: \(error)")
+        }
+    }
+    
+    public func createMessagingRealtimeService() -> MessagingRealtimeProtocol {
+        // Debug factory uses the default implementation
+        // The actual mock/production switching is handled in Messaging module
+        do {
+            return try DefaultServiceFactory.messagingRealtimeService()
+        } catch {
+            fatalError("[DebugServiceFactory] Failed to create messaging realtime service: \(error)")
+        }
+    }
+    
+    public func createMessagingMediaService() -> MessagingMediaProtocol {
+        // Debug factory uses the default implementation
+        // The actual mock/production switching is handled in Messaging module
+        do {
+            return try DefaultServiceFactory.messagingMediaService()
+        } catch {
+            fatalError("[DebugServiceFactory] Failed to create messaging media service: \(error)")
         }
     }
 }

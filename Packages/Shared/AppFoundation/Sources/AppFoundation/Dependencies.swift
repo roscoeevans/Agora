@@ -1,5 +1,6 @@
 import Foundation
 import SupabaseKit
+import Analytics
 
 // MARK: - API Client Protocol
 
@@ -356,30 +357,6 @@ public struct UpdateProfileRequest: Sendable, Codable {
     }
 }
 
-// MARK: - Analytics Protocol
-
-/// Protocol for analytics tracking
-/// 
-/// This protocol is defined in AppFoundation to avoid circular dependencies.
-/// The Analytics Kit provides concrete implementations.
-public protocol AnalyticsClient: Sendable {
-    func track(event: String, properties: [String: Any]) async
-    func identify(userId: String, properties: [String: Any]) async
-    func setUserProperties(_ properties: [String: Any]) async
-    func reset() async
-    func flush() async
-}
-
-/// No-op analytics client for when analytics is disabled or not yet initialized
-public struct NoOpAnalyticsClient: AnalyticsClient {
-    public init() {}
-    
-    public func track(event: String, properties: [String: Any]) async {}
-    public func identify(userId: String, properties: [String: Any]) async {}
-    public func setUserProperties(_ properties: [String: Any]) async {}
-    public func reset() async {}
-    public func flush() async {}
-}
 
 // MARK: - Dependencies Container
 
@@ -417,6 +394,9 @@ public struct Dependencies: Sendable {
     /// Analytics client (always available - uses no-op if not initialized)
     public let analytics: any AnalyticsClient
     
+    /// Event tracker for type-safe analytics events
+    public let eventTracker: EventTracker?
+    
     /// Environment configuration (build settings, feature flags)
     public let environment: any EnvironmentConfig
     
@@ -435,6 +415,18 @@ public struct Dependencies: Sendable {
     /// Media bundle service for fetching and managing media bundles
     public let mediaBundle: MediaBundleServiceProtocol?
     
+    /// Messaging service for conversations and messages
+    public let messaging: MessagingServiceProtocol?
+    
+    /// Real-time messaging service for subscriptions and events
+    public let messagingRealtime: MessagingRealtimeProtocol?
+    
+    /// Messaging media service for attachment handling
+    public let messagingMedia: MessagingMediaProtocol?
+    
+    /// Push notification service for handling notifications
+    public let pushNotifications: PushNotificationServiceProtocol?
+    
     // MARK: - Initialization
     
     public init(
@@ -446,7 +438,12 @@ public struct Dependencies: Sendable {
         engagement: (any EngagementService)? = nil,
         supabase: (any SupabaseClientProtocol)? = nil,
         commentComposition: CommentCompositionProtocol? = nil,
-        mediaBundle: MediaBundleServiceProtocol? = nil
+        mediaBundle: MediaBundleServiceProtocol? = nil,
+        messaging: MessagingServiceProtocol? = nil,
+        messagingRealtime: MessagingRealtimeProtocol? = nil,
+        messagingMedia: MessagingMediaProtocol? = nil,
+        eventTracker: EventTracker? = nil,
+        pushNotifications: PushNotificationServiceProtocol? = nil
     ) {
         self.networking = networking
         self.auth = auth
@@ -457,6 +454,11 @@ public struct Dependencies: Sendable {
         self.supabase = supabase
         self.commentComposition = commentComposition
         self.mediaBundle = mediaBundle
+        self.messaging = messaging
+        self.messagingRealtime = messagingRealtime
+        self.messagingMedia = messagingMedia
+        self.eventTracker = eventTracker
+        self.pushNotifications = pushNotifications
     }
 }
 
@@ -525,7 +527,9 @@ extension Dependencies {
             environment: EnvironmentConfigLive(),
             appearance: AppearancePreferenceLive(),
             commentComposition: commentComposition,
-            mediaBundle: mediaBundle
+            mediaBundle: mediaBundle,
+            eventTracker: EventTracker(analyticsClient: NoOpAnalyticsClient()),
+            pushNotifications: NoOpPushNotificationService()
         )
     }
     
@@ -545,7 +549,12 @@ extension Dependencies {
         environment: (any EnvironmentConfig)? = nil,
         appearance: AppearancePreference? = nil,
         commentComposition: CommentCompositionProtocol? = nil,
-        mediaBundle: MediaBundleServiceProtocol? = nil
+        mediaBundle: MediaBundleServiceProtocol? = nil,
+        messaging: MessagingServiceProtocol? = nil,
+        messagingRealtime: MessagingRealtimeProtocol? = nil,
+        messagingMedia: MessagingMediaProtocol? = nil,
+        eventTracker: EventTracker? = nil,
+        pushNotifications: PushNotificationServiceProtocol? = nil
     ) -> Dependencies {
         return Dependencies(
             networking: networking ?? PreviewStubClient(),
@@ -554,7 +563,12 @@ extension Dependencies {
             environment: environment ?? EnvironmentConfigFake(),
             appearance: appearance ?? AppearancePreferenceLive(),
             commentComposition: commentComposition ?? NoOpCommentCompositionService(),
-            mediaBundle: mediaBundle ?? NoOpMediaBundleService()
+            mediaBundle: mediaBundle ?? NoOpMediaBundleService(),
+            messaging: messaging,
+            messagingRealtime: messagingRealtime,
+            messagingMedia: messagingMedia,
+            eventTracker: eventTracker,
+            pushNotifications: pushNotifications ?? NoOpPushNotificationService()
         )
     }
     #endif
@@ -575,7 +589,12 @@ extension Dependencies {
             engagement: self.engagement,
             supabase: self.supabase,
             commentComposition: self.commentComposition,
-            mediaBundle: self.mediaBundle
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: EventTracker(analyticsClient: analytics),
+            pushNotifications: self.pushNotifications
         )
     }
     
@@ -591,7 +610,12 @@ extension Dependencies {
             engagement: engagement,
             supabase: self.supabase,
             commentComposition: self.commentComposition,
-            mediaBundle: self.mediaBundle
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications
         )
     }
     
@@ -606,7 +630,12 @@ extension Dependencies {
             engagement: self.engagement,
             supabase: supabase,
             commentComposition: self.commentComposition,
-            mediaBundle: self.mediaBundle
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications
         )
     }
     
@@ -621,7 +650,12 @@ extension Dependencies {
             engagement: self.engagement,
             supabase: self.supabase,
             commentComposition: commentComposition,
-            mediaBundle: self.mediaBundle
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications
         )
     }
     
@@ -636,7 +670,36 @@ extension Dependencies {
             engagement: self.engagement,
             supabase: self.supabase,
             commentComposition: self.commentComposition,
-            mediaBundle: mediaBundle
+            mediaBundle: mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications
+        )
+    }
+    
+    /// Returns a copy with updated messaging services
+    public func withMessaging(
+        messaging: MessagingServiceProtocol,
+        realtime: MessagingRealtimeProtocol,
+        media: MessagingMediaProtocol
+    ) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: self.mediaBundle,
+            messaging: messaging,
+            messagingRealtime: realtime,
+            messagingMedia: media,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications
         )
     }
 }

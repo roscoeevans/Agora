@@ -13,6 +13,7 @@ public struct ConversationView: View {
     }
     
     public var body: some View {
+        let _ = Self._printChanges() // Help compiler with type checking
         VStack {
             Text("Conversation: \(conversationId.uuidString)")
                 .font(.title2)

@@ -22,8 +22,6 @@
 		3122BDC82E95FC4700E495EE /* Resources/Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC12E95FC4700E495EE /* Resources/Localizable.strings */; };
 		3122BDC92E95FC4700E495EE /* Resources/Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC22E95FC4700E495EE /* Resources/Secrets.plist */; };
 		3191F36B2EA088E500C72CB8 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 3191F36A2EA088E500C72CB8 /* DesignSystem */; };
-		31BEE2332EA57724006F127C /* AuthFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 31BEE2322EA57724006F127C /* AuthFeature */; };
-		31BEE2362EA582CA006F127C /* Compose in Frameworks */ = {isa = PBXBuildFile; productRef = 31BEE2352EA582CA006F127C /* Compose */; };
 		OnboardingInFrameworks /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = Onboarding /* Onboarding */; };
 /* End PBXBuildFile section */
 
@@ -100,8 +98,6 @@
 				310C73BA2E962CCF00AA5C35 /* PostDetail in Frameworks */,
 				310C73B82E962CCF00AA5C35 /* HomeFollowing in Frameworks */,
 				310C73B72E962CCF00AA5C35 /* HomeForYou in Frameworks */,
-				31BEE2362EA582CA006F127C /* Compose in Frameworks */,
-				31BEE2332EA57724006F127C /* AuthFeature in Frameworks */,
 				OnboardingInFrameworks /* Onboarding in Frameworks */,
 				3191F36B2EA088E500C72CB8 /* DesignSystem in Frameworks */,
 			);
@@ -192,9 +188,7 @@
 				DMs /* DMs */,
 				3191F36A2EA088E500C72CB8 /* DesignSystem */,
 				311EF1B22EA32B0A00C941C1 /* Engagement */,
-				31BEE2322EA57724006F127C /* AuthFeature */,
 				Onboarding /* Onboarding */,
-				31BEE2352EA582CA006F127C /* Compose */,
 			);
 			productName = Agora;
 			productReference = 3122BD902E95FC4500E495EE /* Agora (Dev).app */;
@@ -886,10 +880,6 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Features/AuthFeature;
 		};
-		OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Features/Onboarding;
-		};
 		ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Features/Compose;
@@ -909,6 +899,10 @@
 		NotificationsPackage /* XCLocalSwiftPackageReference "Packages/Features/Notifications" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Features/Notifications;
+		};
+		OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/Onboarding;
 		};
 		PostDetailPackage /* XCLocalSwiftPackageReference "Packages/Features/PostDetail" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -937,20 +931,6 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = DesignSystem;
 		};
-		31BEE2322EA57724006F127C /* AuthFeature */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AuthFeature;
-		};
-		31BEE2352EA582CA006F127C /* Compose */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */;
-			productName = Compose;
-		};
-		Onboarding /* Onboarding */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */;
-			productName = Onboarding;
-		};
 		DMs /* DMs */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DMsPackage /* XCLocalSwiftPackageReference "Packages/Features/DMs" */;
@@ -970,6 +950,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = NotificationsPackage /* XCLocalSwiftPackageReference "Packages/Features/Notifications" */;
 			productName = Notifications;
+		};
+		Onboarding /* Onboarding */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */;
+			productName = Onboarding;
 		};
 		PostDetail /* PostDetail */ = {
 			isa = XCSwiftPackageProductDependency;

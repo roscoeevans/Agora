@@ -140,3 +140,5 @@ The profile picture selection now works with:
 - ✅ Automatic downscaling for large images
 - ✅ Maintained quality and performance
 - ✅ Seamless user experience
+
+

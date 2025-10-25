@@ -17,6 +17,9 @@ let package = Package(
         .package(path: "../../Kits/DesignSystem"),
         .package(path: "../../Shared/AppFoundation"),
         .package(path: "../../Kits/Media"),
+        .package(path: "../../Kits/Analytics"),
+        .package(path: "../../Kits/Moderation"),
+        .package(path: "../../Kits/Persistence"),
         .package(path: "../../Shared/TestSupport")
     ],
     targets: [
@@ -25,7 +28,10 @@ let package = Package(
             dependencies: [
                 "DesignSystem",
                 "AppFoundation",
-                "Media"
+                "Media",
+                "Analytics",
+                "Moderation",
+                "Persistence"
             ]
         ),
         .testTarget(
