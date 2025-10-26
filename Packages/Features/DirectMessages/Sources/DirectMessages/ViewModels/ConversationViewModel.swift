@@ -378,7 +378,7 @@ public class ConversationViewModel {
             await MainActor.run {
                 // Check if this is a duplicate of an optimistic message
                 if let nonce = message.nonce,
-                   let optimisticMessage = self.optimisticMessages[nonce] {
+                   let _ = self.optimisticMessages[nonce] {
                     // Replace optimistic message with server version
                     if let index = self.messages.firstIndex(where: { $0.nonce == nonce }) {
                         self.messages[index] = message
@@ -432,7 +432,7 @@ public class ConversationViewModel {
                 }
             }
             
-        case .readReceipt(let conversationId, let messageId, let userId):
+        case .readReceipt(let conversationId, let messageId, let _):
             guard conversationId == self.conversationId else { return }
             
             await MainActor.run {

@@ -19,33 +19,54 @@ public final class StorageService: Sendable {
     ///   - userId: The user's ID (used for folder organization)
     /// - Returns: The public URL of the uploaded image
     public func uploadAvatar(imageData: Data, userId: String) async throws -> String {
+        print("☁️ [StorageService] Starting avatar upload")
+        print("☁️ [StorageService] Image data size: \(imageData.count) bytes")
+        print("☁️ [StorageService] User ID: \(userId)")
+        
         // Generate unique filename
         let fileExtension = "jpg"
         let fileName = "\(userId)/avatar-\(UUID().uuidString).\(fileExtension)"
+        print("☁️ [StorageService] Generated filename: \(fileName)")
         
         // Get raw Supabase client for advanced storage operations
         guard let rawClient = supabaseClient.client.rawClient as? SupabaseClient else {
+            print("❌ [StorageService] Failed to get raw Supabase client")
             throw StorageError.uploadFailed
         }
+        print("☁️ [StorageService] Supabase client obtained successfully")
         
         // Upload to Supabase Storage
-        _ = try await rawClient.storage
-            .from("avatars")
-            .upload(
-                fileName,
-                data: imageData,
-                options: FileOptions(
-                    contentType: "image/jpeg",
-                    upsert: false
+        print("☁️ [StorageService] Uploading to Supabase Storage bucket 'avatars'")
+        do {
+            _ = try await rawClient.storage
+                .from("avatars")
+                .upload(
+                    fileName,
+                    data: imageData,
+                    options: FileOptions(
+                        contentType: "image/jpeg",
+                        upsert: false
+                    )
                 )
-            )
+            print("✅ [StorageService] Upload to Supabase Storage successful")
+        } catch {
+            print("❌ [StorageService] Upload to Supabase Storage failed: \(error)")
+            throw error
+        }
         
         // Get public URL using the file path we uploaded to
-        let publicURL = try rawClient.storage
-            .from("avatars")
-            .getPublicURL(path: fileName)
-        
-        return publicURL.absoluteString
+        print("☁️ [StorageService] Getting public URL for uploaded file")
+        do {
+            let publicURL = try rawClient.storage
+                .from("avatars")
+                .getPublicURL(path: fileName)
+            
+            print("✅ [StorageService] Public URL obtained: \(publicURL.absoluteString)")
+            return publicURL.absoluteString
+        } catch {
+            print("❌ [StorageService] Failed to get public URL: \(error)")
+            throw error
+        }
     }
     
     /// Delete a user's avatar from storage

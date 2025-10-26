@@ -87,12 +87,6 @@ struct ComposerBar: View {
                 }
                 .frame(minWidth: 44, minHeight: 44) // Ensure minimum touch target
                 .accessibilityLabel("Add attachment")
-                .photosPicker(
-                    isPresented: $showingPhotoPicker,
-                    selection: $selectedPhotos,
-                    maxSelectionCount: 10,
-                    matching: .any(of: [.images, .videos])
-                )
                 
                 // Text input area
                 textInputView
@@ -131,6 +125,15 @@ struct ComposerBar: View {
             typingDetector?.textChanged(newText)
         }
         .sensoryFeedback(.selection, trigger: hapticTrigger)
+        .sheet(isPresented: $showingPhotoPicker) {
+            PhotosPicker(
+                selection: $selectedPhotos,
+                maxSelectionCount: 10,
+                matching: .any(of: [.images, .videos])
+            ) {
+                EmptyView()
+            }
+        }
         .onAppear {
             loadDraft()
             setupTypingDetection()
@@ -427,7 +430,7 @@ struct AttachmentPreviewChip: View {
                 }
                 
                 // Error overlay
-                if let error = uploadError {
+                if uploadError != nil {
                     ZStack {
                         Circle()
                             .fill(.red.opacity(0.8))
@@ -455,8 +458,8 @@ struct AttachmentPreviewChip: View {
 }
 
 #Preview {
-    @State var text = ""
-    @State var attachments: [Attachment] = []
+    @Previewable @State var text = ""
+    @Previewable @State var attachments: [Attachment] = []
     
     return VStack {
         Spacer()

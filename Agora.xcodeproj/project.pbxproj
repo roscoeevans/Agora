@@ -186,6 +186,8 @@
 				Search /* Search */,
 				Notifications /* Notifications */,
 				DMs /* DMs */,
+				DirectMessages /* DirectMessages */,
+				Compose /* Compose */,
 				3191F36A2EA088E500C72CB8 /* DesignSystem */,
 				311EF1B22EA32B0A00C941C1 /* Engagement */,
 				Onboarding /* Onboarding */,
@@ -276,6 +278,7 @@
 				HomeForYouPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeForYou" */,
 				HomeFollowingPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeFollowing" */,
 				ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */,
+				DirectMessagesPackage /* XCLocalSwiftPackageReference "Packages/Features/DirectMessages" */,
 				PostDetailPackage /* XCLocalSwiftPackageReference "Packages/Features/PostDetail" */,
 				ThreadingPackage /* XCLocalSwiftPackageReference "Packages/Features/Threading" */,
 				ProfilePackage /* XCLocalSwiftPackageReference "Packages/Features/Profile" */,
@@ -286,7 +289,7 @@
 				311EF1B12EA32B0A00C941C1 /* XCLocalSwiftPackageReference "Packages/Kits/Engagement" */,
 				31ECCB572EA4459C00B14E7E /* XCLocalSwiftPackageReference "Packages/Kits/SupabaseKit" */,
 				31ECCB752EA4478500B14E7E /* XCLocalSwiftPackageReference "Packages/Kits/Analytics" */,
-				31ECCBCA2EA4650E00B14E7E /* XCLocalSwiftPackageReference "Packages/Features/AuthFeature" */,
+				31ECCBCA2EA4650E00B14E7E /* XCLocalSwiftPackageReference "Packages/Features/Authentication" */,
 				OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -876,13 +879,17 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Kits/Analytics;
 		};
-		31ECCBCA2EA4650E00B14E7E /* XCLocalSwiftPackageReference "Packages/Features/AuthFeature" */ = {
+		31ECCBCA2EA4650E00B14E7E /* XCLocalSwiftPackageReference "Packages/Features/Authentication" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Features/AuthFeature;
+			relativePath = Packages/Features/Authentication;
 		};
 		ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Features/Compose;
+		};
+		DirectMessagesPackage /* XCLocalSwiftPackageReference "Packages/Features/DirectMessages" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/DirectMessages;
 		};
 		DMsPackage /* XCLocalSwiftPackageReference "Packages/Features/DMs" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -925,10 +932,12 @@
 /* Begin XCSwiftPackageProductDependency section */
 		311EF1B22EA32B0A00C941C1 /* Engagement */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 311EF1B12EA32B0A00C941C1 /* XCLocalSwiftPackageReference "Packages/Kits/Engagement" */;
 			productName = Engagement;
 		};
 		3191F36A2EA088E500C72CB8 /* DesignSystem */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 3191F3692EA088E500C72CB8 /* XCLocalSwiftPackageReference "Packages/Kits/DesignSystem" */;
 			productName = DesignSystem;
 		};
 		DMs /* DMs */ = {
@@ -975,6 +984,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = ThreadingPackage /* XCLocalSwiftPackageReference "Packages/Features/Threading" */;
 			productName = Threading;
+		};
+		DirectMessages /* DirectMessages */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DirectMessagesPackage /* XCLocalSwiftPackageReference "Packages/Features/DirectMessages" */;
+			productName = DirectMessages;
+		};
+		Compose /* Compose */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */;
+			productName = Compose;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

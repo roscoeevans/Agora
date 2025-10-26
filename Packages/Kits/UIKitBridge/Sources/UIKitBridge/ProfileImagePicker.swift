@@ -6,20 +6,21 @@
 //
 
 import SwiftUI
-
-#if canImport(PhotosUI) && canImport(UIKit)
 import PhotosUI
-import UIKit
 
-/// SwiftUI wrapper for profile image selection with validation and cropping
+#if canImport(UIKit)
+import UIKit
+#endif
+
+/// SwiftUI wrapper for profile image selection with native cropping
 @available(iOS 26.0, *)
 public struct ProfileImagePicker: View {
     @Binding var selectedImage: UIImage?
     @Environment(\.dismiss) private var dismiss
     
-    @State private var showImagePicker = false
-    @State private var showCropper = false
+    @State private var pickerItem: PhotosPickerItem?
     @State private var tempImage: UIImage?
+    @State private var showCropper = false
     @State private var validationError: String?
     @State private var isProcessing = false
     
@@ -37,36 +38,30 @@ public struct ProfileImagePicker: View {
                 processingView
             }
         }
-        .sheet(isPresented: $showImagePicker) {
-            SimpleProfileImagePicker(selectedImage: Binding<UIImage?>(
-                get: { tempImage },
-                set: { newImage in
-                    if let image = newImage {
-                        handleImageSelection(image)
-                    }
-                }
-            ))
-        }
-        .fullScreenCover(isPresented: $showCropper) {
+        .sheet(isPresented: $showCropper) {
             if let image = tempImage {
-                ImageCropperView(
+                SimpleImageCropper(
                     image: image,
                     onCrop: { croppedImage in
-                        selectedImage = croppedImage
-                        dismiss()
+                        handleCroppedImage(croppedImage)
                     },
                     onCancel: {
-                        tempImage = nil
                         showCropper = false
                     }
                 )
             }
         }
-        .onAppear {
-            showImagePicker = true
+        .photosPicker(
+            isPresented: .constant(true),
+            selection: $pickerItem,
+            matching: .images
+        )
+        .onChange(of: pickerItem) { _, newItem in
+            Task {
+                await handlePhotoSelection(newItem)
+            }
         }
     }
-    
     
     private func errorView(_ message: String) -> some View {
         HStack {
@@ -100,19 +95,64 @@ public struct ProfileImagePicker: View {
         .padding()
     }
     
-    private func handleImageSelection(_ image: UIImage) {
-        // Validate image
-        let validationResult = ImageProcessingBridge.validateProfileImage(image)
+    @MainActor
+    private func handlePhotoSelection(_ item: PhotosPickerItem?) async {
+        guard let item = item else { return }
+        
+        print("📸 [ProfileImagePicker] Photo selected")
+        
+        do {
+            if let data = try await item.loadTransferable(type: Data.self),
+               let uiImage = UIImage(data: data) {
+                print("📸 [ProfileImagePicker] Image loaded, size: \(uiImage.size.width)x\(uiImage.size.height)")
+                
+                // Validate image
+                let validationResult = ImageProcessingBridge.validateProfileImage(uiImage)
+                print("📸 [ProfileImagePicker] Validation result: \(validationResult)")
+                
+                switch validationResult {
+                case .valid:
+                    print("📸 [ProfileImagePicker] Image validation passed, showing cropper")
+                    tempImage = uiImage
+                    showCropper = true
+                    validationError = nil
+                default:
+                    let errorMessage = ImageProcessingBridge.errorMessage(for: validationResult)
+                    print("❌ [ProfileImagePicker] Image validation failed: \(errorMessage)")
+                    validationError = errorMessage
+                }
+            } else {
+                throw AvatarError.invalidImageData
+            }
+        } catch {
+            print("❌ [ProfileImagePicker] Photo selection failed: \(error)")
+            validationError = "Failed to load image. Please try another photo."
+        }
+    }
+    
+    @MainActor
+    private func handleCroppedImage(_ croppedImage: UIImage?) {
+        guard let croppedImage = croppedImage else {
+            print("❌ [ProfileImagePicker] Cropping failed")
+            validationError = "Failed to crop image. Please try again."
+            return
+        }
+        
+        print("✅ [ProfileImagePicker] Image cropped successfully, size: \(croppedImage.size.width)x\(croppedImage.size.height)")
+        
+        // Validate cropped image
+        let validationResult = ImageProcessingBridge.validateProfileImage(croppedImage)
+        print("📸 [ProfileImagePicker] Cropped image validation: \(validationResult)")
         
         switch validationResult {
         case .valid:
-            tempImage = image
-            showImagePicker = false
-            showCropper = true
+            selectedImage = croppedImage
+            dismiss()
             validationError = nil
         default:
-            validationError = ImageProcessingBridge.errorMessage(for: validationResult)
-            showImagePicker = false
+            let errorMessage = ImageProcessingBridge.errorMessage(for: validationResult)
+            print("❌ [ProfileImagePicker] Cropped image validation failed: \(errorMessage)")
+            validationError = errorMessage
         }
     }
 }
@@ -166,5 +206,3 @@ public struct SimpleProfileImagePicker: UIViewControllerRepresentable {
         }
     }
 }
-
-#endif

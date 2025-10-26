@@ -1,0 +1,338 @@
+---
+description: "When implementing image cropping functionality in iOS 26+, integrating SwiftyCrop with Liquid Glass design, configuring crop masks, handling image processing workflows, or customizing crop UI components. Use this rule for profile picture cropping, media editing features, image selection workflows, or when implementing modern iOS 26 visual design patterns."
+---
+
+## SwiftyCrop iOS 26 Liquid Glass Integration
+
+### Overview
+
+This rule provides comprehensive guidance for implementing SwiftyCrop image cropping functionality in iOS 26+ applications, with special emphasis on the new Liquid Glass design system. SwiftyCrop offers seamless image cropping with customizable masks, aspect ratios, and modern iOS 26 visual design patterns.
+
+### iOS 26 Liquid Glass Design Features
+
+#### Automatic Liquid Glass Activation
+- **Default Behavior**: Liquid Glass design automatically activates on iOS 26+ devices
+- **Visual Changes**: Replaces text buttons with icon-based interface
+- **Modern Aesthetics**: Implements Apple's latest design language
+- **Backward Compatibility**: Falls back to traditional design on older iOS versions
+
+#### Configuration for Liquid Glass
+```swift
+let configuration = SwiftyCropConfiguration(
+    maxMagnificationScale: 4.0,
+    maskRadius: 130,
+    cropImageCircular: false,
+    rotateImage: false,
+    rotateImageWithButtons: false,
+    usesLiquidGlassDesign: true, // Explicitly enable Liquid Glass
+    zoomSensitivity: 1.0,
+    rectAspectRatio: 4/3
+)
+```
+
+### Implementation Patterns
+
+#### 1. Basic Image Cropping Setup
+```swift
+import SwiftUI
+import SwiftyCrop
+
+struct ImageCropperView: View {
+    @State private var showImageCropper: Bool = false
+    @State private var selectedImage: UIImage?
+    
+    var body: some View {
+        VStack {
+            Button("Crop Image") {
+                Task {
+                    selectedImage = await loadImage()
+                    showImageCropper.toggle()
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showImageCropper) {
+            if let selectedImage = selectedImage {
+                SwiftyCropView(
+                    imageToCrop: selectedImage,
+                    maskShape: .square
+                ) { croppedImage in
+                    handleCroppedImage(croppedImage)
+                }
+            }
+        }
+    }
+}
+```
+
+#### 2. Profile Picture Cropping with Circle Mask
+```swift
+struct ProfilePictureCropper: View {
+    @State private var showCropper = false
+    @State private var profileImage: UIImage?
+    
+    var body: some View {
+        VStack {
+            if let image = profileImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 100, height: 100)
+                    .clipShape(Circle())
+            }
+            
+            Button("Select Profile Picture") {
+                showCropper = true
+            }
+        }
+        .fullScreenCover(isPresented: $showCropper) {
+            if let image = profileImage {
+                SwiftyCropView(
+                    imageToCrop: image,
+                    maskShape: .circle,
+                    configuration: SwiftyCropConfiguration(
+                        cropImageCircular: true,
+                        usesLiquidGlassDesign: true
+                    )
+                ) { croppedImage in
+                    profileImage = croppedImage
+                    showCropper = false
+                }
+            }
+        }
+    }
+}
+```
+
+#### 3. Advanced Configuration with Custom Styling
+```swift
+let advancedConfiguration = SwiftyCropConfiguration(
+    maxMagnificationScale: 6.0,
+    maskRadius: 150,
+    cropImageCircular: false,
+    rotateImage: true,
+    rotateImageWithButtons: true,
+    usesLiquidGlassDesign: true,
+    zoomSensitivity: 1.2,
+    rectAspectRatio: 16/9,
+    texts: SwiftyCropConfiguration.Texts(
+        cancelButton: "Cancel",
+        interactionInstructions: "Pinch to zoom, drag to move",
+        saveButton: "Done"
+    ),
+    fonts: SwiftyCropConfiguration.Fonts(
+        cancelButton: Font.system(size: 16, weight: .medium),
+        interactionInstructions: Font.system(size: 14),
+        saveButton: Font.system(size: 16, weight: .semibold)
+    ),
+    colors: SwiftyCropConfiguration.Colors(
+        cancelButton: Color.primary,
+        interactionInstructions: Color.secondary,
+        saveButton: Color.accentColor,
+        background: Color.black.opacity(0.8)
+    )
+)
+```
+
+### Mask Shape Options
+
+#### Available Mask Shapes
+1. **Circle**: Perfect for profile pictures and avatars
+2. **Square**: Ideal for social media posts and thumbnails
+3. **Rectangle**: Customizable aspect ratios for various content types
+
+#### Mask Shape Implementation
+```swift
+// Circle mask for profile pictures
+SwiftyCropView(
+    imageToCrop: image,
+    maskShape: .circle,
+    configuration: SwiftyCropConfiguration(
+        cropImageCircular: true,
+        usesLiquidGlassDesign: true
+    )
+) { croppedImage in
+    // Handle circular cropped image
+}
+
+// Square mask for social media
+SwiftyCropView(
+    imageToCrop: image,
+    maskShape: .square,
+    configuration: SwiftyCropConfiguration(
+        usesLiquidGlassDesign: true
+    )
+) { croppedImage in
+    // Handle square cropped image
+}
+
+// Rectangle mask with custom aspect ratio
+SwiftyCropView(
+    imageToCrop: image,
+    maskShape: .rectangle,
+    configuration: SwiftyCropConfiguration(
+        rectAspectRatio: 16/9,
+        usesLiquidGlassDesign: true
+    )
+) { croppedImage in
+    // Handle rectangular cropped image
+}
+```
+
+### Integration with Image Picker
+
+#### Complete Image Selection and Cropping Flow
+```swift
+struct ImageSelectionFlow: View {
+    @State private var showImagePicker = false
+    @State private var showImageCropper = false
+    @State private var selectedImage: UIImage?
+    @State private var sourceType: UIImagePickerController.SourceType = .photoLibrary
+    
+    var body: some View {
+        VStack {
+            Button("Select Image") {
+                showImagePicker = true
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(
+                sourceType: sourceType,
+                selectedImage: $selectedImage,
+                isPresented: $showImagePicker
+            )
+        }
+        .onChange(of: selectedImage) { image in
+            if image != nil {
+                showImageCropper = true
+            }
+        }
+        .fullScreenCover(isPresented: $showImageCropper) {
+            if let image = selectedImage {
+                SwiftyCropView(
+                    imageToCrop: image,
+                    maskShape: .square,
+                    configuration: SwiftyCropConfiguration(
+                        usesLiquidGlassDesign: true,
+                        maxMagnificationScale: 5.0
+                    )
+                ) { croppedImage in
+                    selectedImage = croppedImage
+                    showImageCropper = false
+                }
+            }
+        }
+    }
+}
+```
+
+### Best Practices
+
+#### 1. iOS 26 Design Considerations
+- **Always enable Liquid Glass** on iOS 26+ for modern user experience
+- **Test on both iOS 26 and older versions** to ensure compatibility
+- **Use appropriate mask shapes** based on content type
+- **Configure zoom sensitivity** based on image complexity
+
+#### 2. Performance Optimization
+- **Limit magnification scale** to prevent memory issues with large images
+- **Use appropriate mask radius** based on screen size
+- **Handle image processing** on background queues when possible
+
+#### 3. User Experience
+- **Provide clear instructions** for cropping interactions
+- **Use consistent styling** with your app's design system
+- **Handle cancellation gracefully** without losing user progress
+- **Provide visual feedback** during image processing
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Liquid Glass Not Appearing**
+   ```swift
+   // Ensure iOS 26+ and explicit configuration
+   let config = SwiftyCropConfiguration(
+       usesLiquidGlassDesign: true
+   )
+   ```
+
+2. **Navigation Stack Compatibility**
+   ```swift
+   // Use NavigationView instead of NavigationStack for sheets
+   NavigationView {
+       SwiftyCropView(...)
+   }
+   ```
+
+3. **Memory Issues with Large Images**
+   ```swift
+   // Limit magnification and process on background
+   let config = SwiftyCropConfiguration(
+       maxMagnificationScale: 3.0,
+       usesLiquidGlassDesign: true
+   )
+   ```
+
+#### Error Handling
+```swift
+SwiftyCropView(
+    imageToCrop: image,
+    maskShape: .square,
+    configuration: SwiftyCropConfiguration(
+        usesLiquidGlassDesign: true
+    )
+) { croppedImage in
+    guard let croppedImage = croppedImage else {
+        // Handle cropping failure
+        return
+    }
+    
+    // Process successful crop
+    processCroppedImage(croppedImage)
+}
+```
+
+### Localization Support
+
+#### Supported Languages
+SwiftyCrop supports 15+ languages including English, German, French, Italian, Russian, Spanish, Turkish, Ukrainian, Hungarian, Brazilian Portuguese, Korean, Japanese, Chinese, Finnish, and Traditional Chinese.
+
+#### Custom Localization
+```swift
+let localizedConfig = SwiftyCropConfiguration(
+    usesLiquidGlassDesign: true,
+    texts: SwiftyCropConfiguration.Texts(
+        cancelButton: "Cancelar",
+        interactionInstructions: "Pellizca para hacer zoom, arrastra para mover",
+        saveButton: "Guardar"
+    )
+)
+```
+
+### Requirements and Dependencies
+
+#### System Requirements
+- **iOS 16.0+** (iOS 26+ for Liquid Glass features)
+- **Xcode 15.0+**
+- **Swift 5.9+**
+
+#### Package Integration
+```swift
+// Package.swift
+dependencies: [
+    .package(url: "https://github.com/benedom/SwiftyCrop", from: "1.0.0")
+]
+```
+
+### Summary
+
+SwiftyCrop provides a powerful, modern image cropping solution for iOS 26+ applications with:
+
+- **Liquid Glass Design**: Automatic modern UI on iOS 26+
+- **Flexible Masking**: Circle, square, and rectangle options
+- **Customizable Configuration**: Extensive styling and behavior options
+- **Localization Support**: 15+ languages included
+- **Performance Optimized**: Efficient memory usage and processing
+- **Easy Integration**: Simple SwiftUI implementation patterns
+
+Always prioritize the Liquid Glass design for iOS 26+ users while maintaining backward compatibility for older iOS versions.

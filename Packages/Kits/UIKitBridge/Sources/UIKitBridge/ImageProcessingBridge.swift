@@ -150,32 +150,47 @@ public struct ImageProcessingBridge {
     /// - Parameter image: The UIImage to process
     /// - Returns: Processed profile image data
     public static func processProfileImage(_ image: UIImage) async throws -> ProcessedProfileImage {
+        print("🖼️ [ImageProcessing] Starting profile image processing")
         let originalSize = image.size
+        print("🖼️ [ImageProcessing] Original image size: \(originalSize.width)x\(originalSize.height)")
         
         // Determine target size based on original image size
         let targetSize: CGSize
         if originalSize.width > 2048 || originalSize.height > 2048 {
             // For very large images, use 1080x1080
             targetSize = CGSize(width: 1080, height: 1080)
+            print("🖼️ [ImageProcessing] Large image detected, resizing to 1080x1080")
         } else if originalSize.width > 1080 || originalSize.height > 1080 {
             // For large images, use 1080x1080
             targetSize = CGSize(width: 1080, height: 1080)
+            print("🖼️ [ImageProcessing] Medium image detected, resizing to 1080x1080")
         } else {
             // For smaller images, keep original size
             targetSize = originalSize
+            print("🖼️ [ImageProcessing] Small image detected, keeping original size: \(targetSize.width)x\(targetSize.height)")
         }
         
+        print("🖼️ [ImageProcessing] Attempting to resize image to: \(targetSize.width)x\(targetSize.height)")
         let processedImage = image.resized(to: targetSize) ?? image
         let processedSize = processedImage.size
+        print("🖼️ [ImageProcessing] Resized image size: \(processedSize.width)x\(processedSize.height)")
         
         // Convert to JPEG with 85% quality
+        print("🖼️ [ImageProcessing] Converting to JPEG with 85% quality")
         guard let originalData = processedImage.jpegData(compressionQuality: 0.85) else {
+            print("❌ [ImageProcessing] Failed to convert image to JPEG data")
             throw ImageProcessingError.compressionFailed
         }
+        print("🖼️ [ImageProcessing] JPEG conversion successful, data size: \(originalData.count) bytes")
         
         // Generate thumbnails
+        print("🖼️ [ImageProcessing] Generating 120x120 thumbnail")
         let thumbnail120 = try await generateThumbnail(from: processedImage, size: CGSize(width: 120, height: 120))
+        print("🖼️ [ImageProcessing] 120x120 thumbnail generated, size: \(thumbnail120.count) bytes")
+        
+        print("🖼️ [ImageProcessing] Generating 320x320 thumbnail")
         let thumbnail320 = try await generateThumbnail(from: processedImage, size: CGSize(width: 320, height: 320))
+        print("🖼️ [ImageProcessing] 320x320 thumbnail generated, size: \(thumbnail320.count) bytes")
         
         // Create metadata
         let metadata = ImageMetadata(
@@ -185,7 +200,9 @@ public struct ImageProcessingBridge {
             format: .jpeg,
             quality: 0.85
         )
+        print("🖼️ [ImageProcessing] Metadata created: original=\(originalSize.width)x\(originalSize.height), processed=\(processedSize.width)x\(processedSize.height), fileSize=\(originalData.count)")
         
+        print("✅ [ImageProcessing] Profile image processing completed successfully")
         return ProcessedProfileImage(
             original: originalData,
             thumbnail120: thumbnail120,
@@ -200,13 +217,18 @@ public struct ImageProcessingBridge {
     ///   - size: Target thumbnail size
     /// - Returns: Thumbnail image data
     private static func generateThumbnail(from image: UIImage, size: CGSize) async throws -> Data {
+        print("🖼️ [Thumbnail] Generating thumbnail for size: \(size.width)x\(size.height)")
         guard let thumbnail = image.resized(to: size) else {
+            print("❌ [Thumbnail] Failed to resize image to thumbnail size")
             throw ImageProcessingError.thumbnailGenerationFailed
         }
+        print("🖼️ [Thumbnail] Thumbnail resized successfully")
         
         guard let data = thumbnail.jpegData(compressionQuality: 0.8) else {
+            print("❌ [Thumbnail] Failed to convert thumbnail to JPEG data")
             throw ImageProcessingError.compressionFailed
         }
+        print("🖼️ [Thumbnail] Thumbnail JPEG conversion successful, size: \(data.count) bytes")
         
         return data
     }

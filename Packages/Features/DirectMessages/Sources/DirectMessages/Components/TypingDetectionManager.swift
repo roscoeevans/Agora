@@ -1,6 +1,10 @@
 import Foundation
 import AppFoundation
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 /// Manager for handling typing detection and broadcasting with proper debouncing
 @Observable
 @MainActor

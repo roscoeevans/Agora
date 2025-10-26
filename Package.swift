@@ -20,6 +20,7 @@ let package = Package(
         // Supabase
         .package(url: "https://github.com/supabase/supabase-swift", from: "2.35.0"),
         
+        
         // Push Notifications
         .package(url: "https://github.com/OneSignal/OneSignal-iOS-SDK", from: "5.0.0"),
         
