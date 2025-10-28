@@ -205,6 +205,21 @@ public final class AuthStateManager {
         }
     }
     
+    /// Force sign out when authentication fails
+    /// This is called when the app detects that the user is no longer authenticated
+    public func forceSignOut() {
+        Task { @MainActor in
+            do {
+                try await authService.signOut()
+            } catch {
+                // Even if sign out fails, clear the session
+                Logger.auth.warning("Force sign out failed, clearing state anyway: \(error)")
+            }
+            state = .unauthenticated
+            Logger.auth.info("Force signed out due to authentication failure")
+        }
+    }
+    
     // MARK: - Validation
     
     /// Get handle validator for UI

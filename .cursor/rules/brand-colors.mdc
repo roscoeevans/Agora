@@ -1,0 +1,270 @@
+---
+alwaysApply: false
+---
+
+# Brand Colors and Gradients
+
+## Overview
+
+This rule defines Agora's brand color system, including primary palette colors, gradient patterns, and dark mode adaptations. Use this when working with brand colors, creating gradients, or updating the design system color tokens.
+
+**Apple Design Integration:** Agora's brand colors follow Apple's design philosophy—ensuring high contrast, supporting both light and dark modes, maintaining simplicity and clarity, and integrating seamlessly with iOS system colors for standard UI elements.
+
+## Brand Color Palette
+
+Agora uses a vibrant 6-color palette that supports rich gradient expressions:
+
+### Color Definitions
+
+| Color Name | Hex Code | RGB (0-1) | Role |
+|-----------|----------|-----------|------|
+| **Sky Blue** | `#30C1FD` <br/> Dark: `#2195E4` | RGB(0.188, 0.757, 0.992) <br/> Dark: RGB(0.129, 0.584, 0.894) | Primary brand color |
+| **Rosy Magenta** | `#FF3268` | RGB(1.000, 0.196, 0.408) | Secondary brand color |
+| **Golden Yellow** | `#FCAE23` | RGB(0.988, 0.682, 0.137) | Warm accent |
+| **Peachy Coral** | `#F97B47` | RGB(0.976, 0.482, 0.278) | Warm accent |
+| **Lavender Purple** | `#D59FFF` | RGB(0.835, 0.624, 1.000) | Cool accent |
+| **Light Turquoise** | `#A6D3E8` | RGB(0.651, 0.827, 0.910) | Cool accent |
+
+### Gradient Structure
+
+The palette forms a **diagonal gradient flow** from warm to cool tones:
+
+```
+Golden Yellow  (#FCAE23)   →   Peachy Coral  (#F97B47)   →   Rosy Magenta  (#FF3268)
+       ↑                                                              ↑
+       │                                                              │
+Light Turquoise  (#A6D3E8)   →   Sky Blue  (#30C1FD)   →   Lavender Purple  (#D59FFF)
+```
+
+This creates two primary gradient patterns:
+
+1. **Warm Gradient** (top row): Golden Yellow → Peachy Coral → Rosy Magenta
+2. **Cool Gradient** (bottom row): Light Turquoise → Sky Blue → Lavender Purple
+
+## Implementation
+
+### Color Tokens
+
+The design system provides semantic color tokens and full palette access:
+
+```swift
+// Semantic tokens (primary, secondary, tertiary)
+ColorTokens.primary            // Sky Blue - primary actions, key interactive elements
+ColorTokens.secondary          // Rosy Magenta - secondary actions, highlights
+ColorTokens.tertiary           // Light Turquoise - tertiary elements, info states
+
+// Extended brand palette (all six colors)
+ColorTokens.BrandPalette.skyBlue       // #30C1FD
+ColorTokens.BrandPalette.rosyMagenta   // #FF3268
+ColorTokens.BrandPalette.goldenYellow  // #FCAE23
+ColorTokens.BrandPalette.peachyCoral   // #F97B47
+ColorTokens.BrandPalette.lavenderPurple // #D59FFF
+ColorTokens.BrandPalette.lightTurquoise // #A6D3E8
+```
+
+### Gradient Usage
+
+**Prefer gradients for hero/expressive surfaces.**
+
+#### Common Gradient Patterns
+
+1. **Full Spectrum** (warmest to coolest):
+   - Golden Yellow → Peachy Coral → Rosy Magenta → Light Turquoise → Sky Blue → Lavender Purple
+   - Use for hero sections, prominent CTAs, special moments
+
+2. **Two-Color Gradients**:
+   - Sky Blue → Rosy Magenta (primary secondary flow)
+   - Golden Yellow → Rosy Magenta (warm highlight)
+   - Light Turquoise → Lavender Purple (cool ambient)
+
+3. **Three-Color Gradients** (diagonal flow):
+   - Golden Yellow → Peachy Coral → Rosy Magenta (warm progression)
+   - Light Turquoise → Sky Blue → Lavender Purple (cool progression)
+
+#### Gradient Angle Guidelines
+
+- **Horizontal (0°)**: Default for most UI elements
+- **Diagonal (45° to -45°)**: For energy and movement
+- **Vertical (90°)**: For depth and elevation
+- **Circular/Radiant**: For focal points, buttons, icons
+
+**Stability Rule:** Keep gradient angles consistent within a context (e.g., all hero cards use 45°, all headers use 0°) to avoid visual drift.
+
+### Dark Mode Adaptations
+
+**General Rule:** Keep brand colors as similar as possible between light and dark modes to maintain brand consistency.
+
+#### Primary Exception: Very Bright Colors for Readability
+
+**For extremely bright colors** (like Sky Blue #30C1FD), Apple's Human Interface Guidelines recommend slight darkening for dark mode to:
+- Improve white text contrast (achieves WCAG AA compliance)
+- Prevent the "glow" effect on dark backgrounds
+- Maintain visual balance
+
+**Sky Blue Dark Mode Variant:**
+- Light Mode: `#30C1FD` (RGB 0.188, 0.757, 0.992)
+- Dark Mode: `#2195E4` (RGB 0.129, 0.584, 0.894) - ~10-12% darker
+- Increases contrast from ~2.1 to ~4.4 (AA-compliant)
+- Maintains the same "Sky Blue" identity while being readable
+
+#### Strategy
+
+For most brand colors:
+- Use **identical hex values** for light and dark modes
+- Brand colors should be consistent regardless of appearance mode
+
+For very bright colors (primary brand color):
+- Slightly darken and desaturate for dark mode (10-12% adjustment)
+- Target: same hue emotion, less light energy on dark backgrounds
+
+For surfaces and text:
+- Adjust background/text contrast using system colors
+- Brand gradients work in both modes (may benefit from same adjustments if used as backgrounds)
+
+## Usage Guidelines
+
+### When to Use Brand Colors
+
+**Primary (Sky Blue):**
+- Main CTA buttons (replaces system blue for primary actions)
+- Active state indicators (selected tabs, active items)
+- Primary navigation elements (key interactive elements)
+- Links and interactive text (use sparingly)
+
+**Secondary (Rosy Magenta):**
+- Secondary CTAs and alternative actions
+- Engagement indicators (hearts, likes, positive feedback)
+- Highlighting important content (achievements, badges)
+- Notification accents (non-destructive)
+
+**Gradients:**
+- Use for: hero sections, onboarding flows, celebration moments, big CTAs, cards/headers that need brand energy
+- **Keep gradients special** - use sparingly to maintain Apple's minimalist aesthetic
+- One or two well-placed gradients per screen maximum
+- Test if gradient actually improves understanding vs. flat color
+
+**Solids (brand colors):**
+- Use for: small controls, badges, secondary UI where clarity > flair
+- Defer to content - let brand colors enhance, not compete with, primary content
+
+### Apple Design Philosophy Integration
+
+**Follow Apple's proven conventions:**
+- **Reserve red for destructive actions** - never use brand colors for delete/cancel buttons (use `ColorTokens.error`)
+- **Use system colors for system elements** - separators, backgrounds, labels use iOS semantic colors
+- **Support Increase Contrast mode** - brand colors must be distinguishable even with higher contrast
+- **Support Reduce Transparency mode** - gradients should have solid fallbacks for reduced transparency
+- **Use SF Symbols with brand colors** - icons automatically adapt to brand colors when tinted
+
+### When NOT to Use Brand Colors
+
+**Never use brand colors for:**
+- Destructive actions (delete, remove, cancel) - use system red
+- Error or warning states - use system red/orange/yellow
+- Text content - use semantic text colors (primaryText, secondaryText, etc.)
+- Background surfaces - use system backgrounds
+- Separators and dividers - use system separator colors
+- Placeholders or loading states - use system gray colors
+- Disabled states - use system disabled colors with reduced opacity
+
+**Keep interfaces uncluttered:**
+- Avoid overusing brand colors - not every element needs brand treatment
+- When in doubt, use system colors and apply brand sparingly for key moments
+- Let content take center stage - brand colors should enhance, not distract
+
+### Accessibility Considerations
+
+**Critical Contrast Requirements:**
+1. **WCAG AA Standard:** 4.5:1 ratio for all text over brand colors
+2. **Touch Targets:** Brand-colored buttons must meet 44×44pt minimum touch size
+3. **State Indicators:** Don't rely on color alone—use icons, labels, or patterns
+
+**Accessibility Preference Support:**
+- **Increase Contrast:** Brand colors must remain distinguishable with higher contrast settings
+- **Reduce Transparency:** Provide solid fallback colors when gradients are reduced
+- **Reduce Motion:** Static color states should be clear (avoid relying on gradient animations)
+- **VoiceOver:** All brand-colored interactive elements must have descriptive labels
+
+**Color-Blind Friendly:**
+- Gradients maintain distinction even without color perception (warm/cool, light/dark variations help)
+- Test with ColorBlindSim or similar tools
+- Provide icons, labels, or patterns in addition to color cues
+
+## File Locations
+
+### Color Asset Files
+- `Packages/Kits/DesignSystem/Sources/DesignSystem/Resources/Colors.xcassets/`
+  - `AgoraBrand.colorset/` - Sky Blue (#30C1FD) - Primary brand color
+  - `AgoraAccent.colorset/` - Rosy Magenta (#FF3268) - Secondary brand color
+  - `AgoraTertiary.colorset/` - Light Turquoise (#A6D3E8) - Tertiary brand color
+  - Additional colors (Golden Yellow, Peachy Coral, Lavender Purple) defined inline in `BrandPalette` struct
+
+### Global iOS Tint
+- `Resources/Assets.xcassets/AccentColor.colorset/` - Sky Blue
+  - This is the global iOS app tint used throughout the system
+
+### Code Definitions
+- `Packages/Kits/DesignSystem/Sources/DesignSystem/DesignSystem.swift` - `ColorTokens`
+- `Packages/Kits/DesignSystem/Sources/DesignSystem/DesignSystem.swift` - Extension `Color+agora`
+
+## Migration Strategy
+
+**Full replacement, no legacy support.**
+
+1. Update all color asset files (colorsets)
+2. Update ColorTokens in DesignSystem.swift
+3. Remove any deprecated color references
+4. Update all gradient definitions
+5. Test across light/dark modes
+
+**No backward compatibility** - clean break to new system.
+
+## Testing Requirements
+
+- [ ] Visual verification in light mode
+- [ ] Visual verification in dark mode  
+- [ ] Gradient rendering in various contexts
+- [ ] Accessibility contrast ratios
+- [ ] iOS device testing across sizes (standard and plus models)
+
+## Apple Design Integration Notes
+
+### Common Mistakes to Avoid
+
+**Visual Design:**
+- Don't overuse gradients on every screen
+- Don't mix brand colors with system colors inconsistently
+- Don't ignore accessibility contrast requirements
+- Don't use brand colors for destructive/dangerous actions
+- Don't create cluttered interfaces with too many colorful elements
+
+**Accessibility:**
+- Don't rely on color alone to convey meaning
+- Don't ignore Increase Contrast or Reduce Transparency modes
+- Don't forget to test with VoiceOver enabled
+- Don't use low-contrast color combinations
+- Don't block user interaction during color transitions
+
+### Integration with SF Symbols
+
+When using SF Symbols with brand colors:
+- Apply `.foregroundColor(ColorTokens.primary)` for primary actions
+- Apply `.foregroundColor(ColorTokens.secondary)` for secondary actions
+- Symbols automatically adapt to color and respect Dynamic Type
+- Use consistent icon weights throughout the app
+- Don't mix wildly different icon styles
+
+### Apple Voice & Tone
+
+When copy appears on brand-colored backgrounds:
+- Use clear, direct language
+- Keep sentences short and focused
+- Use active voice ("Follow" not "Following")
+- Test readability in both light and dark modes
+
+## Related Rules
+
+- **apple-ui-ux-design.mdc**: Apple design language and interaction patterns
+- **dark-mode.mdc**: Dark mode implementation patterns
+- **swiftui-first-architecture.mdc**: UI implementation approach
+- **design-system-usage.mdc**: Using DesignSystem components

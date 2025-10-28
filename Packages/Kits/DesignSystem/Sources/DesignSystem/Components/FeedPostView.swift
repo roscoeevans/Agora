@@ -61,8 +61,8 @@ public struct FeedPostView: View {
             // Right column: All content
             VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                 // Header row: Handle, timestamp, edited indicator
-                HStack(alignment: .top, spacing: SpacingTokens.xxs) {
-                    Text("@\(post.authorDisplayHandle)")
+                HStack(alignment: .lastTextBaseline, spacing: SpacingTokens.xxs) {
+                    Text(post.authorDisplayHandle)
                         .font(TypographyScale.body)
                         .fontWeight(.semibold)
                         .foregroundColor(ColorTokens.primaryText)
@@ -71,14 +71,16 @@ public struct FeedPostView: View {
                     // TODO: Add @ symbol badge when available
                     
                     Text("·")
+                        .font(TypographyScale.body)
                         .foregroundColor(ColorTokens.quaternaryText)
                     
                     Text(formatTimestamp(post.createdAt))
-                        .font(TypographyScale.caption1)
+                        .font(TypographyScale.body)
                         .foregroundColor(ColorTokens.tertiaryText)
                     
                     if post.editedAt != nil {
                         Text("·")
+                            .font(TypographyScale.body)
                             .foregroundColor(ColorTokens.quaternaryText)
                         
                         HStack(spacing: 2) {
@@ -159,7 +161,7 @@ public struct FeedPostView: View {
                 }
             }
         }
-        .padding(SpacingTokens.md)
+        .padding(.vertical, SpacingTokens.xs)
         .background(ColorTokens.background)
         .task {
             // Initialize engagement state using cache for persistence
@@ -248,7 +250,7 @@ public struct FeedPostView: View {
     DesignSystemPreviewDeps.withEngagement {
         ScrollView {
             FeedPostView(post: PreviewFixtures.shortPost)
-                .padding()
+                .padding(.horizontal, SpacingTokens.sm)
         }
         .background(ColorTokens.background)
     }
@@ -257,7 +259,7 @@ public struct FeedPostView: View {
     DesignSystemPreviewDeps.withEngagement {
         ScrollView {
             FeedPostView(post: PreviewFixtures.longPost)
-                .padding()
+                .padding(.horizontal, SpacingTokens.sm)
         }
         .background(ColorTokens.background)
     }
@@ -267,7 +269,7 @@ public struct FeedPostView: View {
     DesignSystemPreviewDeps.withEngagementDark {
         ScrollView {
             FeedPostView(post: PreviewFixtures.popularPost)
-                .padding()
+                .padding(.horizontal, SpacingTokens.sm)
         }
         .background(ColorTokens.background)
     }
@@ -277,7 +279,7 @@ public struct FeedPostView: View {
     DesignSystemPreviewDeps.withEngagement {
         ScrollView {
             FeedPostView(post: PreviewFixtures.recentPost)
-                .padding()
+                .padding(.horizontal, SpacingTokens.sm)
         }
         .background(ColorTokens.background)
     }
@@ -286,13 +288,22 @@ public struct FeedPostView: View {
 #Preview("Multiple Posts in Feed") {
     DesignSystemPreviewDeps.withEngagement {
         ScrollView {
-            LazyVStack(spacing: SpacingTokens.md) {
+            LazyVStack(spacing: 0) {
                 FeedPostView(post: PreviewFixtures.shortPost)
+                    .padding(.horizontal, SpacingTokens.sm)
+                Divider()
+                    .padding(.horizontal, SpacingTokens.sm)
                 FeedPostView(post: PreviewFixtures.longPost)
+                    .padding(.horizontal, SpacingTokens.sm)
+                Divider()
+                    .padding(.horizontal, SpacingTokens.sm)
                 FeedPostView(post: PreviewFixtures.popularPost)
+                    .padding(.horizontal, SpacingTokens.sm)
+                Divider()
+                    .padding(.horizontal, SpacingTokens.sm)
                 FeedPostView(post: PreviewFixtures.recentPost)
+                    .padding(.horizontal, SpacingTokens.sm)
             }
-            .padding()
         }
         .background(ColorTokens.background)
     }

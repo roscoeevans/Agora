@@ -114,6 +114,7 @@ final class ColorTokensTests: XCTestCase {
     
     func testColorTokensAreNotNil() {
         XCTAssertNotNil(ColorTokens.primary)
+        XCTAssertNotNil(ColorTokens.secondary)
         XCTAssertNotNil(ColorTokens.primaryVariant)
         XCTAssertNotNil(ColorTokens.background)
         XCTAssertNotNil(ColorTokens.secondaryBackground)
@@ -132,10 +133,11 @@ final class ColorTokensTests: XCTestCase {
         XCTAssertNotNil(ColorTokens.info)
         XCTAssertNotNil(ColorTokens.agoraBrand)
         XCTAssertNotNil(ColorTokens.agoraAccent)
+        XCTAssertNotNil(ColorTokens.agoraTertiary)
         XCTAssertNotNil(ColorTokens.agoraSurface)
-        XCTAssertNotNil(ColorTokens.agoraBrandCustom)
-        XCTAssertNotNil(ColorTokens.agoraAccentCustom)
-        XCTAssertNotNil(ColorTokens.agoraTertiaryCustom)
+        XCTAssertNotNil(ColorTokens.brandPrimary)
+        XCTAssertNotNil(ColorTokens.brandSecondary)
+        XCTAssertNotNil(ColorTokens.brandTertiary)
     }
     
     func testBackwardCompatibilityExtensions() {
@@ -145,6 +147,16 @@ final class ColorTokensTests: XCTestCase {
         XCTAssertNotNil(Color.agoraTertiary)
         XCTAssertNotNil(Color.agoraBackground)
         XCTAssertNotNil(Color.agoraSurface)
+    }
+    
+    func testBrandPaletteExists() {
+        // Test that brand palette colors exist
+        XCTAssertNotNil(ColorTokens.BrandPalette.skyBlue)
+        XCTAssertNotNil(ColorTokens.BrandPalette.rosyMagenta)
+        XCTAssertNotNil(ColorTokens.BrandPalette.goldenYellow)
+        XCTAssertNotNil(ColorTokens.BrandPalette.peachyCoral)
+        XCTAssertNotNil(ColorTokens.BrandPalette.lavenderPurple)
+        XCTAssertNotNil(ColorTokens.BrandPalette.lightTurquoise)
     }
     
     func testColorHierarchy() {

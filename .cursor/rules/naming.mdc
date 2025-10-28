@@ -745,7 +745,7 @@ struct ProfileView_Previews: PreviewProvider {
 
 ### Related Rules
 
-- **ios-di-injection.mdc**: DI-specific naming (protocols, factories, Live suffix)
-- **ios-module-standards.mdc**: Package/module naming, test naming
+- **dependency-injection.mdc**: DI-specific naming (protocols, factories, Live suffix)
+- **module-standards.mdc**: Package/module naming, test naming
 - **project-structure.mdc**: File organization and placement
 - **swift-concurrency.mdc**: Actor and async naming patterns

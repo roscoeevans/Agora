@@ -279,6 +279,6 @@ import AppKit  // ❌ Why? You're not shipping on Mac
 
 ### Related Documentation
 
-- Xcode configuration: See `ios-configuration.mdc`
-- Package structure: See `ios-module-standards.mdc`
+- Xcode configuration: See `configuration.mdc`
+- Package structure: See `module-standards.mdc`
 - Project organization: See `project-structure.mdc`

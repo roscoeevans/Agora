@@ -1,5 +1,6 @@
 import Foundation
 import AuthenticationServices
+import CoreGraphics
 
 // MARK: - Authentication Service Protocol
 
@@ -210,6 +211,153 @@ public enum CaptchaError: LocalizedError, Sendable {
         }
     }
 }
+
+// MARK: - User Search Protocol
+
+/// Protocol for user search functionality
+public protocol UserSearchProtocol: Sendable {
+    /// Search for users matching a query
+    /// - Parameters:
+    ///   - q: Search query string (supports "@handle" for exact matches)
+    ///   - limit: Maximum number of results to return (default: 20)
+    ///   - after: Cursor for pagination (handle of last result from previous page)
+    /// - Returns: Array of SearchUser results sorted by relevance + popularity
+    /// - Throws: UserSearchError if search fails
+    func search(q: String, limit: Int, after: String?) async throws -> [SearchUser]
+    
+    /// Get suggested creators (popular users to follow)
+    /// - Parameter limit: Maximum number of suggestions to return (default: 20)
+    /// - Returns: Array of SearchUser results sorted by popularity
+    /// - Throws: UserSearchError if request fails
+    func suggestedCreators(limit: Int) async throws -> [SearchUser]
+    
+    /// Look up a user by exact handle
+    /// - Parameter handle: User handle (with or without "@" prefix)
+    /// - Returns: SearchUser if found, nil if not found
+    /// - Throws: UserSearchError if lookup fails
+    func lookupByHandle(_ handle: String) async throws -> SearchUser?
+}
+
+/// Represents a user returned from search results
+public struct SearchUser: Codable, Identifiable, Sendable, Hashable {
+    /// Unique user identifier
+    public let userId: UUID
+    
+    /// Conform to Identifiable
+    public var id: UUID { userId }
+    
+    /// Canonical lowercase handle (e.g., "rocky.evans")
+    public let handle: String
+    
+    /// User's preferred capitalization (e.g., "Rocky.Evans")
+    public let displayHandle: String
+    
+    /// User's display name
+    public let displayName: String
+    
+    /// Avatar URL (Cloudflare Images variant URL)
+    public let avatarUrl: String?
+    
+    /// Trust level (0-3)
+    public let trustLevel: Int
+    
+    /// Verified badge
+    public let verified: Bool
+    
+    /// Cached follower count (for popularity ranking)
+    public let followersCount: Int
+    
+    /// Last activity timestamp
+    public let lastActiveAt: Date?
+    
+    /// Search relevance score (internal, for sorting)
+    public let score: Double
+    
+    /// Initialize a SearchUser
+    public init(
+        userId: UUID,
+        handle: String,
+        displayHandle: String,
+        displayName: String,
+        avatarUrl: String?,
+        trustLevel: Int,
+        verified: Bool,
+        followersCount: Int,
+        lastActiveAt: Date?,
+        score: Double
+    ) {
+        self.userId = userId
+        self.handle = handle
+        self.displayHandle = displayHandle
+        self.displayName = displayName
+        self.avatarUrl = avatarUrl
+        self.trustLevel = trustLevel
+        self.verified = verified
+        self.followersCount = followersCount
+        self.lastActiveAt = lastActiveAt
+        self.score = score
+    }
+}
+
+// MARK: - SearchUser Preview Helpers
+
+#if DEBUG
+extension SearchUser {
+    /// Sample search user for previews
+    public static let preview = SearchUser(
+        userId: UUID(),
+        handle: "rocky.evans",
+        displayHandle: "Rocky.Evans",
+        displayName: "Rocky Evans",
+        avatarUrl: nil,
+        trustLevel: 2,
+        verified: true,
+        followersCount: 1234,
+        lastActiveAt: Date(),
+        score: 0.95
+    )
+    
+    /// Array of sample users for previews
+    public static let previewArray: [SearchUser] = [
+        SearchUser(
+            userId: UUID(),
+            handle: "rocky.evans",
+            displayHandle: "Rocky.Evans",
+            displayName: "Rocky Evans",
+            avatarUrl: nil,
+            trustLevel: 2,
+            verified: true,
+            followersCount: 1234,
+            lastActiveAt: Date(),
+            score: 0.95
+        ),
+        SearchUser(
+            userId: UUID(),
+            handle: "jane.doe",
+            displayHandle: "jane.doe",
+            displayName: "Jane Doe",
+            avatarUrl: nil,
+            trustLevel: 1,
+            verified: false,
+            followersCount: 567,
+            lastActiveAt: Date().addingTimeInterval(-86400),
+            score: 0.75
+        ),
+        SearchUser(
+            userId: UUID(),
+            handle: "john.smith",
+            displayHandle: "John.Smith",
+            displayName: "John Smith",
+            avatarUrl: nil,
+            trustLevel: 0,
+            verified: false,
+            followersCount: 89,
+            lastActiveAt: Date().addingTimeInterval(-86400 * 7),
+            score: 0.50
+        )
+    ]
+}
+#endif
 
 // MARK: - Comment Composition Protocol
 
@@ -858,5 +1006,183 @@ public final class NoOpMessagingSubscription: MessagingSubscription {
     
     public var isActive: Bool {
         get async { false }
+    }
+}
+
+// MARK: - Avatar Cropper Service Protocols
+
+/// Protocol for image crop rendering functionality
+public protocol ImageCropRendering: Sendable {
+    /// Renders a square output (e.g., 512×512) from a source CGImage and transform
+    /// - Parameters:
+    ///   - source: The source CGImage to crop
+    ///   - cropRectInPixels: The crop rectangle in image pixel coordinates
+    ///   - outputSize: The desired output size (width and height in pixels)
+    ///   - colorSpace: The color space for the output image
+    /// - Returns: PNG or JPEG data of the cropped image
+    /// - Throws: CropValidationError if rendering fails
+    func renderSquareAvatar(
+        source: CGImage,
+        cropRectInPixels: CGRect,
+        outputSize: Int,
+        colorSpace: CGColorSpace
+    ) throws -> Data
+}
+
+/// Protocol for avatar upload service
+public protocol AvatarUploadService: Sendable {
+    /// Uploads avatar data to storage and updates user profile
+    /// - Parameters:
+    ///   - data: The image data to upload (PNG or JPEG)
+    ///   - mime: The MIME type of the image data
+    /// - Returns: The public URL of the uploaded avatar with cache-busting version
+    /// - Throws: AvatarUploadError if upload or profile update fails
+    func uploadAvatar(_ data: Data, mime: String) async throws -> URL
+}
+
+// MARK: - Avatar Cropper Error Types
+
+/// Errors that can occur during crop validation and processing
+public enum CropValidationError: LocalizedError, Sendable {
+    case imageTooSmall(size: CGSize, minimum: CGFloat)
+    case imageDecodingFailed
+    case cropProcessingFailed
+    case uploadFailed(underlying: Error)
+    case memoryPressure
+    case invalidImageFormat
+    case cropAreaTooSmall(required: CGSize, actual: CGSize)
+    case qualityLimitExceeded(maxZoom: CGFloat, requestedZoom: CGFloat)
+    case insufficientPixelDensity(required: CGFloat, actual: CGFloat)
+    case orientationNormalizationFailed
+    case colorSpaceConversionFailed
+    case thumbnailGenerationFailed
+    
+    public var errorDescription: String? {
+        switch self {
+        case .imageTooSmall(let size, let minimum):
+            return "This photo is too small for a profile picture. Minimum size: \(Int(minimum))px, actual: \(Int(min(size.width, size.height)))px."
+        case .imageDecodingFailed:
+            return "Unable to process this image. Please try a different photo."
+        case .cropProcessingFailed:
+            return "Failed to crop image. Please try again."
+        case .uploadFailed:
+            return "Upload failed. Please check your connection and try again."
+        case .memoryPressure:
+            return "Using an optimized preview to finish the crop."
+        case .invalidImageFormat:
+            return "This image format is not supported. Please use JPEG, PNG, or HEIC."
+        case .cropAreaTooSmall(let required, let actual):
+            return "Crop area is too small. Required: \(Int(required.width))×\(Int(required.height))px, actual: \(Int(actual.width))×\(Int(actual.height))px."
+        case .qualityLimitExceeded(let maxZoom, let requestedZoom):
+            return "Zoom level too high for good quality. Maximum: \(String(format: "%.1f", maxZoom))×, requested: \(String(format: "%.1f", requestedZoom))×."
+        case .insufficientPixelDensity(let required, let actual):
+            return "Image resolution too low for crisp display. Required: \(String(format: "%.1f", required)) px/pt, actual: \(String(format: "%.1f", actual)) px/pt."
+        case .orientationNormalizationFailed:
+            return "Failed to correct image orientation. Please try a different photo."
+        case .colorSpaceConversionFailed:
+            return "Failed to process image colors. Please try a different photo."
+        case .thumbnailGenerationFailed:
+            return "Failed to create image preview. Please try a different photo."
+        }
+    }
+    
+    /// User-friendly recovery suggestions
+    public var recoverySuggestion: String? {
+        switch self {
+        case .imageTooSmall:
+            return "Try using a higher resolution photo from your camera or a different source."
+        case .imageDecodingFailed, .invalidImageFormat:
+            return "Try saving the image in a different format (JPEG or PNG) or use a different photo."
+        case .cropProcessingFailed, .orientationNormalizationFailed, .colorSpaceConversionFailed:
+            return "Try restarting the app or using a different photo."
+        case .uploadFailed:
+            return "Check your internet connection and try again."
+        case .memoryPressure:
+            return "Close other apps to free up memory, or try a smaller image."
+        case .cropAreaTooSmall, .qualityLimitExceeded, .insufficientPixelDensity:
+            return "Try zooming out or using a higher resolution photo."
+        case .thumbnailGenerationFailed:
+            return "Try using a different photo or restarting the app."
+        }
+    }
+    
+    /// Whether this error allows retry
+    public var isRetryable: Bool {
+        switch self {
+        case .imageTooSmall, .imageDecodingFailed, .invalidImageFormat, .orientationNormalizationFailed:
+            return false // These require a different image
+        case .cropProcessingFailed, .uploadFailed, .memoryPressure, .colorSpaceConversionFailed, .thumbnailGenerationFailed:
+            return true // These might succeed on retry
+        case .cropAreaTooSmall, .qualityLimitExceeded, .insufficientPixelDensity:
+            return false // These require user adjustment
+        }
+    }
+    
+    /// Error category for analytics and debugging
+    public var category: CropErrorCategory {
+        switch self {
+        case .imageTooSmall, .imageDecodingFailed, .invalidImageFormat, .orientationNormalizationFailed, .thumbnailGenerationFailed:
+            return .imageValidation
+        case .cropProcessingFailed, .colorSpaceConversionFailed:
+            return .processing
+        case .uploadFailed:
+            return .network
+        case .memoryPressure:
+            return .system
+        case .cropAreaTooSmall, .qualityLimitExceeded, .insufficientPixelDensity:
+            return .userInput
+        }
+    }
+}
+
+/// Categories of crop validation errors for analytics and handling
+public enum CropErrorCategory: String, Sendable, CaseIterable {
+    case imageValidation = "image_validation"
+    case processing = "processing"
+    case network = "network"
+    case system = "system"
+    case userInput = "user_input"
+}
+
+/// Errors that can occur during avatar upload
+public enum AvatarUploadError: LocalizedError, Sendable {
+    case notAuthenticated
+    case uploadFailed(Error)
+    case profileUpdateFailed(Error)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .notAuthenticated:
+            return "Please sign in to update your avatar."
+        case .uploadFailed:
+            return "Failed to upload avatar. Please try again."
+        case .profileUpdateFailed:
+            return "Avatar uploaded but profile update failed. Please try again."
+        }
+    }
+}
+
+// MARK: - No-Op Avatar Service Implementations
+
+/// No-op implementation of ImageCropRendering for testing and previews
+public final class NoOpImageCropRenderer: ImageCropRendering {
+    public init() {}
+    
+    public func renderSquareAvatar(
+        source: CGImage,
+        cropRectInPixels: CGRect,
+        outputSize: Int,
+        colorSpace: CGColorSpace
+    ) throws -> Data {
+        throw CropValidationError.cropProcessingFailed
+    }
+}
+
+/// No-op implementation of AvatarUploadService for testing and previews
+public final class NoOpAvatarUploadService: AvatarUploadService {
+    public init() {}
+    
+    public func uploadAvatar(_ data: Data, mime: String) async throws -> URL {
+        throw AvatarUploadError.uploadFailed(NSError(domain: "NoOpService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Avatar upload service not available"]))
     }
 }

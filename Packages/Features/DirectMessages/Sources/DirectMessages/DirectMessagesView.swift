@@ -7,33 +7,39 @@ public struct DirectMessagesView: View {
     @State private var viewModel: DirectMessagesViewModel
     @State private var searchText = ""
     @Environment(\.deps) private var deps
+    @Environment(\.navigateToConversation) private var navigateToConversation
     
     public init() {
         self._viewModel = State(initialValue: DirectMessagesViewModel())
     }
     
     public var body: some View {
-        NavigationStack {
-            Group {
-                if viewModel.isLoading && viewModel.conversations.isEmpty {
-                    // Initial loading state
-                    loadingView
-                } else if viewModel.conversations.isEmpty && !viewModel.isLoading {
-                    // Empty state
-                    emptyStateView
-                } else {
-                    // Conversation list
-                    conversationList
-                }
+        Group {
+            if viewModel.isLoading && viewModel.conversations.isEmpty {
+                // Initial loading state
+                loadingView
+            } else if viewModel.conversations.isEmpty && !viewModel.isLoading {
+                // Empty state
+                emptyStateView
+            } else {
+                // Conversation list
+                conversationList
             }
-            .navigationTitle("Messages")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.large)
-            #endif
-            .searchable(text: $searchText, prompt: "Search conversations")
-            .onChange(of: searchText) { _, newValue in
-                viewModel.searchText = newValue
-            }
+        }
+        .navigationTitle("Messages")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .tabBar)
+        .searchable(
+            text: $searchText,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "Search conversations"
+        )
+        #else
+        .searchable(text: $searchText, prompt: "Search conversations")
+        #endif
+        .onChange(of: searchText) { _, newValue in
+            viewModel.searchText = newValue
         }
         .task {
             // Initialize viewModel with dependencies
@@ -63,11 +69,16 @@ public struct DirectMessagesView: View {
     // MARK: - Subviews
     
     private var conversationList: some View {
-        List(viewModel.filteredConversations) { conversation in
-            ConversationRow(conversation: conversation)
-                .onTapGesture {
-                    viewModel.navigate(to: .conversation(id: conversation.id))
+        List {
+            ForEach(Array(viewModel.filteredConversations.enumerated()), id: \.element.id) { index, conversation in
+                Button {
+                    navigateToConversation?.action(conversation.id)
+                } label: {
+                    ConversationRow(conversation: conversation)
                 }
+                .buttonStyle(.plain)
+                .listRowSeparator(index == 0 ? .hidden : .visible, edges: .top)
+            }
         }
         .refreshable {
             await viewModel.refresh()

@@ -134,7 +134,7 @@ public struct FeedView: View {
 }
 ```
 
-**Naming:** Keep previews next to the view file or in a `Previews/` subgroup. See `ios-naming.mdc` for file names; no separate "PreviewApp" target is required.
+**Naming:** Keep previews next to the view file or in a `Previews/` subgroup. See `naming.mdc` for file names; no separate "PreviewApp" target is required.
 
 ---
 
@@ -158,13 +158,13 @@ public struct FeedView: View {
 
 ## Integration With Other Rules
 
-### Module Standards (ios-module-standards.mdc)
+### Module Standards (module-standards.mdc)
 Add a "Resources" subsection noting `.process("Resources")` and asset loading expectations for previewable UI.
 
-### DI (ios-di-injection.mdc)
+### DI (dependency-injection.mdc)
 Add a `Mocks` or `PreviewContainer` pattern referenced by `PreviewDeps`.
 
-### Naming (ios-naming.mdc)
+### Naming (naming.mdc)
 Add guidance: co-locate preview blocks; optional `Previews/` subgroup; name examples `ThingView.preview.swift` if split.
 
 ---
@@ -258,7 +258,7 @@ public struct ButtonShowcase: View {
 
 ## Optional Cross-Rule Updates (suggested)
 
-- **ios-module-standards.mdc** → Add a "Resources for Previews" bullet with `.process("Resources")`.
-- **ios-di-injection.mdc** → Add a `Mocks`/`PreviewContainer` recommendation and mention `PreviewDeps`.
-- **ios-naming.mdc** → Add preview file naming guidance (co-located vs. `Previews/` subgroup).
+- **module-standards.mdc** → Add a "Resources for Previews" bullet with `.process("Resources")`.
+- **dependency-injection.mdc** → Add a `Mocks`/`PreviewContainer` recommendation and mention `PreviewDeps`.
+- **naming.mdc** → Add preview file naming guidance (co-located vs. `Previews/` subgroup).
 

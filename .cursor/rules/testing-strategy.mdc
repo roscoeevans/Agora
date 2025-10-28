@@ -1,0 +1,620 @@
+---
+description: Pragmatic testing strategy for Agora (Swift 6.2, iOS 26, SPM-first). Defines scopes, placement, naming, Swift Testing usage, fixtures, and doubles—without snapshots or heavy CI gates.
+alwaysApply: false
+tags: [ios, swift, testing, swift-testing, spm, architecture]
+---
+
+## Agora iOS Testing Strategy (Swift 6.2 • iOS 26)
+
+### Overview
+
+This rule defines the testing strategy for the Agora iOS app, focusing on practical, maintainable tests using Swift Testing. It covers test types, placement, fixture patterns, and doubles—keeping tests lightweight and focused on business logic and boundary seams.
+
+### Philosophy
+
+**Core principles:**
+- **Ship > perfect.** Cover the most important business logic and boundary seams first
+- **SPM-first.** Tests live with the code by default; cross-module tests at top-level
+- **Swift Testing everywhere** (XCUITest only for minimal UI smoke, if/when needed)
+- **No snapshots** (defer until post-MVP)
+- **No flaky tolerance:** fix or delete immediately; keep suite green and small
+
+### Test Types & Placement
+
+#### Unit Test (Default)
+
+**Definition:** Tests a single type or tiny collaboration; all externals replaced with Fake/Stub/Mock
+
+**Where:** `Packages/<Module>/Tests/<Module>Tests/`
+
+**Imports:** Module under test only (+ TestSupport)
+
+**Example:**
+```swift
+import Testing
+@testable import Networking
+
+@Suite struct NetworkingClientTests {
+    @Test
+    func sends_request_with_correct_url() async throws {
+        let client = NetworkingClientFake(expectedURL: "https://api.agora.com/posts")
+        let result = try await client.send(HTTPRequest(url: "https://api.agora.com/posts"))
+        #expect(result != nil)
+    }
+}
+```
+
+#### Integration Test (Module-Local)
+
+**Definition:** Tests multiple **concrete** types within the **same module** (e.g., client + mappers)
+
+**Where:** Same module test target (`Packages/<Module>/Tests/<Module>Tests/`)
+
+**Imports:** Module under test only (+ TestSupport)
+
+**Example:**
+```swift
+import Testing
+@testable import Networking
+
+@Suite struct NetworkingIntegrationTests {
+    @Test
+    func fetch_and_map_posts() async throws {
+        let client = NetworkingClientLive()
+        let response = try await client.fetchPosts()
+        // Test that raw API response is correctly mapped to domain models
+        #expect(response.isEmpty == false)
+    }
+}
+```
+
+#### Cross-Module Integration (Optional)
+
+**Definition:** Exercises multiple internal modules together (e.g., ForYouView with real DI but fake network)
+
+**Where:** Top-level `Tests/AgoraIntegrationTests/`
+
+**Imports:** 2+ internal modules
+
+**Note:** No image snapshots; assert on states, strings, or route transitions
+
+**Example:**
+```swift
+import Testing
+@testable import HomeForYou
+@testable import Networking
+import AppFoundation
+
+@Test @MainActor
+func forYou_renders_with_fake_feed() async throws {
+    let deps = Dependencies(
+        networking: NetworkingClientFake(),
+        analytics: AnalyticsClientSpy(),
+        auth: AuthSessionFake(user: .fixture(id: "u1")),
+        clock: TestClock()
+    )
+    
+    let view = ForYouView().environment(\.deps, deps)
+    // Assert on simple text presence or state transitions (no snapshots)
+}
+```
+
+#### UI/E2E Test (Optional, Post-MVP)
+
+**Definition:** Minimal "app launches and happy path works" checks via XCUITest
+
+**Where:** Top-level `Tests/AgoraUITests/` or `AgoraUITests/`
+
+**Scope:** 1–3 happy-path journeys only
+
+**Example:**
+```swift
+import XCTest
+
+final class SmokeTests: XCTestCase {
+    func test_app_launches() throws {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.buttons["Sign In"].exists)
+    }
+}
+```
+
+### Decision Tree: Where Should This Test Go?
+
+**Rule of thumb:**
+- **One internal module imported?** → Keep with that module's tests
+- **2+ internal modules imported?** → Put in top-level `Tests/`
+- **Needs `Environment(\.deps)` with app-level wiring?** → Put in top-level `Tests/`
+
+### Swift Testing Usage
+
+Use Swift Testing (`@Test`, `#expect`, `@Suite`) for all unit and integration tests.
+
+#### Basic Structure
+
+```swift
+import Testing
+@testable import YourModule
+
+@Suite struct YourServiceTests {
+    @Test
+    func loads_first_page_success() async throws {
+        let service = YourServiceFake(pages: [[.fixture()]])
+        let posts = try await service.page()
+        #expect(posts.isEmpty == false)
+    }
+    
+    @Test
+    func handles_error_gracefully() async throws {
+        let service = YourServiceFake(error: .networkFailure)
+        await #expect(throws: NetworkError.networkFailure) {
+            try await service.page()
+        }
+    }
+}
+```
+
+#### Async Testing
+
+**Prefer async tests:**
+```swift
+@Test
+func fetch_data_async() async throws {
+    let result = try await service.fetch()
+    #expect(result != nil)
+}
+```
+
+**Avoid sleeps except to validate cancellation:**
+```swift
+@Test
+func respects_cancellation() async throws {
+    let service = LongRunningService()
+    let task = Task {
+        try await service.process()
+    }
+    
+    task.cancel()
+    
+    await #expect(throws: CancellationError.self) {
+        try await task.value
+    }
+}
+```
+
+#### Suite Organization
+
+**Structure by subject:**
+```swift
+@Suite struct FeedServiceTests {
+    @Test func loads_first_page_success() async throws { /* ... */ }
+    @Test func handles_empty_feed() async throws { /* ... */ }
+    @Test func cancels_previous_request_on_retry() async throws { /* ... */ }
+}
+
+@Suite struct FeedMapperTests {
+    @Test func maps_generated_to_domain() async throws { /* ... */ }
+    @Test func handles_missing_fields() async throws { /* ... */ }
+}
+```
+
+#### Shared Assertion Helpers
+
+**Place in `Shared/TestSupport`:**
+```swift
+// Shared/TestSupport/Sources/TestSupport/Assertions.swift
+import Testing
+
+public func assertEqualUnordered<T: Equatable>(
+    _ lhs: [T],
+    _ rhs: [T],
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    #expect(lhs.count == rhs.count, "Counts differ: \(lhs.count) vs \(rhs.count)")
+    #expect(Set(lhs) == Set(rhs), "Sets differ")
+}
+```
+
+### Fixtures & Preview Data
+
+#### Per-Module Fixtures
+
+**Pattern:** Lightweight `.fixture()` extensions on domain types in each module's test target
+
+```swift
+// Packages/Kits/Networking/Tests/NetworkingTests/Fixtures.swift
+import Testing
+import AppFoundation  // For domain types
+
+extension Post {
+    static func fixture(
+        id: Post.ID = "p1",
+        author: User.ID = "u1",
+        text: String = "hello"
+    ) -> Post {
+        .init(id: id, author: author, text: text)
+    }
+}
+
+extension User {
+    static func fixture(
+        id: User.ID = "u1",
+        username: String = "test_user",
+        displayName: String = "Test User"
+    ) -> User {
+        .init(id: id, username: username, displayName: displayName)
+    }
+}
+```
+
+#### Builders (Minimal Use)
+
+**Only for complex graphs; keep tiny:**
+```swift
+struct PostBuilder {
+    private var author: User.ID = "u1"
+    private var text: String = "hello"
+    
+    func withAuthor(_ author: User.ID) -> Self {
+        var builder = self
+        builder.author = author
+        return builder
+    }
+    
+    func build() -> Post {
+        .init(id: "p1", author: author, text: text)
+    }
+}
+
+// Usage
+let post = PostBuilder()
+    .withAuthor("rocky")
+    .withText("Human-only social ✨")
+    .build()
+```
+
+#### Preview Data
+
+**Keep with the module; never perform real I/O:**
+```swift
+// Features/HomeForYou/Sources/HomeForYou/PreviewModels.swift
+public enum PreviewModels {
+    public static let samplePost = Post.fixture(
+        author: "rocky",
+        text: "Human-only social ✨"
+    )
+    
+    public static let emptyFeed: [Post] = []
+    public static let loadingState = Phase<[Post]>.loading
+}
+```
+
+#### Shared Fixtures (Cross-Cutting)
+
+**Elevate to `Shared/TestSupport` when truly shared:**
+```swift
+// Shared/TestSupport/Sources/TestSupport/Fixtures.swift
+public extension User {
+    static func fixture(id: User.ID = "u1") -> User {
+        .init(id: id, username: "test_user", displayName: "Test User")
+    }
+}
+```
+
+### Test Doubles
+
+Use the correct type based on what you need to test:
+
+#### Fake (Preferred)
+
+**Definition:** In-memory, realistic behavior; handles simple state and latency
+
+**When to use:** Most test scenarios—replaces real implementation with deterministic behavior
+
+**Example:**
+```swift
+struct NetworkingClientFake: NetworkingClient {
+    private var responses: [URL: Data] = [:]
+    
+    init(responses: [URL: Data] = [:]) {
+        self.responses = responses
+    }
+    
+    func send<T: Decodable>(_ request: HTTPRequest) async throws -> T {
+        guard let data = responses[request.url] else {
+            throw NetworkError.notFound
+        }
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+}
+```
+
+#### Stub
+
+**Definition:** Returns fixed values; good for Clock, UUIDGen, etc.
+
+**When to use:** Simple dependency replacements with no state needed
+
+**Example:**
+```swift
+struct ClockStub: Clock {
+    let now: Date
+    
+    func now() -> Date { now }
+}
+```
+
+#### Mock / Spy
+
+**Definition:** Verifies interactions; counts/arguments when behavior depends on events
+
+**When to use:** Analytics tracking, event verification, interaction testing
+
+**Example:**
+```swift
+struct AnalyticsClientSpy: AnalyticsClient {
+    private(set) var trackedEvents: [String] = []
+    
+    func track(_ event: String, _ properties: [String: Any]) {
+        trackedEvents.append(event)
+    }
+}
+
+// Usage
+var analytics = AnalyticsClientSpy()
+let viewModel = ComposeViewModel(analytics: analytics)
+await viewModel.didTapPost()
+#expect(analytics.trackedEvents.contains("post_published"))
+```
+
+#### Naming
+
+Follow conventions from **naming.mdc:**
+- `Fake{Type}` - In-memory, realistic behavior
+- `{Type}Stub` - Fixed-value returns
+- `{Type}Mock` - Behavior verification
+- `{Type}Spy` - Interaction tracking
+
+### Analytics Verification
+
+**Simple and modern approach:**
+- Use a Spy to record events
+- Assert presence (and optionally minimal ordering), not every field
+- Do not block tests on network/flush
+
+**Example:**
+```swift
+struct AnalyticsClientSpy: AnalyticsClient {
+    private(set) var events: [String] = []
+    
+    mutating func track(_ name: String, _ props: [String: Any]) {
+        events.append(name)
+    }
+}
+
+@Test
+func tracks_post_publication() async throws {
+    var analytics = AnalyticsClientSpy()
+    let vm = ComposeViewModel(analytics: analytics)
+    
+    await vm.didTapPost()
+    
+    #expect(analytics.events.contains("post_published"))
+}
+```
+
+### Coverage & Policy
+
+**Philosophy:**
+- No hard coverage gates pre-MVP
+- Track informally
+- Prioritize Kits (business logic) and mappers first
+- View models next
+- Pure SwiftUI views: cover with small state assertions (no snapshots yet)
+
+**Prioritization order:**
+1. **Business logic in Kits** - Highest value
+2. **Mappers** - Transformation logic
+3. **View models** - State management
+4. **Boundary seams** - Protocol implementations
+5. **Pure SwiftUI views** - Minimal state assertions
+
+### Project Layout
+
+**SPM-aligned structure:**
+
+```
+Agora/
+├── Packages/
+│   ├── Kits/
+│   │   ├── Networking/
+│   │   │   ├── Sources/Networking/…
+│   │   │   └── Tests/NetworkingTests/
+│   │   │       ├── NetworkingTests.swift
+│   │   │       ├── Fixtures.swift
+│   │   │       └── NetworkingClientFake.swift
+│   │   └── Analytics/
+│   │       ├── Sources/Analytics/…
+│   │       └── Tests/AnalyticsTests/…
+│   ├── Features/
+│   │   ├── HomeForYou/
+│   │   │   ├── Sources/HomeForYou/…
+│   │   │   └── Tests/HomeForYouTests/…
+│   │   └── Compose/
+│   │       ├── Sources/Compose/…
+│   │       └── Tests/ComposeTests/…
+│   └── Shared/
+│       ├── AppFoundation/ (no tests unless needed)
+│       └── TestSupport/   (reusable test utilities)
+│           └── Tests/TestSupportTests/
+├── Tests/
+│   ├── AgoraIntegrationTests/   # Cross-module integration (no snapshots)
+│   └── AgoraUITests/            # Optional, minimal XCUITests post-MVP
+└── Package.swift
+```
+
+**Top-level `Tests/` imports multiple internal modules and wires `Environment(\.deps)` as needed.**
+
+### Minimal DI in Tests
+
+#### Initializer Injection (Preferred)
+
+**Use for unit tests:**
+```swift
+@Test
+func loads_feed_successfully() async throws {
+    let fakeService = FeedServiceFake(pages: [[.fixture()]])
+    let viewModel = FeedViewModel(feedService: fakeService)
+    
+    await viewModel.load()
+    
+    #expect(viewModel.phase.isSuccess)
+}
+```
+
+#### Environment Override (Integration Only)
+
+**Use only in integration/UI smoke tests or when testing SwiftUI Views:**
+
+```swift
+@Test @MainActor
+func forYou_renders_with_fake_feed() async throws {
+    let deps = Dependencies(
+        networking: NetworkingClientFake(),
+        analytics: AnalyticsClientSpy(),
+        auth: AuthSessionFake(user: .fixture(id: "u1")),
+        clock: TestClock()
+    )
+    
+    let view = ForYouView().environment(\.deps, deps)
+    // Assert on state/strings (no snapshots)
+}
+```
+
+### Flaky Tests Policy
+
+**We don't quarantine.** If a test is flaky:
+1. **Fix it immediately** - root cause analysis
+2. **Delete it** - if fix isn't immediately obvious
+3. **Keep suite green and small**
+
+**Common root causes:**
+- Sleeps without deterministic timing
+- Shared mutable state across tests
+- Real time/network usage (use TestClock/Fakes)
+- Race conditions (improve synchronization)
+
+**Examples:**
+```swift
+// ❌ BAD - Flaky
+try await Task.sleep(nanoseconds: 100_000_000)
+
+// ✅ GOOD - Deterministic
+try await clock.sleep(until: clock.now + Duration(secondsComponent: 1))
+```
+
+### Naming & Conventions
+
+#### Test Files
+
+- **Unit tests:** `{Type}Tests.swift` (e.g., `FeedServiceTests.swift`)
+- **Integration tests:** `{Type}IntegrationTests.swift` (e.g., `FeedIntegrationTests.swift`)
+
+#### Helpers
+
+- **Module-specific:** `{Module}Tests/Fixtures.swift`, `{Module}Tests/Fakes.swift`
+- **Shared:** `Shared/TestSupport/Sources/TestSupport/Assertions.swift`, `Shared/TestSupport/Sources/TestSupport/Fakes/*.swift`
+
+#### Test Methods
+
+**Pattern:** `test{MethodName}_{scenario}_{expectedBehavior}`
+
+```swift
+@Test
+func load_first_page_when_empty_returns_empty_array() async throws
+
+@Test  
+func create_post_with_invalid_data_throws_validation_error() async throws
+```
+
+### Async Service Mocking
+
+**Guidance:**
+- Fakes should respect cancellation and optionally simulate tiny latency (5–20ms) only where order matters
+- Otherwise, execute synchronously to keep tests fast
+
+```swift
+struct FeedServiceFake: FeedService {
+    private let pages: [[Post]]
+    
+    init(pages: [[Post]] = []) {
+        self.pages = pages
+    }
+    
+    func fetchPage() async throws -> [Post] {
+        // Execute synchronously (fast)
+        return pages.first ?? []
+    }
+}
+
+// When latency matters (rare):
+func fetchPage() async throws -> [Post] {
+    // Minimal latency only if testing ordering/race conditions
+    try await clock.sleep(until: clock.now + Duration(milliseconds: 10))
+    return pages.first ?? []
+}
+```
+
+### Optional: XCUITest (Post-MVP)
+
+**If/when needed, add 1–3 happy path tests:**
+
+1. App launches
+2. Auth flow succeeds (with fake backend if feasible)
+3. Compose → Post → Appears in feed (with deterministic stubs)
+
+**Keep them:**
+- Fast
+- Few (1–3 only)
+- Deterministic (use fakes/stubs)
+
+```swift
+import XCTest
+
+final class SmokeTests: XCTestCase {
+    func test_app_launches() throws {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.buttons["Sign In"].exists)
+    }
+    
+    func test_compose_flow() throws {
+        let app = XCUIApplication()
+        app.launch()
+        
+        // Only test that buttons exist and are tappable (no network calls)
+        XCTAssertTrue(app.buttons["Compose"].exists)
+        app.buttons["Compose"].tap()
+        XCTAssertTrue(app.buttons["Post"].exists)
+    }
+}
+```
+
+### Quick Reference
+
+| Type | Where | Imports | Scope |
+|------|-------|---------|-------|
+| Unit Test | `Packages/<Module>/Tests/` | Module under test + TestSupport | Single type |
+| Integration | `Packages/<Module>/Tests/` | Module under test + TestSupport | Multiple types in same module |
+| Cross-Module | `Tests/AgoraIntegrationTests/` | 2+ internal modules | Multiple modules |
+| UI/E2E | `Tests/AgoraUITests/` or `AgoraUITests/` | App-level wiring | Full app flow |
+
+### Related Rules
+
+For detailed information on related topics:
+- **Naming Conventions:** `naming.mdc` - Test double naming (Fake, Stub, Mock, Spy)
+- **Dependency Injection:** `dependency-injection.mdc` - DI patterns for testing
+- **Module Standards:** `module-standards.mdc` - Package structure and organization
+- **Previews:** `swiftui-previews.mdc` - Using `PreviewDeps` and preview fixtures

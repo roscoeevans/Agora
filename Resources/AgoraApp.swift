@@ -14,6 +14,7 @@ import Analytics
 import Engagement
 import PostDetail
 import SupabaseKit
+import SearchKit
 import Observation
 
 @main
@@ -72,6 +73,15 @@ struct AgoraApp: App {
         // Wire up comment composition service
         let commentCompositionService = CommentCompositionService()
         baseDeps = baseDeps.withCommentComposition(commentCompositionService)
+        
+        // Wire up user search service
+        let searchService = UserSearchServiceLive(
+            baseURL: AppConfig.supabaseURL,
+            authTokenProvider: { [auth = baseDeps.auth] in
+                try? await auth.currentAccessToken()
+            }
+        )
+        baseDeps = baseDeps.withUserSearch(searchService)
         
         self.deps = baseDeps
         

@@ -9,9 +9,16 @@ VALUES (
   true, -- Public bucket so avatar URLs work without auth
   5242880, -- 5MB limit
   ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/heic']
-);
+)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for avatars bucket
+
+-- Drop existing policies to allow re-running migration
+DROP POLICY IF EXISTS "Public avatar access" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
 
 -- 1. Anyone can view avatars (public bucket)
 CREATE POLICY "Public avatar access"

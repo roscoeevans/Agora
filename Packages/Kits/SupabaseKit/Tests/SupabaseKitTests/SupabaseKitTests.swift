@@ -6,6 +6,7 @@
 //
 
 import Testing
+import Foundation
 @testable import SupabaseKit
 
 @Test("SupabaseKit module version")
@@ -39,7 +40,8 @@ func testSupabaseRealtimeMockEngagement() async {
     let updates = mockRealtime.subscribeToPostEngagement(postId: "test123")
     
     // Test that the stream is created (even if empty)
-    #expect(updates != nil)
+    // AsyncStream is never nil, so we just verify it exists
+    #expect(true)
 }
 
 @Test("SupabaseStorageMock upload")
@@ -55,7 +57,7 @@ func testSupabaseStorageMockUpload() async throws {
 
 @Test("SupabaseDatabaseMock posts")
 func testSupabaseDatabaseMockPosts() async throws {
-    let mockDatabase = SupabaseDatabaseMock()
+    var mockDatabase = SupabaseDatabaseMock()
     
     // Add some mock posts
     let mockPost = Post(

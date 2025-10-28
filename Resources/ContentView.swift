@@ -20,8 +20,8 @@ import Authentication
 
 @available(iOS 26.0, *)
 struct ContentView: View {
-    // Persisted tab selection
-    @SceneStorage("nav.tab.selection") private var selectionRaw: String = AppTab.home.rawValue
+    // Tab selection - resets to home on every launch
+    @State private var selectionRaw: String = AppTab.home.rawValue
     private var selection: Binding<AppTab> {
         Binding(
             get: { AppTab(rawValue: selectionRaw) ?? .home },
@@ -29,13 +29,7 @@ struct ContentView: View {
         )
     }
     
-    // Persisted paths (serialized)
-    @SceneStorage("nav.path.home") private var homePathData: Data?
-    @SceneStorage("nav.path.search") private var searchPathData: Data?
-    @SceneStorage("nav.path.notifications") private var notificationsPathData: Data?
-    @SceneStorage("nav.path.profile") private var profilePathData: Data?
-    
-    // Live paths
+    // Navigation paths - reset on every launch
     @State private var homePath: [HomeRoute] = []
     @State private var searchPath: [SearchRoute] = []
     @State private var notificationsPath: [NotificationsRoute] = []
@@ -50,16 +44,6 @@ struct ContentView: View {
             .sheet(isPresented: $showingCompose, onDismiss: handleComposeDismiss) {
                 ComposeView()
             }
-            .task {
-                homePath = decode(homePathData) ?? []
-                searchPath = decode(searchPathData) ?? []
-                notificationsPath = decode(notificationsPathData) ?? []
-                profilePath = decode(profilePathData) ?? []
-            }
-            .onChange(of: homePath) { _, newValue in homePathData = encode(newValue) }
-            .onChange(of: searchPath) { _, newValue in searchPathData = encode(newValue) }
-            .onChange(of: notificationsPath) { _, newValue in notificationsPathData = encode(newValue) }
-            .onChange(of: profilePath) { _, newValue in profilePathData = encode(newValue) }
             .onOpenURL(perform: handleDeepLink)
     }
     
@@ -150,7 +134,6 @@ private struct HomeFlow: View {
     @State private var selectedFeed: HomeFeedType = .following
     @State private var showingFeedSettings = false
     @State private var showingCompose = false
-    @State private var showingDirectMessages = false
     
     // ========================================
     // HARDCODED FEED TOGGLE
@@ -189,7 +172,7 @@ private struct HomeFlow: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showingDirectMessages = true
+                        path.append(.directMessages)
                     } label: {
                         Image(systemName: "message.fill")
                     }
@@ -201,9 +184,6 @@ private struct HomeFlow: View {
             }
             .sheet(isPresented: $showingCompose) {
                 ComposeView()
-            }
-            .sheet(isPresented: $showingDirectMessages) {
-                MessagesFlow(path: .constant([]))
             }
             .environment(\.navigateToPost, NavigateToPost { postId in
                 Task { @MainActor in
@@ -229,6 +209,15 @@ private struct HomeFlow: View {
                     FullscreenVideoPlayer(videoUrl: videoUrl, bundleId: bundleId)
                 case .imageGallery(let urls, let initialIndex):
                     ImageGalleryView(imageUrls: urls, initialIndex: initialIndex)
+                case .directMessages:
+                    DirectMessagesView()
+                        .environment(\.navigateToConversation, NavigateToConversation { conversationId in
+                            Task { @MainActor in
+                                path.append(.conversation(id: conversationId))
+                            }
+                        })
+                case .conversation(let id):
+                    ConversationView(conversationId: id)
                 }
             }
         }
@@ -434,18 +423,11 @@ private struct FeedSettingsView: View {
     }
 }
 
-// MARK: - Helpers
-
-private func encode<T: Codable>(_ value: T) -> Data? {
-    try? JSONEncoder().encode(value)
-}
-
-private func decode<T: Codable>(_ data: Data?) -> T? {
-    guard let data else { return nil }
-    return try? JSONDecoder().decode(T.self, from: data)
-}
-
+#if DEBUG
+@available(iOS 26.0, *)
 #Preview("Default Tab (Home)") {
-    ContentView()
-        .environment(\.deps, .preview)
+    PreviewDeps.scoped {
+        ContentView()
+    }
 }
+#endif

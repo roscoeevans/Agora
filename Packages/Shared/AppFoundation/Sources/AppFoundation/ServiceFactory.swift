@@ -1,4 +1,6 @@
 import Foundation
+import SupabaseKit
+@preconcurrency import Supabase
 
 // MARK: - Service Factory Protocol
 
@@ -48,6 +50,16 @@ public protocol ServiceFactory: Sendable {
     /// - Returns: MessagingMediaProtocol implementation appropriate for current environment
     /// - Throws: ServiceFactoryError if service creation fails
     static func messagingMediaService() throws -> MessagingMediaProtocol
+    
+    /// Creates an image crop renderer service instance
+    /// - Returns: ImageCropRendering implementation appropriate for current environment
+    /// - Throws: ServiceFactoryError if service creation fails
+    static func imageCropRenderer() throws -> ImageCropRendering
+    
+    /// Creates an avatar upload service instance
+    /// - Returns: AvatarUploadService implementation appropriate for current environment
+    /// - Throws: ServiceFactoryError if service creation fails
+    static func avatarUploadService() throws -> AvatarUploadService
 }
 
 // MARK: - Forward declaration for Networking module types
@@ -281,6 +293,20 @@ public struct DefaultServiceFactory: ServiceFactory {
         return NoOpMessagingMediaService()
     }
     
+    public static func imageCropRenderer() throws -> ImageCropRendering {
+        // For now, return a no-op implementation
+        // The real implementation from Media kit will be provided via dependency injection
+        // at runtime when the Media module is available
+        print("[ServiceFactory] Creating image crop renderer service (no-op)")
+        return NoOpImageCropRenderer()
+    }
+    
+    public static func avatarUploadService() throws -> AvatarUploadService {
+        // Use real implementation from SupabaseKit
+        print("[ServiceFactory] Creating avatar upload service")
+        return try createProductionAvatarUploadService()
+    }
+    
     // MARK: - Production Service Creation
     
     private static func createProductionAuthService() throws -> AuthServiceProtocol {
@@ -313,6 +339,49 @@ public struct DefaultServiceFactory: ServiceFactory {
         // This would integrate with hCaptcha SDK
         // For now, we'll throw an error to indicate it's not implemented
         throw ServiceFactoryError.productionServiceNotImplemented("CaptchaService")
+    }
+    
+    private static func createProductionAvatarUploadService() throws -> AvatarUploadService {
+        // Create production avatar upload service using Supabase
+        print("[ServiceFactory] Creating Supabase avatar upload service")
+        
+        // Create Supabase client using configuration
+        do {
+            let client = SupabaseClient(
+                supabaseURL: AppConfig.supabaseURL,
+                supabaseKey: AppConfig.supabaseAnonKey
+            )
+            let liveService = AvatarUploadServiceLive(client: client)
+            // Return adapter that bridges protocols
+            return AvatarUploadServiceAdapter(liveService: liveService)
+        } catch {
+            throw ServiceFactoryError.initializationFailed("AvatarUploadService", error)
+        }
+    }
+}
+
+// MARK: - Protocol Adapter
+
+/// Adapter that bridges AvatarUploadServiceProtocol from SupabaseKit to AvatarUploadService from AppFoundation
+private struct AvatarUploadServiceAdapter: AvatarUploadService {
+    private let liveService: AvatarUploadServiceProtocol
+    
+    init(liveService: AvatarUploadServiceProtocol) {
+        self.liveService = liveService
+    }
+    
+    func uploadAvatar(_ data: Data, mime: String) async throws -> URL {
+        // Bridge to the live service, converting errors as needed
+        do {
+            return try await liveService.uploadAvatar(data, mime: mime)
+        } catch {
+            // Map SupabaseKit errors to AppFoundation errors
+            if let supabaseError = error as? AvatarUploadError {
+                throw supabaseError
+            } else {
+                throw AvatarUploadError.uploadFailed(error)
+            }
+        }
     }
 }
 
@@ -445,6 +514,14 @@ public struct DebugServiceFactory: ServiceFactory {
         return DebugServiceFactory().createMessagingMediaService()
     }
     
+    public static func imageCropRenderer() throws -> ImageCropRendering {
+        return DebugServiceFactory().createImageCropRenderer()
+    }
+    
+    public static func avatarUploadService() throws -> AvatarUploadService {
+        return DebugServiceFactory().createAvatarUploadService()
+    }
+    
     // MARK: - Debug Service Creation
     
     public func createAuthService() -> AuthServiceProtocol {
@@ -525,6 +602,38 @@ public struct DebugServiceFactory: ServiceFactory {
             return try DefaultServiceFactory.messagingMediaService()
         } catch {
             fatalError("[DebugServiceFactory] Failed to create messaging media service: \(error)")
+        }
+    }
+    
+    public func createImageCropRenderer() -> ImageCropRendering {
+        if configuration.forceUseMocks {
+            let mockService = MockImageCropRenderer()
+            mockService.processingDelay = 0.1
+            mockService.shouldSucceed = !configuration.shouldSimulateFailures
+            return mockService
+        } else {
+            // Use no-op implementation for debug builds when not forcing mocks
+            // Real implementation will be provided via dependency injection
+            return NoOpImageCropRenderer()
+        }
+    }
+    
+    public func createAvatarUploadService() -> AvatarUploadService {
+        if configuration.forceUseMocks {
+            let mockService = MockAvatarUploadService()
+            mockService.uploadDelay = 0.2
+            mockService.shouldSucceed = !configuration.shouldSimulateFailures
+            return mockService
+        } else {
+            // Use real implementation for debug builds when not forcing mocks
+            do {
+                return try DefaultServiceFactory.avatarUploadService()
+            } catch {
+                print("[DebugServiceFactory] Failed to create real avatar upload service, using mock: \(error)")
+                let mockService = MockAvatarUploadService()
+                mockService.shouldSucceed = !configuration.shouldSimulateFailures
+                return mockService
+            }
         }
     }
 }

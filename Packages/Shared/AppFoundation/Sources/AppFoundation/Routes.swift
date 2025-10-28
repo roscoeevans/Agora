@@ -19,6 +19,8 @@ public enum HomeRoute: Hashable, Codable {
     case editHistory(postId: String, currentText: String)
     case fullscreenVideo(bundleId: String, videoUrl: String)
     case imageGallery(urls: [String], initialIndex: Int)
+    case directMessages
+    case conversation(id: UUID)
 }
 
 public enum SearchRoute: Hashable, Codable {

@@ -1,6 +1,19 @@
 ---
-description: When needing to know where to place a new file, organize code into the correct package, understand the Packages/ directory structure, or determine which module (Feature/Kit/Shared/ThirdParty) should contain new functionality.
-alwaysApply: false
+description: Authoritative module placement & dependency contract for Agora iOS (SPM-first, iOS-only). Defines where code lives and how modules communicate.
+alwaysApply: true
+globs:
+  - "Packages/**"
+  - "Resources/**"
+  - "Tools/**"
+lint:
+  failOn:
+    - "forbidden-imports"
+    - "route-file-location"
+    - "designsystem-service-access"
+    - "feature-to-feature-dep"
+    - "models-usage"
+    - "platform-guards"
+    - "uikit-isolation"
 ---
 ## Agora iOS Project Structure
 
@@ -17,7 +30,7 @@ Agora/
 ├── AgoraUITests/              # Main app UI tests
 ├── database/                  # Supabase migrations and schema
 ├── docs/                      # Project documentation
-├── OpenAPI/                   # API specifications (see ios-configuration.mdc)
+├── OpenAPI/                   # API specifications (see configuration.mdc)
 ├── Packages/                  # Swift Package modules (see below)
 ├── Resources/                 # App resources and main app files
 ├── Scripts/                   # Legacy CI/test scripts (most replaced by agctl)
@@ -87,12 +100,16 @@ Kits/
 **Key Kit Guidelines:**
 - **SupabaseKit**: PostgREST/Realtime/Auth/Storage/Edge Functions for Supabase. Never host OpenAPI clients here.
 - **Networking**: OpenAPI client and non-Supabase HTTP/WS. Never import Supabase from here.
-- **DesignSystem**: UI components only - NO business logic dependencies
-  - **MUST NOT import:** SwiftData, SupabaseKit, or any business-logic Kit
-  - **Allowed imports:** SwiftUI, Combine (view concerns), AppFoundation (types/themes), TestSupport (tests only)
+- **DesignSystem**: UI components only (value-types + views)
+  - Allowed imports: SwiftUI, Foundation, CoreGraphics
+  - Conditional: UIKit under `#if os(iOS)` for haptics/rendering only
+  - May import AppFoundation value types (tokens, ID newtypes)
+  - **MUST NOT** access services or `@Environment(\.deps)`
+  - No business logic; no service classes/actors
 - **Engagement**: Business logic for post interactions - protocols defined in AppFoundation (`ServiceProtocols.swift`)
+- **Recommender**: Client wrapper for server-driven ranking only. No heuristic/scoring models.
 
-**Important:** Authentication services (Sign in with Apple, phone verification, session management) live in `AppFoundation`, not as a Kit. See "Why Auth is in AppFoundation" below.
+**Important:** Authentication services (Sign in with Apple, phone verification, session management) live in `AppFoundation`, not as a Kit. See "Why Authentication Lives in AppFoundation" below.
 
 #### Shared (`Packages/Shared/`)
 **When to use:** Creating cross-cutting concerns and utilities used everywhere
@@ -167,11 +184,14 @@ ThirdParty/
 - If available via SPM → Add to Package.swift dependencies
 - If needs custom wrapper → **ThirdParty** in `Packages/ThirdParty/`
 
-**Only create ThirdParty wrapper if:**
-- The SDK lacks SPM or needs binary vendoring
-- You need protocol abstraction to avoid leaking types
-- You must gate platform/features or inject config at init
-- If none apply, depend on the vendor package directly in the using Kit
+### ThirdParty Wrapping Policy
+
+**Wrap if:**
+- SDK has no SPM/binary vendoring support, OR
+- Vendor API needs protocol abstraction to avoid type leakage, OR
+- Requires platform gating or centralized config injection
+
+**Otherwise:** Depend on vendor directly **from the consuming Kit** (not from Features).
 
 #### "I'm creating a service that other modules need"
 - Define protocol in **AppFoundation** (`ServiceProtocols.swift`)
@@ -197,7 +217,7 @@ Every Swift Package must follow this structure:
 
 ```
 PackageName/
-├── Package.swift              # Package manifest (see ios-module-standards.mdc)
+├── Package.swift              # Package manifest (see module-standards.mdc)
 ├── README.md                  # Package documentation
 ├── Sources/
 │   └── PackageName/           # Source code (matches package name exactly)
@@ -293,28 +313,101 @@ import AppFoundation
 deps.engagement?.toggleLike(...)
 ```
 
-### Why Auth is in AppFoundation (Not a Kit)
+### DesignSystem Contract (Value-Only, Enforced)
 
-Authentication services live in `Shared/AppFoundation` rather than a separate `AuthKit` because:
+**Allowed imports:**
+- SwiftUI, Foundation, CoreGraphics
+- Conditionally: `UIKit` under `#if os(iOS)` for haptics/rendering only
+- AppFoundation **value types** (themes, tokens, lightweight `User.ID`, `Post.ID` types)
 
-1. **Foundation-Level Concern:** Auth is used by nearly every feature and kit
-2. **Tight Integration:** Auth services integrate deeply with environment config and app lifecycle
-3. **Avoid Circular Dependencies:** Many kits need auth services; having AuthKit would create dependency issues
-4. **Protocol First:** Service protocols belong in Shared/AppFoundation. Implementations live in Kits.
-   **Exception:** Auth implementations live in Shared/AppFoundation due to lifecycle coupling (bootstrap, session, environment).
-5. **Simplicity:** One place for all auth code is clearer than splitting UI (Feature) and Services (Kit)
+**MUST NOT:**
+- Access `Dependencies`, service protocols, or any runtime services
+- Import service kits (Engagement, Networking, SupabaseKit, Persistence)
+- Use `@Environment(\.deps)` or any dependency injection mechanism
+
+**Enforce:** `DesignSystem` exports only `struct`, `enum`, `View`, `ShapeStyle`, and `PreviewProvider`—no `actor`, `class` services.
+
+**Lint enforcement:**
+- `designsystem-service-access`: Fail if `import Dependencies` or `@Environment(\.deps)` appears in DesignSystem
+- Value-only types: Warn if DesignSystem defines `class` or `actor` types (prefer `struct`, `enum`)
+
+### Cross-Feature UI Reuse Rule
+
+**Decision test:**
+- If the component is **purely presentational** (no navigation, no data fetch, no feature coupling), place in **DesignSystem**.
+- If it needs **profile/search/messaging hooks**, or depends on domain models/services, create a **focused Kit** (e.g., `PeopleKit`) that exposes:
+  - `UserRowView` (UI)
+  - `PeopleService` protocols (optional)
+  - Domain mappers/adapters
+
+### Recommender Kit Contract
+
+**Scope:** Client wrapper for server-driven ranking.
+
+**Allowed:**
+- Signal collection (views, engagements, timestamps)
+- Lightweight local filtering (e.g., hide muted users)
+- Network calls to recommendation endpoints
+
+**Forbidden:**
+- Ranking heuristics or algorithms
+- Scoring models (server-side only)
+- Client-side optimization logic
+
+> All ranking/scoring logic stays on the server. Client only fetches recommendations.
+
+### Why Authentication Lives in AppFoundation (and Lifecycle Exceptions)
+
+**Authentication** (session bootstrap, SIWA, keychain) is implemented in **Shared/AppFoundation** because it:
+1) is required before UI composition,
+2) is consumed across nearly all modules, and
+3) would create dependency cycles if implemented elsewhere.
+
+**Lifecycle Exceptions (future, review required):**
+- Feature Flags
+- Remote Config
+
+**Admission checklist (ALL must be true):**
+- ≥80% of modules depend on it
+- Early bootstrap before first view
+- Protocol-first surface in `ServiceProtocols.swift`
+- Mocks in `Shared/TestSupport`
+- Kit implementation would create cycles
+
+> Everything else: protocols in AppFoundation, implementations in Kits.
+
+**Naming Rule:**
+- Use `Authentication` (NOT `Auth`) to avoid collision with Supabase Swift `Auth` target.
+- Always import as `import Authentication` when using authentication components.
 
 **Auth Architecture:**
-- **Feature:** `Features/Authentication/` - UI/UX and app-level state management (exports as `Authentication` to avoid Supabase conflict)
+- **Feature:** `Features/Authentication/` - UI/UX and app-level state management
 - **Services:** `Shared/AppFoundation/` - Service protocols, implementations, session management
 
-**Important:** The Authentication feature package exports its product as `Authentication` (not `Auth`) to avoid naming conflicts with the Supabase Swift package, which also exports an `Auth` target. Always import as `import Authentication` when using the authentication UI components.
+### Models & Mapping Policy
 
-**Import Style Example:**
-```swift
-import Authentication
-// Use Authentication components
-```
+**Location hierarchy:**
+- Domain models → `Shared/AppFoundation/Domain` (User, Post, Comment, IDs, enums)
+- Generated API types → `Kits/Networking/Generated` (OpenAPI/Supabase responses)
+- Mappers → `Kits/Networking/Mappers` (Generated → Domain)
+
+**Rule:** Features/Kits consume **domain** models only. Never import `Networking.Generated` outside the Networking Kit.
+
+**Lint enforcement:**
+- `models-usage`: Fail if non-Networking targets import `Networking.Generated`
+
+### Routing Rules (AppFoundation)
+
+**File location:** `Shared/AppFoundation/Routes.swift`
+
+**Structure:**
+- One `enum` per tab: `FeedRoute`, `DMRoute`, `ProfileRoute`, `SearchRoute`, `ComposeRoute`
+- **Payloads:** Must be stable identifiers or small value types (e.g., `Post.ID`, `User.ID`), no `View` or closures
+- Provide convenience factories for deep links
+
+**Lint enforcement:**
+- `route-file-location`: Fail if any `enum .*Route` defined outside `Shared/AppFoundation/Routes.swift`
+- Route payload check: Fail if any route payload type contains `some View` or `View`
 
 ### Why Navigation is in AppFoundation (Not a Kit)
 
@@ -368,7 +461,7 @@ Resources/
 ├── Info.plist                  # App configuration
 ├── Agora.entitlements          # App entitlements (Sign in with Apple)
 ├── Localizable.strings         # App-level localized strings
-└── Configs/                    # Environment plists (see ios-configuration.mdc)
+└── Configs/                    # Environment plists (see configuration.mdc)
 ```
 
 ### Quick Reference: Common Tasks
@@ -389,46 +482,77 @@ Resources/
 | Build automation tool | `Tools/agctl/` | `agctl --help` |
 | Database migration | `database/migrations/{number}_{name}.sql` | - |
 
-### Test Placement Strategy
+### Test Structure
 
-**Test Routing Table:**
-- **Per-package unit tests:** `Packages/*/Tests/` (live inside each package)
+**Lanes (carve now to prevent drift):**
+- **Per-package unit tests:** `Packages/*/Tests/*` (package:Tests target)
 - **Cross-module snapshot/UI tests:** `Tests/` (top-level)
 - **Legacy app-target tests:** `AgoraTests/`, `AgoraUITests/` (goal: migrate or keep minimal)
-- **New tests default:** Swift Testing; XCTest only where UI testing requires
-- **Snapshot baselines:** Live inside each Feature/Kit test target, but cross-feature snapshots belong in top-level `Tests/`
 
-### Enforceability: Machine-Checkable Rules
+**Framework:**
+- Default: Swift Testing
+- XCTest only for UI tests
 
-**Forbidden Imports Matrix:**
-```
-# Allowed imports
-Feature → {Kit, Shared}
-Kit     → {Kit, Shared}
-Shared  → {}
-ThirdParty → {}
+**Naming:**
+- `{Type}Tests.swift` (unit tests)
+- `{Type}SnapshotTests.swift` (visual regression)
 
-# Forbidden
-Feature → Feature
-DesignSystem → {Engagement, Networking, SupabaseKit, Persistence}
-Kit → Feature
-```
+**Snapshots:**
+- Prefer per-package snapshots
+- Cross-feature snapshots at top-level `Tests/`
 
-**Validation Checks (agctl validate modules):**
+### Forbidden Imports (Regex Enforced)
+
+**Allowed imports:**
+- Feature → {Kit, Shared}
+- Kit → {Kit, Shared}
+- Shared → {external deps only}
+- ThirdParty → {}
+
+**Forbidden (lints enabled):**
+- `forbidden-imports`: Features importing Features
+  - Regex: `^import\s+(Features\/.+)$` → fail
+- `designsystem-service-access`: DesignSystem importing services
+  - Regex: `^@Environment\(\.deps\)` or `^import\s+(Engagement|Networking|SupabaseKit|Persistence)$` → fail
+- `feature-to-feature-dep`: Feature-to-Feature dependencies
+  - Regex: `^import\s+(Features\/.+)$` → fail (enforce protocol-based communication)
+- `models-usage`: Non-Networking importing Generated
+  - Regex: `^import\s+Networking.*Generated$` → fail (use domain models)
+- `route-file-location`: Route enums outside Routes.swift
+  - Regex: `enum .*Route` outside `Shared/AppFoundation/Routes.swift` → fail
+
+**Additional validation checks:**
 - Bundle.resource presence for packages that ship UI
 - Target graph check: no cycles; Features depend only on Kits/Shared; Kits never depend on Features
 - Name checkers: {Service,Client}{Live,Mock}, {Type}+{Purpose}.swift extensions
-- Routes location check: Routes.swift only under Shared/AppFoundation
-- Auth exception: allow AppFoundation to contain Auth*Live.swift; block other *ServiceLive.swift there
+- Naming collisions: Warn if new target name collides with {Auth, Core, Foundation, UIKit, SwiftUI, Networking, Storage}
+- Platform guards: Warn if UIKit imported without `#if os(iOS)` in non-iOS-only packages
 - No global singletons—all service access via @Environment(\.deps) or DI initializer
 - Service protocols defined in AppFoundation (`ServiceProtocols.swift`) with explicit path reference
+
+### Platform & UIKit Usage (iOS-only)
+
+**Guards:**
+- The app targets **iOS only**. Do **not** introduce Catalyst/tvOS/watchOS targets.
+- All UIKit usage must be guarded with `#if os(iOS)` or `#if canImport(UIKit)`
+- Non-iOS fallback in DesignSystem must be value-only (no services); prefer CoreGraphics
+
+**UIKit Isolation Rule:**
+- Any UIKit usage must live in `Packages/Kits/UIKitBridge/` and be exposed as SwiftUI-native bridges.
+- DesignSystem may call UIKit only behind `#if os(iOS)` and **never** expose UIKit types in public APIs.
+- SwiftUI is the primary framework; UIKit bridges are only for system-required UIs, rich editing, or specialized input.
+- Never import UIKit outside of UIKitBridge package.
+
+**Lint enforcement:**
+- `platform-guards`: Warn if UIKit imported without `#if os(iOS)` in non-iOS-only packages
+- `uikit-isolation`: Fail if `import UIKit` appears outside `Packages/Kits/UIKitBridge/`
 
 ### Related Rules
 
 For detailed information on specific topics:
-- **Naming Conventions:** `ios-naming.mdc` - Comprehensive naming guidelines for types, variables, functions, and component types
-- **Module standards:** `ios-module-standards.mdc` - How to create quality packages
-- **Configuration:** `ios-configuration.mdc` - Build configs, environments, OpenAPI
-- **Navigation:** `ios-navigation.mdc` - Navigation patterns and deep links
-- **Dependency Injection:** `ios-di-injection.mdc` - DI patterns and scopes
+- **Naming Conventions:** `naming.mdc` - Comprehensive naming guidelines for types, variables, functions, and component types
+- **Module standards:** `module-standards.mdc` - How to create quality packages
+- **Configuration:** `configuration.mdc` - Build configs, environments, OpenAPI
+- **Navigation:** `navigation.mdc` - Navigation patterns and deep links
+- **Dependency Injection:** `dependency-injection.mdc` - DI patterns and scopes
 - **Concurrency:** `swift-concurrency.mdc` - Async/await and actors

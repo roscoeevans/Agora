@@ -85,6 +85,44 @@ public final class StubAgoraClient: AgoraAPIClient {
                     RecommendationReason(signal: "relation", weight: 0.08)
                 ],
                 explore: false
+            ),
+            Post(
+                id: "post-4",
+                authorId: "user-101",
+                authorDisplayHandle: "swift.ui.master",
+                text: """
+                Really loving SwiftUI's latest updates! The declarative syntax makes building complex UIs so much more enjoyable.
+                
+                Can't wait to see what's next! 🎨✨
+                """,
+                likeCount: 89,
+                repostCount: 12,
+                replyCount: 15,
+                createdAt: Date().addingTimeInterval(-14400),
+                authorDisplayName: "Swift UI Master", score: 0.91,
+                reasons: [
+                    RecommendationReason(signal: "quality", weight: 0.50),
+                    RecommendationReason(signal: "engagement", weight: 0.28),
+                    RecommendationReason(signal: "relation", weight: 0.13)
+                ],
+                explore: false
+            ),
+            Post(
+                id: "post-5",
+                authorId: "user-202",
+                authorDisplayHandle: "minimalist",
+                text: "Less is more. ✨",
+                likeCount: 234,
+                repostCount: 45,
+                replyCount: 67,
+                createdAt: Date().addingTimeInterval(-18000),
+                score: 0.88,
+                reasons: [
+                    RecommendationReason(signal: "engagement", weight: 0.55),
+                    RecommendationReason(signal: "quality", weight: 0.25),
+                    RecommendationReason(signal: "fresh", weight: 0.08)
+                ],
+                explore: true
             )
         ]
         

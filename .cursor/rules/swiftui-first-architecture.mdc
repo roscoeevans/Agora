@@ -215,6 +215,69 @@ public struct DesignSystemBridge: Sendable {
 - ✅ `@MainActor` for UI-related static properties
 - ✅ Graceful fallback for non-UIKit platforms
 
+#### 3. Authentication Bridge Pattern
+
+**✅ IMPLEMENTED PATTERN: AuthBridge**
+
+```swift
+import SwiftUI
+import AuthenticationServices
+
+#if canImport(UIKit)
+import UIKit
+
+/// Bridge for authentication-related UIKit functionality
+@available(iOS 26.0, *)
+public struct AuthBridge: Sendable {
+    @MainActor
+    public static let shared = AuthBridge()
+    
+    private init() {}
+    
+    /// Get presentation anchor for ASAuthorizationController
+    @MainActor
+    public static func getPresentationAnchor() throws -> ASPresentationAnchor {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first else {
+            throw AuthBridgeError.noWindowAvailable
+        }
+        return window
+    }
+}
+
+public enum AuthBridgeError: Error, LocalizedError {
+    case noWindowAvailable
+    
+    public var errorDescription: String? {
+        "No window available for authentication presentation"
+    }
+}
+#endif
+```
+
+**Usage in Authentication Service:**
+```swift
+import UIKitBridge
+import AuthenticationServices
+
+extension MyAuthService: ASAuthorizationControllerPresentationContextProviding {
+    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        do {
+            return try AuthBridge.getPresentationAnchor()
+        } catch {
+            Logger.auth.error("Failed to get presentation anchor: \(error)")
+            fatalError("No window available: \(error.localizedDescription)")
+        }
+    }
+}
+```
+
+**Key Implementation Notes:**
+- ✅ Required for `ASAuthorizationController` (Sign in with Apple)
+- ✅ Clean error handling with custom error types
+- ✅ No UIKit types in consumer code (AppFoundation)
+- ✅ Alternative: Consider `SignInWithAppleButton` for new SwiftUI-first flows
+
 ### Bridge Implementation Rules
 
 1. **SwiftUI wrapper owns configuration** via inputs/bindings; UIKit object stays private
@@ -270,9 +333,11 @@ struct MyView: View {
 
 #### Available Bridges
 
+- **AuthBridge**: Window presentation for ASAuthorizationController (Sign in with Apple)
 - **MediaPickerBridge**: Multi-image selection with PHPickerViewController
 - **ImagePickerBridge**: Single image selection with PHPickerViewController  
 - **DesignSystemBridge**: UIKit utilities (dark mode, system colors, etc.)
+- **HapticFeedbackBridge**: Haptic feedback utilities (UIImpactFeedbackGenerator wrapper)
 
 #### Creating New Bridges
 
@@ -466,21 +531,17 @@ UIImagePickerController() // This should be in UIKitBridge
 
 #### ✅ Completed
 - **UIKitBridge Package**: Centralized module at `Packages/Kits/UIKitBridge/`
+- **AuthBridge**: Window presentation for ASAuthorizationController (Sign in with Apple) ✨ NEW
 - **MediaPickerBridge**: Multi-image selection with PHPickerViewController
 - **ImagePickerBridge**: Single image selection with PHPickerViewController
 - **DesignSystemBridge**: Dark mode utilities and UIKit system integration
+- **HapticFeedbackBridge**: Haptic feedback utilities (UIImpactFeedbackGenerator wrapper)
 - **Package Dependencies**: AuthFeature and other modules properly depend on UIKitBridge
+- **AppFoundation**: Now imports UIKitBridge for auth window presentation (no direct UIKit import)
 
 #### 🚧 In Progress
 - **DesignSystem Migration**: Moving remaining UIKit usage (UIColor, UIImpactFeedbackGenerator, UIPasteboard) from DesignSystem to UIKitBridge
 - **Comprehensive Testing**: Adding full test coverage for all bridges
-
-#### 📋 Migration Roadmap
-1. **Phase 1**: ✅ Core UIKitBridge package and essential bridges
-2. **Phase 2**: 🚧 Complete DesignSystem UIKit migration
-3. **Phase 3**: 📋 Add remaining UIKit utilities (haptic feedback, pasteboard, etc.)
-4. **Phase 4**: 📋 Comprehensive testing and documentation
-5. **Phase 5**: 📋 CI enforcement of UIKit usage rules
 
 ### Enforcement Checklist
 

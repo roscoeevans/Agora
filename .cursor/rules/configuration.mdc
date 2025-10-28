@@ -585,6 +585,6 @@ xcodebuild -scheme "Agora Production" -configuration Release-Production
 ### Related Documentation
 
 - **Project Structure:** `project-structure.mdc` - Where files go
-- **Module Standards:** `ios-module-standards.mdc` - How to create packages
+- **Module Standards:** `module-standards.mdc` - How to create packages
 - **Environment Strategy:** See `STAGING_ENVIRONMENT_STATUS.md` for environment details
 - **OpenAPI Integration:** See `OpenAPI/README.md` for spec editing workflow

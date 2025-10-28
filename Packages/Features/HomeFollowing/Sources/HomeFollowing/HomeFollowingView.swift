@@ -34,8 +34,10 @@ public struct HomeFollowingView: View {
                             Spacer()
                             AgoraEmptyStateView.emptyFeed(action: onComposeAction)
                                 .padding(.horizontal, SpacingTokens.md)
+                                .transition(.liquidGlass)
                             Spacer()
                         }
+                        .transition(.opacity)
                     } else {
                         // Show scrollable feed with enhanced pagination skeleton integration
                         ScrollView {
@@ -69,6 +71,7 @@ public struct HomeFollowingView: View {
                                             shouldDisableShimmer: viewModel.shouldDisableShimmer,
                                             performanceMonitor: viewModel.performanceMonitor
                                         )
+                                        .padding(.horizontal, SpacingTokens.sm)
                                         .onAppear {
                                             // Enhanced pagination trigger with 5-row threshold
                                             if viewModel.shouldTriggerPagination(currentIndex: index) {
@@ -81,7 +84,7 @@ public struct HomeFollowingView: View {
                                         // Add divider between posts (except after the last post)
                                         if index < viewModel.skeletonAwarePosts.count - 1 {
                                             Divider()
-                                                .padding(.horizontal, SpacingTokens.md)
+                                                .padding(.horizontal, SpacingTokens.sm)
                                                 .padding(.vertical, SpacingTokens.xs)
                                         }
                                     }
@@ -100,7 +103,6 @@ public struct HomeFollowingView: View {
                                     .padding(.top, SpacingTokens.md)
                                 }
                             }
-                            .padding(.horizontal, SpacingTokens.md)
                             .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                             .skeletonContainerAccessibility(
                                 isLoading: viewModel.skeletonLoadingState.isLoading,
@@ -110,6 +112,8 @@ public struct HomeFollowingView: View {
                         }
                     }
                 }
+                .animation(.liquidGlass, value: viewModel.skeletonLoadingState)
+                .animation(.liquidGlass, value: viewModel.skeletonAwarePosts.isEmpty)
                 .refreshable {
                     await viewModel.refreshWithSkeletonSupport()
                 }
@@ -133,17 +137,17 @@ public struct HomeFollowingView: View {
                         ForEach(0..<SkeletonConfiguration.homeFollowing.placeholderCount, id: \.self) { index in
                             VStack(spacing: 0) {
                                 FeedPostSkeletonView()
+                                    .padding(.horizontal, SpacingTokens.sm)
                                 
                                 // Add divider between skeleton posts (except after the last post)
                                 if index < SkeletonConfiguration.homeFollowing.placeholderCount - 1 {
                                     Divider()
-                                        .padding(.horizontal, SpacingTokens.md)
+                                        .padding(.horizontal, SpacingTokens.sm)
                                         .padding(.vertical, SpacingTokens.xs)
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, SpacingTokens.md)
                 }
             }
         }

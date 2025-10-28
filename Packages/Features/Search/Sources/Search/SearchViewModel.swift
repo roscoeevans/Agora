@@ -7,28 +7,44 @@
 
 import Foundation
 import SwiftUI
-import Networking
+import AppFoundation
 
 @MainActor
 @Observable
 public class SearchViewModel {
-    public var searchResults: [SearchResult] = []
+    // MARK: - Published State
+    
+    public var searchResults: [SearchUser] = []
+    public var suggestedCreators: [SearchUser] = []
     public var isLoading = false
     public var error: Error?
+    public var hasMore = false
     
-    private let networking: any AgoraAPIClient
+    // MARK: - Private State
+    
+    private var currentCursor: String?
     private var searchTask: Task<Void, Never>?
+    private let userSearch: UserSearchProtocol?
     
-    public init(networking: any AgoraAPIClient) {
-        self.networking = networking
+    // MARK: - Initialization
+    
+    public init(userSearch: UserSearchProtocol?) {
+        self.userSearch = userSearch
     }
     
+    // MARK: - Public Methods
+    
+    /// Search for users with debouncing
     public func search(query: String) async {
         // Cancel previous search
         searchTask?.cancel()
         
+        // Clear results if query is empty
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             searchResults = []
+            currentCursor = nil
+            hasMore = false
+            await loadSuggestedCreators() // Show suggested creators when empty
             return
         }
         
@@ -37,76 +53,116 @@ public class SearchViewModel {
             defer { isLoading = false }
             
             do {
-                // Add a small delay to debounce rapid typing
-                try await Task.sleep(nanoseconds: 300_000_000) // 300ms
-                
-                // Check if task was cancelled
+                // Debounce rapid typing (300ms)
+                try await Task.sleep(for: .milliseconds(300))
                 try Task.checkCancellation()
                 
-                // TODO: Implement actual API call
-                // For now, simulate network delay and load placeholder data
-                try await Task.sleep(nanoseconds: 500_000_000) // 500ms
+                // Perform search
+                guard let service = userSearch else {
+                    throw SearchError.serviceUnavailable
+                }
                 
-                // Check if task was cancelled again
+                let results = try await service.search(
+                    q: query,
+                    limit: 20,
+                    after: nil // Reset cursor for new search
+                )
+                
                 try Task.checkCancellation()
                 
-                loadPlaceholderResults(for: query)
+                // Update UI
+                searchResults = results
+                currentCursor = results.last?.handle
+                hasMore = results.count >= 20
+                error = nil
+                
             } catch is CancellationError {
                 // Task was cancelled, do nothing
             } catch {
                 self.error = error
+                searchResults = []
             }
         }
         
         await searchTask?.value
     }
     
-    private func loadPlaceholderResults(for query: String) {
-        let lowercaseQuery = query.lowercased()
+    /// Load more results (pagination)
+    public func loadMore(query: String) async {
+        guard !isLoading, hasMore, let cursor = currentCursor else { return }
         
-        var results: [SearchResult] = []
+        isLoading = true
+        defer { isLoading = false }
         
-        // Mock user results
-        let users = [
-            ("Alice Johnson", "@alice", "iOS developer and coffee enthusiast"),
-            ("Bob Smith", "@bobsmith", "Designer creating beautiful experiences"),
-            ("Carol Davis", "@carol_d", "Writer sharing stories and insights"),
-            ("David Wilson", "@dwilson", "Photographer capturing life's moments")
-        ]
-        
-        for (name, handle, bio) in users {
-            if name.lowercased().contains(lowercaseQuery) || handle.lowercased().contains(lowercaseQuery) {
-                results.append(SearchResult(
-                    type: .user,
-                    title: name,
-                    subtitle: handle,
-                    content: bio
-                ))
+        do {
+            guard let service = userSearch else {
+                throw SearchError.serviceUnavailable
             }
+            
+            let moreResults = try await service.search(
+                q: query,
+                limit: 20,
+                after: cursor
+            )
+            
+            // Append results
+            searchResults.append(contentsOf: moreResults)
+            currentCursor = moreResults.last?.handle
+            hasMore = moreResults.count >= 20
+            error = nil
+            
+        } catch {
+            self.error = error
+            hasMore = false
         }
+    }
+    
+    /// Load suggested creators (for empty state)
+    public func loadSuggestedCreators() async {
+        guard suggestedCreators.isEmpty else { return }
         
-        // Mock post results
-        let posts = [
-            ("Alice Johnson", "Just shipped a new feature! Really excited about the user feedback so far."),
-            ("Bob Smith", "Working on some new design concepts. The creative process never stops!"),
-            ("Carol Davis", "Sometimes the best stories come from the most unexpected places."),
-            ("David Wilson", "Golden hour photography tips: timing is everything in capturing the perfect shot.")
-        ]
-        
-        for (author, content) in posts {
-            if content.lowercased().contains(lowercaseQuery) {
-                results.append(SearchResult(
-                    type: .post,
-                    title: author,
-                    subtitle: "Posted recently",
-                    content: content
-                ))
+        do {
+            guard let service = userSearch else {
+                throw SearchError.serviceUnavailable
             }
+            
+            let creators = try await service.suggestedCreators(limit: 10)
+            suggestedCreators = creators
+            
+        } catch {
+            // Silently fail for suggested creators
+            print("Failed to load suggested creators: \(error)")
         }
-        
-        searchResults = results
+    }
+    
+    /// Clear all results and state
+    public func clear() {
+        searchResults = []
+        suggestedCreators = []
+        currentCursor = nil
+        hasMore = false
+        error = nil
+        searchTask?.cancel()
     }
 }
+
+// MARK: - Search Errors
+
+enum SearchError: LocalizedError {
+    case serviceUnavailable
+    case invalidQuery
+    
+    var errorDescription: String? {
+        switch self {
+        case .serviceUnavailable:
+            return "Search service is not available"
+        case .invalidQuery:
+            return "Invalid search query"
+        }
+    }
+}
+
+// MARK: - Legacy SearchResult (for compatibility)
 
 public struct SearchResult: Identifiable, Codable {
     public let id: String

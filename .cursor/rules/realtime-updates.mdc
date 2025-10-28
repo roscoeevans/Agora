@@ -763,8 +763,8 @@ await observer.stopObserving()
 
 ### Related Rules & Documentation
 
-- `ios-di-injection.mdc` - How to inject dependencies properly
-- `ios-module-standards.mdc` - Package structure guidelines
+- `dependency-injection.mdc` - How to inject dependencies properly
+- `module-standards.mdc` - Package structure guidelines
 - `swift-concurrency.mdc` - Actor patterns and async/await
 - `FEED_ALGORITHM.md` - How engagement affects recommendations
 - `ENGAGEMENT_BUTTONS_PLAN.md` - Full engagement system design

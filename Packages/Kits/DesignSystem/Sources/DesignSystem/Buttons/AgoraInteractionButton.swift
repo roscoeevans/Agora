@@ -6,9 +6,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 /// A standardized interaction button component for the Agora design system.
 ///
@@ -52,6 +49,7 @@ public struct AgoraInteractionButton: View {
     let action: () -> Void
     
     @State private var isPressed = false
+    @State private var hapticTrigger = 0
     
     /// Creates a new AgoraInteractionButton.
     ///
@@ -77,11 +75,7 @@ public struct AgoraInteractionButton: View {
     
     public var body: some View {
         Button(action: {
-            // Add haptic feedback
-            #if canImport(UIKit)
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
-            #endif
+            hapticTrigger += 1
             action()
         }) {
             HStack(spacing: spacing) {
@@ -107,6 +101,7 @@ public struct AgoraInteractionButton: View {
         }, perform: {})
         .disabled(interactionState == .disabled)
         .opacity(interactionState == .disabled ? 0.6 : 1.0)
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityValue(accessibilityValue)
     }

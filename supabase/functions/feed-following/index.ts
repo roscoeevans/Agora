@@ -120,6 +120,7 @@ serve(async (req) => {
 
     // Build query for posts from users the current user follows
     // Chronological order (newest first)
+    // IMPORTANT: Use explicit foreign key name to disambiguate relationship
     let query = supabaseClient
       .from('posts')
       .select(`
@@ -137,7 +138,7 @@ serve(async (req) => {
         created_at,
         edited_at,
         self_destruct_at,
-        users!inner (
+        users!posts_author_id_fkey (
           handle,
           display_handle,
           display_name,
@@ -158,10 +159,12 @@ serve(async (req) => {
 
     if (fetchError) {
       console.error('Error fetching following feed:', fetchError)
+      console.error('Full error details:', JSON.stringify(fetchError))
       return new Response(
         JSON.stringify({ 
           error: 'Failed to fetch following feed',
-          message: fetchError.message 
+          message: fetchError.message,
+          details: fetchError
         }),
         {
           status: 500,
@@ -170,9 +173,25 @@ serve(async (req) => {
       )
     }
 
+    if (!posts || posts.length === 0) {
+      console.log('No posts found for following feed')
+      return new Response(
+        JSON.stringify({
+          posts: [],
+          nextCursor: null,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     // Check if there's a next page
     const hasMore = posts.length > limit
     const postsToReturn = hasMore ? posts.slice(0, limit) : posts
+    
+    console.log(`Fetched ${postsToReturn.length} posts for following feed`)
 
     // Determine next cursor (created_at of last post)
     const nextCursor = hasMore && postsToReturn.length > 0
@@ -182,46 +201,84 @@ serve(async (req) => {
     // Fetch viewer state (likes and reposts) for all posts
     const postIds = postsToReturn.map(p => p.id)
     
-    // Get likes by current user
-    const { data: likes } = await supabaseClient
-      .from('likes')
-      .select('post_id')
-      .eq('user_id', user.id)
-      .in('post_id', postIds)
+    let likedPostIds = new Set()
+    let repostedPostIds = new Set()
     
-    const likedPostIds = new Set(likes?.map(l => l.post_id) || [])
-    
-    // Get reposts by current user
-    const { data: reposts } = await supabaseClient
-      .from('reposts')
-      .select('post_id')
-      .eq('user_id', user.id)
-      .in('post_id', postIds)
-    
-    const repostedPostIds = new Set(reposts?.map(r => r.post_id) || [])
+    // Only query likes/reposts if there are posts to check
+    if (postIds.length > 0) {
+      // Get likes by current user
+      const { data: likes } = await supabaseClient
+        .from('likes')
+        .select('post_id')
+        .eq('user_id', user.id)
+        .in('post_id', postIds)
+      
+      likedPostIds = new Set(likes?.map(l => l.post_id) || [])
+      
+      // Get reposts by current user
+      const { data: reposts } = await supabaseClient
+        .from('reposts')
+        .select('post_id')
+        .eq('user_id', user.id)
+        .in('post_id', postIds)
+      
+      repostedPostIds = new Set(reposts?.map(r => r.post_id) || [])
+    }
     
     // Transform database rows to match OpenAPI schema (camelCase)
-    const transformedPosts = postsToReturn.map((post: any) => ({
-      id: post.id.toString(),
-      authorId: post.author_id,
-      authorDisplayHandle: post.users.display_handle,
-      authorDisplayName: post.users.display_name,
-      authorAvatarUrl: post.users.avatar_url,
-      text: post.text,
-      linkUrl: post.link_url,
-      mediaBundleId: post.media_bundle_id,
-      replyToPostId: post.reply_to_post_id?.toString(),
-      quotePostId: post.quote_post_id?.toString(),
-      likeCount: post.like_count || 0,
-      repostCount: post.repost_count || 0,
-      replyCount: post.reply_count || 0,
-      visibility: post.visibility,
-      createdAt: new Date(post.created_at).toISOString(),
-      editedAt: post.edited_at ? new Date(post.edited_at).toISOString() : null,
-      selfDestructAt: post.self_destruct_at ? new Date(post.self_destruct_at).toISOString() : null,
-      isLikedByViewer: likedPostIds.has(post.id.toString()),
-      isRepostedByViewer: repostedPostIds.has(post.id.toString()),
-    }))
+    let transformedPosts
+    try {
+      transformedPosts = postsToReturn.map((post: any, index: number) => {
+        try {
+          // Handle users field (can be object or array depending on PostgREST version)
+          const userInfo = Array.isArray(post.users) ? post.users[0] : post.users
+          
+          if (!userInfo) {
+            console.error(`Post ${index} missing users field:`, JSON.stringify(post))
+            throw new Error(`Post at index ${index} missing user information`)
+          }
+          
+          return {
+            id: post.id,
+            authorId: post.author_id,
+            authorDisplayHandle: userInfo.display_handle,
+            authorDisplayName: userInfo.display_name,
+            authorAvatarUrl: userInfo.avatar_url,
+            text: post.text,
+            linkUrl: post.link_url,
+            mediaBundleId: post.media_bundle_id,
+            replyToPostId: post.reply_to_post_id,
+            quotePostId: post.quote_post_id,
+            likeCount: post.like_count || 0,
+            repostCount: post.repost_count || 0,
+            replyCount: post.reply_count || 0,
+            visibility: post.visibility,
+            createdAt: new Date(post.created_at).toISOString(),
+            editedAt: post.edited_at ? new Date(post.edited_at).toISOString() : null,
+            selfDestructAt: post.self_destruct_at ? new Date(post.self_destruct_at).toISOString() : null,
+            isLikedByViewer: likedPostIds.has(post.id),
+            isRepostedByViewer: repostedPostIds.has(post.id),
+          }
+        } catch (postError) {
+          console.error(`Error transforming post at index ${index}:`, postError)
+          console.error(`Post data:`, JSON.stringify(post, null, 2))
+          throw postError
+        }
+      })
+    } catch (transformError) {
+      console.error('Error during post transformation:', transformError)
+      return new Response(
+        JSON.stringify({
+          error: 'Post transformation failed',
+          message: transformError.message,
+          details: transformError
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
 
     // Return feed response
     return new Response(

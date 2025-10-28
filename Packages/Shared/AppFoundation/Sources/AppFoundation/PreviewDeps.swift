@@ -17,6 +17,7 @@ public enum PreviewDeps {
     /// - Uses stub implementations (no network calls)
     /// - Has deterministic data for consistent previews
     /// - Avoids heavy initialization that slows down preview refresh
+    /// - Includes engagement service for buttons to appear
     ///
     /// Example:
     /// ```swift

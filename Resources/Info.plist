@@ -22,7 +22,11 @@
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
-		<string>AccentColor</string>
+		<string>LaunchScreenBackground</string>
+		<key>UIImageName</key>
+		<string>AppIcon</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<true/>
 	</dict>
 	<key>UNIVERSAL_LINKS_HOST</key>
 	<string>$(UNIVERSAL_LINKS_HOST)</string>

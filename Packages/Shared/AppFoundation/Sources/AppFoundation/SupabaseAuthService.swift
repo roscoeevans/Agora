@@ -2,9 +2,7 @@ import Foundation
 import Security
 import SupabaseKit
 import AuthenticationServices
-#if canImport(UIKit)
-import UIKit
-#endif
+import UIKitBridge
 
 /// Production authentication service using Supabase Auth
 @MainActor
@@ -222,14 +220,12 @@ extension SupabaseAuthService: ASAuthorizationControllerDelegate {
 
 extension SupabaseAuthService: ASAuthorizationControllerPresentationContextProviding {
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        #if canImport(UIKit)
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first else {
-            fatalError("No window available for Sign in with Apple presentation")
+        do {
+            return try AuthBridge.getPresentationAnchor()
+        } catch {
+            // Log error and provide fallback (this should never happen in normal operation)
+            Logger.auth.error("Failed to get presentation anchor: \(error)")
+            fatalError("No window available for Sign in with Apple presentation: \(error.localizedDescription)")
         }
-        return window
-        #else
-        fatalError("Sign in with Apple is only available on iOS")
-        #endif
     }
 }

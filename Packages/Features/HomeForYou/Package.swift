@@ -15,6 +15,7 @@ let package = Package(
         .package(path: "../../Kits/DesignSystem"),
         .package(path: "../../Kits/Networking"),
         .package(path: "../../Kits/Analytics"),
+        .package(path: "../../Kits/Engagement"),
         .package(path: "../../Shared/AppFoundation"),
         .package(path: "../../Shared/TestSupport"),
         .package(path: "../PostDetail")
@@ -26,6 +27,7 @@ let package = Package(
                 "DesignSystem",
                 "Networking", 
                 "Analytics",
+                "Engagement",
                 "AppFoundation",
                 "PostDetail"
             ],

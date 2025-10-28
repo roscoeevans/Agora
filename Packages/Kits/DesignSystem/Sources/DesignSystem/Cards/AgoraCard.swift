@@ -45,6 +45,7 @@ public struct AgoraCard<Content: View>: View {
     let content: () -> Content
     
     @State private var isPressed = false
+    @State private var hapticTrigger = 0
     
     /// Creates a new AgoraCard.
     ///
@@ -69,11 +70,7 @@ public struct AgoraCard<Content: View>: View {
                 cardContent
             case .tappable(let action):
                 Button(action: {
-                    // Add haptic feedback
-                    #if canImport(UIKit)
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                    impactFeedback.impactOccurred()
-                    #endif
+                    hapticTrigger += 1
                     action()
                 }) {
                     cardContent
@@ -81,6 +78,7 @@ public struct AgoraCard<Content: View>: View {
                 .buttonStyle(PlainButtonStyle())
                 .scaleEffect(isPressed ? 0.98 : 1.0)
                 .animation(AnimationTokens.easeInOut, value: isPressed)
+                .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
                 .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
                     isPressed = pressing
                 }, perform: {})

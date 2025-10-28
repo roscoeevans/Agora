@@ -371,7 +371,7 @@ Navigation infrastructure lives in `Shared/AppFoundation` because:
 - `DeepLinkRouter.swift` - URL parsing and route construction
 - `NavigationEnvironment.swift` - SwiftUI environment for coordination
 
-See `ios-navigation.mdc` for complete navigation patterns.
+See `navigation.mdc` for complete navigation patterns.
 
 ### Module Dependency Hierarchy
 
@@ -439,7 +439,7 @@ func testFetchPosts_whenSuccessful_returnsPostArray() async throws
 func testCreatePost_withInvalidData_throwsValidationError() async throws
 ```
 
-**Test doubles:** See **ios-naming.mdc** for complete naming conventions:
+**Test doubles:** See **naming.mdc** for complete naming conventions:
 - `Mock{Service}` - Behavior verification
 - `{Service}Fake` - Realistic test implementations
 - `Stub{Service}` - Canned responses
@@ -814,7 +814,7 @@ final class ComposeViewModel {
 
 ✅ **Use specific, descriptive names:** `StringValidation.swift`, `DateFormatting.swift`, `SessionManager.swift`
 
-See **ios-naming.mdc** for comprehensive naming conventions including when to use Service vs Repository vs Manager vs Helper.
+See **naming.mdc** for comprehensive naming conventions including when to use Service vs Repository vs Manager vs Helper.
 
 #### Dependency Issues
 
@@ -967,10 +967,10 @@ let client: NetworkingClient  // Protocol  ← GOOD!
 ### Related Rules
 
 For detailed information on related topics:
-- **Naming Conventions:** `ios-naming.mdc` - Comprehensive naming guidelines for types, variables, functions, and choosing between Service/Repository/Manager/Helper
+- **Naming Conventions:** `naming.mdc` - Comprehensive naming guidelines for types, variables, functions, and choosing between Service/Repository/Manager/Helper
 - **Project Structure:** `project-structure.mdc` - Where files go
-- **Configuration:** `ios-configuration.mdc` - Build configs and environments
-- **Navigation:** `ios-navigation.mdc` - Navigation patterns
-- **Dependency Injection:** `ios-di-injection.mdc` - DI patterns and scopes
+- **Configuration:** `configuration.mdc` - Build configs and environments
+- **Navigation:** `navigation.mdc` - Navigation patterns
+- **Dependency Injection:** `dependency-injection.mdc` - DI patterns and scopes
 - **Concurrency:** `swift-concurrency.mdc` - Async/await and actors
 - **Previews:** `swiftui-previews.mdc` - SwiftUI preview best practices

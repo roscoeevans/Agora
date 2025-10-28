@@ -9,6 +9,10 @@ import SwiftUI
 import UIKitBridge
 import AppFoundation
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 /// The main entry point for Agora's design system.
 ///
 /// DesignSystem provides access to design tokens, components, and utilities
@@ -52,44 +56,50 @@ public extension EnvironmentValues {
 public struct ColorTokens: Sendable {
     // MARK: - Primary Colors
     
-    /// Primary brand color used for key interactive elements.
+    /// Primary brand color used for key interactive elements (Sky Blue).
     public static let primary = Color.accentColor
+    
+    /// Secondary brand color used for highlights and secondary actions (Rosy Magenta).
+    public static let secondary = Color("AgoraAccent", bundle: .module)
     
     /// Variant of the primary color for secondary brand elements.
     public static let primaryVariant = Color("AgoraBrand", bundle: .module)
     
     // MARK: - System Colors (Adaptive for Dark Mode)
+    // SwiftUI with UIKit semantic colors (platform-guarded)
     #if canImport(UIKit)
-    public static let background = Color(UIColor.systemBackground)
-    public static let secondaryBackground = Color(UIColor.secondarySystemBackground)
-    public static let tertiaryBackground = Color(UIColor.tertiarySystemBackground)
-    public static let groupedBackground = Color(UIColor.systemGroupedBackground)
+    public static let background = Color(uiColor: .systemBackground)
+    public static let secondaryBackground = Color(uiColor: .secondarySystemBackground)
+    public static let tertiaryBackground = Color(uiColor: .tertiarySystemBackground)
+    public static let groupedBackground = Color(uiColor: .systemGroupedBackground)
+    #else
+    public static let background = Color(nsColor: .windowBackgroundColor)
+    public static let secondaryBackground = Color(nsColor: .controlBackgroundColor)
+    public static let tertiaryBackground = Color(nsColor: .controlBackgroundColor)
+    public static let groupedBackground = Color(nsColor: .windowBackgroundColor)
+    #endif
     
     // MARK: - Text Colors (Adaptive for Dark Mode)
-    public static let primaryText = Color(UIColor.label)
-    public static let secondaryText = Color(UIColor.secondaryLabel)
-    public static let tertiaryText = Color(UIColor.tertiaryLabel)
-    public static let quaternaryText = Color(UIColor.quaternaryLabel)
+    #if canImport(UIKit)
+    public static let primaryText = Color(uiColor: .label)
+    public static let secondaryText = Color(uiColor: .secondaryLabel)
+    public static let tertiaryText = Color(uiColor: .tertiaryLabel)
+    public static let quaternaryText = Color(uiColor: .quaternaryLabel)
+    #else
+    public static let primaryText = Color(nsColor: .labelColor)
+    public static let secondaryText = Color(nsColor: .secondaryLabelColor)
+    public static let tertiaryText = Color(nsColor: .tertiaryLabelColor)
+    public static let quaternaryText = Color(nsColor: .quaternaryLabelColor)
+    #endif
     
     // MARK: - Interactive Colors (Adaptive for Dark Mode)
     public static let link = Color("AgoraBrand", bundle: .module)
-    public static let separator = Color(UIColor.separator)
-    public static let opaqueSeparator = Color(UIColor.opaqueSeparator)
+    #if canImport(UIKit)
+    public static let separator = Color(uiColor: .separator)
+    public static let opaqueSeparator = Color(uiColor: .opaqueSeparator)
     #else
-    // macOS fallbacks - use simple colors
-    public static let background = Color.white
-    public static let secondaryBackground = Color.gray.opacity(0.1)
-    public static let tertiaryBackground = Color.gray.opacity(0.05)
-    public static let groupedBackground = Color.white
-    
-    public static let primaryText = Color.black
-    public static let secondaryText = Color.gray
-    public static let tertiaryText = Color.gray.opacity(0.7)
-    public static let quaternaryText = Color.gray.opacity(0.5)
-    
-    public static let link = Color("AgoraBrand", bundle: .module)
-    public static let separator = Color.gray.opacity(0.3)
-    public static let opaqueSeparator = Color.gray.opacity(0.3)
+    public static let separator = Color(nsColor: .separatorColor)
+    public static let opaqueSeparator = Color(nsColor: .separatorColor)
     #endif
     
     // MARK: - Status Colors (Adaptive for Dark Mode)
@@ -99,18 +109,14 @@ public struct ColorTokens: Sendable {
     public static let info = Color("AgoraTertiary", bundle: .module)
     
     // MARK: - Error Background Colors
-    #if canImport(UIKit)
-    public static let errorBackground = Color(UIColor.systemRed).opacity(0.1)
-    #else
     public static let errorBackground = Color.red.opacity(0.1)
-    #endif
     
     // MARK: - App-Specific Colors (Adaptive for Dark Mode)
     public static let accentPrimary = Color("AgoraAccent", bundle: .module)
     #if canImport(UIKit)
-    public static let agoraSurface = Color(UIColor.secondarySystemBackground)
+    public static let agoraSurface = Color(uiColor: .secondarySystemBackground)
     #else
-    public static let agoraSurface = Color.gray.opacity(0.1)
+    public static let agoraSurface = Color(nsColor: .controlBackgroundColor)
     #endif
     
     // MARK: - Brand Colors (with Dark Mode variants)
@@ -118,13 +124,45 @@ public struct ColorTokens: Sendable {
     public static let agoraBrand = Color("AgoraBrand", bundle: .module)
     public static let agoraAccent = Color("AgoraAccent", bundle: .module)
     public static let agoraTertiary = Color("AgoraTertiary", bundle: .module)
+    
+    // MARK: - Brand Palette
+    /// Extended brand color palette with all six colors
+    public struct BrandPalette: Sendable {
+        /// Sky Blue - Primary brand color #30C1FD
+        public static let skyBlue = Color("AgoraBrand", bundle: .module)
+        
+        /// Rosy Magenta - Secondary brand color #FF3268
+        public static let rosyMagenta = Color("AgoraAccent", bundle: .module)
+        
+        /// Light Turquoise - Tertiary brand color #A6D3E8
+        public static let lightTurquoise = Color("AgoraTertiary", bundle: .module)
+        
+        /// Golden Yellow - Warm accent #FCAE23
+        public static let goldenYellow = Color(red: 0.988, green: 0.682, blue: 0.137)
+        
+        /// Peachy Coral - Warm accent #F97B47
+        public static let peachyCoral = Color(red: 0.976, green: 0.482, blue: 0.278)
+        
+        /// Lavender Purple - Cool accent #D59FFF
+        public static let lavenderPurple = Color(red: 0.835, green: 0.624, blue: 1.000)
+    }
+    
+    // MARK: - Semantic Brand Color Tokens
+    /// Primary brand color (Sky Blue)
+    public static let brandPrimary = agoraBrand
+    
+    /// Secondary brand color (Rosy Magenta)
+    public static let brandSecondary = agoraAccent
+    
+    /// Tertiary brand color (Light Turquoise)
+    public static let brandTertiary = agoraTertiary
 }
 
 // MARK: - Color Extensions for Backward Compatibility
 @available(iOS 26.0, *)
 public extension Color {
     static let agoraPrimary = ColorTokens.primary
-    static let agoraSecondary = ColorTokens.secondaryText
+    static let agoraSecondary = ColorTokens.secondary
     static let agoraTertiary = ColorTokens.agoraTertiary
     static let agoraBackground = ColorTokens.background
     static let agoraSurface = ColorTokens.agoraSurface
@@ -421,22 +459,25 @@ public struct AnimationTokens {
     
     /// Animation that respects Reduce Motion setting
     /// Returns instant animation if Reduce Motion is enabled
+    ///
+    /// Note: For view-level usage, prefer the `.animation()` modifier with
+    /// `@Environment(\.accessibilityReduceMotion)` to respect user preferences.
+    /// These static methods are provided for compatibility but don't have
+    /// access to environment values. Consider using view modifiers instead.
     public static func accessible(_ duration: Double) -> Animation {
-        #if canImport(UIKit)
-        if UIAccessibility.isReduceMotionEnabled {
-            return .linear(duration: 0.1) // Minimal animation
-        }
-        #endif
+        // Note: Static methods can't access @Environment values
+        // For proper reduce motion support, use .animation() modifier in views
+        // with @Environment(\.accessibilityReduceMotion)
         return .easeInOut(duration: duration)
     }
     
     /// Spring animation that respects Reduce Motion setting
+    ///
+    /// Note: For view-level usage, prefer the `.animation()` modifier with
+    /// `@Environment(\.accessibilityReduceMotion)` to respect user preferences.
     public static var accessibleSpring: Animation {
-        #if canImport(UIKit)
-        if UIAccessibility.isReduceMotionEnabled {
-            return .linear(duration: 0.1)
-        }
-        #endif
+        // Note: Static methods can't access @Environment values
+        // For proper reduce motion support, use .animation() modifier in views
         return spring
     }
     

@@ -402,6 +402,227 @@ public struct NoOpCommentCompositionService: CommentCompositionProtocol {
     }
 }
 
+// MARK: - Mock Avatar Cropper Services
+
+/// Mock implementation of ImageCropRendering for testing and development
+public final class MockImageCropRenderer: ImageCropRendering, @unchecked Sendable {
+    
+    // MARK: - Configuration Properties
+    
+    /// Whether crop operations should succeed
+    public var shouldSucceed: Bool = true
+    
+    /// Delay to simulate crop processing
+    public var processingDelay: TimeInterval = 0.1
+    
+    /// Mock PNG data to return on successful crop
+    public var mockCropData: Data = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) // PNG header
+    
+    // MARK: - Tracking Properties
+    
+    /// Whether renderSquareAvatar was called
+    public var renderCalled: Bool = false
+    
+    /// Last source image passed to renderSquareAvatar
+    public var lastSourceImage: CGImage?
+    
+    /// Last crop rectangle passed to renderSquareAvatar
+    public var lastCropRect: CGRect?
+    
+    /// Last output size passed to renderSquareAvatar
+    public var lastOutputSize: Int?
+    
+    /// Last color space passed to renderSquareAvatar
+    public var lastColorSpace: CGColorSpace?
+    
+    /// Number of times renderSquareAvatar was called
+    public var renderCallCount: Int = 0
+    
+    // MARK: - Initialization
+    
+    public init() {}
+    
+    // MARK: - ImageCropRendering Implementation
+    
+    public func renderSquareAvatar(
+        source: CGImage,
+        cropRectInPixels: CGRect,
+        outputSize: Int,
+        colorSpace: CGColorSpace
+    ) throws -> Data {
+        // Update tracking properties
+        renderCalled = true
+        renderCallCount += 1
+        lastSourceImage = source
+        lastCropRect = cropRectInPixels
+        lastOutputSize = outputSize
+        lastColorSpace = colorSpace
+        
+        // Simulate processing delay
+        if processingDelay > 0 {
+            Thread.sleep(forTimeInterval: processingDelay)
+        }
+        
+        guard shouldSucceed else {
+            throw CropValidationError.cropProcessingFailed
+        }
+        
+        return mockCropData
+    }
+    
+    // MARK: - Mock Control Methods
+    
+    /// Reset the mock service to initial state
+    public func reset() {
+        shouldSucceed = true
+        processingDelay = 0.1
+        renderCalled = false
+        renderCallCount = 0
+        lastSourceImage = nil
+        lastCropRect = nil
+        lastOutputSize = nil
+        lastColorSpace = nil
+        mockCropData = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+    }
+    
+    /// Configure the mock to simulate crop failure
+    public func simulateFailure() {
+        shouldSucceed = false
+    }
+    
+    /// Configure the mock to simulate successful operations
+    public func simulateSuccess() {
+        shouldSucceed = true
+    }
+}
+
+/// Mock implementation of AvatarUploadService for testing and development
+public final class MockAvatarUploadService: AvatarUploadService, @unchecked Sendable {
+    
+    // MARK: - Configuration Properties
+    
+    /// Whether upload operations should succeed
+    public var shouldSucceed: Bool = true
+    
+    /// Delay to simulate upload processing
+    public var uploadDelay: TimeInterval = 0.5
+    
+    /// Mock avatar URL to return on successful upload
+    public var mockAvatarURL: URL = URL(string: "https://example.com/avatar.png")!
+    
+    /// Whether to fail initially (for retry testing)
+    public var shouldFailInitially: Bool = false
+    
+    /// Number of times to fail before succeeding
+    public var failureCount: Int = 0
+    
+    // MARK: - Tracking Properties
+    
+    /// Whether uploadAvatar was called
+    public var uploadCalled: Bool = false
+    
+    /// Number of upload attempts made
+    public var uploadAttempts: Int = 0
+    
+    /// Last data passed to uploadAvatar
+    public var lastData: Data?
+    
+    /// Last MIME type passed to uploadAvatar
+    public var lastMimeType: String?
+    
+    /// All upload attempts with their data and MIME types
+    public var uploadHistory: [(data: Data, mime: String)] = []
+    
+    // MARK: - Initialization
+    
+    public init() {}
+    
+    // MARK: - AvatarUploadService Implementation
+    
+    public func uploadAvatar(_ data: Data, mime: String) async throws -> URL {
+        // Update tracking properties
+        uploadCalled = true
+        uploadAttempts += 1
+        lastData = data
+        lastMimeType = mime
+        uploadHistory.append((data: data, mime: mime))
+        
+        // Simulate upload delay
+        if uploadDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(uploadDelay * 1_000_000_000))
+        }
+        
+        // Handle initial failures for retry testing
+        if shouldFailInitially && uploadAttempts <= failureCount {
+            throw AvatarUploadError.uploadFailed(MockUploadError.simulatedFailure)
+        }
+        
+        guard shouldSucceed else {
+            throw AvatarUploadError.uploadFailed(MockUploadError.simulatedFailure)
+        }
+        
+        // Return mock URL with cache-busting parameter
+        var components = URLComponents(url: mockAvatarURL, resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "v", value: String(uploadAttempts))]
+        
+        return components?.url ?? mockAvatarURL
+    }
+    
+    // MARK: - Mock Control Methods
+    
+    /// Reset the mock service to initial state
+    public func reset() {
+        shouldSucceed = true
+        uploadDelay = 0.5
+        shouldFailInitially = false
+        failureCount = 0
+        uploadCalled = false
+        uploadAttempts = 0
+        lastData = nil
+        lastMimeType = nil
+        uploadHistory.removeAll()
+        mockAvatarURL = URL(string: "https://example.com/avatar.png")!
+    }
+    
+    /// Configure the mock to simulate upload failure
+    public func simulateFailure() {
+        shouldSucceed = false
+    }
+    
+    /// Configure the mock to simulate successful operations
+    public func simulateSuccess() {
+        shouldSucceed = true
+        shouldFailInitially = false
+    }
+    
+    /// Configure the mock to fail initially for retry testing
+    /// - Parameter count: Number of times to fail before succeeding
+    public func simulateInitialFailures(count: Int) {
+        shouldFailInitially = true
+        failureCount = count
+    }
+    
+    /// Set custom mock avatar URL
+    /// - Parameter url: The URL to return on successful upload
+    public func setMockAvatarURL(_ url: URL) {
+        mockAvatarURL = url
+    }
+}
+
+// MARK: - Mock Upload Error
+
+/// Mock upload error for testing
+private enum MockUploadError: LocalizedError {
+    case simulatedFailure
+    
+    var errorDescription: String? {
+        switch self {
+        case .simulatedFailure:
+            return "Simulated upload failure for testing"
+        }
+    }
+}
+
 // MARK: - PersonNameComponents Extension
 
 extension PersonNameComponents {

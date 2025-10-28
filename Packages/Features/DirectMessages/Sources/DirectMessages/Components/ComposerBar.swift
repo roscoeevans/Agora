@@ -40,16 +40,16 @@ struct ComposerBar: View {
     // Dynamic height calculations based on Dynamic Type size
     private var dynamicMinHeight: CGFloat {
         switch dynamicTypeSize {
-        case .xSmall, .small: return 34
-        case .medium, .large: return 38
-        case .xLarge, .xxLarge: return 42
-        case .xxxLarge: return 46
-        case .accessibility1: return 50
-        case .accessibility2: return 54
-        case .accessibility3: return 58
-        case .accessibility4: return 62
-        case .accessibility5: return 66
-        @unknown default: return 38
+        case .xSmall, .small: return 30
+        case .medium, .large: return 34
+        case .xLarge, .xxLarge: return 38
+        case .xxxLarge: return 42
+        case .accessibility1: return 46
+        case .accessibility2: return 50
+        case .accessibility3: return 54
+        case .accessibility4: return 58
+        case .accessibility5: return 62
+        @unknown default: return 34
         }
     }
     
@@ -79,13 +79,10 @@ struct ComposerBar: View {
             HStack(alignment: .bottom, spacing: 8) {
                 // Attachment button
                 Button(action: { showingPhotoPicker = true }) {
-                    Image(systemName: "plus")
-                        .font(.title2)
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 28))
                         .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
-                        .background(.regularMaterial, in: Circle())
                 }
-                .frame(minWidth: 44, minHeight: 44) // Ensure minimum touch target
                 .accessibilityLabel("Add attachment")
                 
                 // Text input area
@@ -100,19 +97,18 @@ struct ComposerBar: View {
                                 .tint(.white)
                         } else {
                             Image(systemName: "arrow.up")
-                                .font(.title3.weight(.semibold))
+                                .font(.body.weight(.semibold))
                         }
                     }
                     .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 30, height: 30)
                     .background(canSend ? .blue : .secondary, in: Circle())
                 }
-                .frame(minWidth: 44, minHeight: 44) // Ensure minimum touch target
                 .disabled(!canSend)
                 .accessibilityLabel(isSending ? "Sending message" : "Send message")
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
             .background(.regularMaterial)
         }
         .onChange(of: selectedPhotos) { _, newPhotos in
@@ -142,18 +138,18 @@ struct ComposerBar: View {
     
     private var textInputView: some View {
         ZStack(alignment: .topLeading) {
-            // Background
+            // Background - adaptive system color like iMessage
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.regularMaterial)
-                .frame(minHeight: 38, maxHeight: 120)
+                .fill(ColorTokens.secondaryBackground)
+                .frame(minHeight: dynamicMinHeight, maxHeight: dynamicMaxHeight)
             
             // Text editor
             TextEditor(text: $text)
                 .focused($isTextFieldFocused)
                 .scrollContentBackground(.hidden)
                 .font(TypographyScale.body)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
                 .frame(minHeight: dynamicMinHeight, maxHeight: dynamicMaxHeight)
                 .onSubmit {
                     if canSend {
@@ -177,8 +173,9 @@ struct ComposerBar: View {
             if text.isEmpty {
                 Text("Message")
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 18)
+                    .font(TypographyScale.body)
+                    .padding(.horizontal, 17)
+                    .padding(.vertical, 15)
                     .allowsHitTesting(false)
             }
         }

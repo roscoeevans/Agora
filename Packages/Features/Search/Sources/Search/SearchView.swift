@@ -19,20 +19,52 @@ public struct SearchView: View {
     public var body: some View {
         Group {
             if let viewModel = viewModel {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        // Search results
-                        if searchText.isEmpty {
-                            EmptySearchView()
-                        } else if viewModel.isLoading {
+                Group {
+                    // Show empty/loading states without ScrollView (for proper centering)
+                    if searchText.isEmpty {
+                        // Empty search state - centered like "You're All Caught Up"
+                        VStack {
+                            Spacer()
+                            AgoraEmptyStateView.emptySearch()
+                                .padding(.horizontal, SpacingTokens.md)
+                                .transition(.liquidGlass)
+                            Spacer()
+                        }
+                        
+                    } else if viewModel.isLoading && viewModel.searchResults.isEmpty {
+                        // Loading state - centered
+                        VStack {
+                            Spacer()
                             LoadingView()
-                        } else if viewModel.searchResults.isEmpty {
-                            NoResultsView(query: searchText)
-                        } else {
-                            SearchResultsList(results: viewModel.searchResults)
+                            Spacer()
+                        }
+                            
+                    } else if viewModel.searchResults.isEmpty {
+                        // No results state - centered
+                        VStack {
+                            Spacer()
+                            AgoraEmptyStateView.noSearchResults()
+                                .padding(.horizontal, SpacingTokens.md)
+                                .transition(.liquidGlass)
+                            Spacer()
+                        }
+                            
+                    } else {
+                        // Search results list - needs ScrollView
+                        ScrollView {
+                            SearchResultsList(
+                                results: viewModel.searchResults,
+                                isLoading: viewModel.isLoading,
+                                hasMore: viewModel.hasMore,
+                                onLoadMore: {
+                                    Task {
+                                        await viewModel.loadMore(query: searchText)
+                                    }
+                                }
+                            )
+                            .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                         }
                     }
-                    .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                 }
                 .navigationTitle("Search")
                 #if os(iOS)
@@ -50,185 +82,197 @@ public struct SearchView: View {
         }
         .task {
             // Initialize view model with dependencies from environment
-            // Following DI rule: dependencies injected from environment
-            self.viewModel = SearchViewModel(networking: deps.networking)
+            self.viewModel = SearchViewModel(userSearch: deps.userSearch)
+            
+            // Load suggested creators for empty state
+            if let vm = viewModel {
+                await vm.loadSuggestedCreators()
+            }
         }
     }
 }
 
-struct EmptySearchView: View {
-    var body: some View {
-        VStack(spacing: SpacingTokens.lg) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 48))
-                .foregroundColor(ColorTokens.tertiaryText)
-                .symbolEffect(.pulse, isActive: true)
-            
-            Text("Search Agora")
-                .font(TypographyScale.title2)
-                .foregroundColor(ColorTokens.primaryText)
-            
-            Text("Find users and posts by typing in the search bar above.")
-                .font(TypographyScale.body)
-                .foregroundColor(ColorTokens.secondaryText)
-                .multilineTextAlignment(.center)
-        }
-        .padding(SpacingTokens.xl)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(ColorTokens.separator.opacity(0.2), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Search Agora. Find users and posts by typing in the search bar above.")
-    }
-}
+// MARK: - Suggested Creators Section
 
-struct NoResultsView: View {
-    let query: String
+struct SuggestedCreatorsSection: View {
+    let creators: [SearchUser]
     
     var body: some View {
-        VStack(spacing: SpacingTokens.lg) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 48))
-                .foregroundColor(ColorTokens.tertiaryText)
-            
-            Text("No Results")
-                .font(TypographyScale.title2)
+        VStack(alignment: .leading, spacing: SpacingTokens.md) {
+            Text("Suggested People")
+                .font(TypographyScale.headline)
                 .foregroundColor(ColorTokens.primaryText)
+                .padding(.horizontal, SpacingTokens.lg)
             
-            Text("No results found for \"\(query)\". Try a different search term.")
-                .font(TypographyScale.body)
-                .foregroundColor(ColorTokens.secondaryText)
-                .multilineTextAlignment(.center)
+            LazyVStack(spacing: SpacingTokens.sm) {
+                ForEach(creators) { creator in
+                    UserRow(user: creator)
+                }
+            }
+            .padding(.horizontal, SpacingTokens.md)
         }
-        .padding(SpacingTokens.xl)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(ColorTokens.separator.opacity(0.2), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("No results found for \(query). Try a different search term.")
     }
 }
+
+// MARK: - Search Results List
 
 struct SearchResultsList: View {
-    let results: [SearchResult]
+    let results: [SearchUser]
+    let isLoading: Bool
+    let hasMore: Bool
+    let onLoadMore: () -> Void
     
     var body: some View {
-        LazyVStack(spacing: SpacingTokens.md) {
-            ForEach(results, id: \.id) { result in
-                SearchResultCard(result: result)
+        LazyVStack(spacing: SpacingTokens.sm) {
+            ForEach(results) { user in
+                UserRow(user: user)
+            }
+            
+            // Load more indicator
+            if hasMore {
+                HStack {
+                    Spacer()
+                    if isLoading {
+                        ProgressView()
+                            .padding(SpacingTokens.md)
+                    } else {
+                        Button(action: onLoadMore) {
+                            Text("Load More")
+                                .font(TypographyScale.callout)
+                                .foregroundColor(ColorTokens.agoraBrand)
+                        }
+                        .padding(SpacingTokens.md)
+                    }
+                    Spacer()
+                }
             }
         }
         .padding(SpacingTokens.md)
     }
 }
 
-struct SearchResultCard: View {
-    let result: SearchResult
+// MARK: - User Row
+
+struct UserRow: View {
+    let user: SearchUser
     @State private var isPressed = false
     @State private var hapticTrigger = false
-    @Environment(\.navigateToSearchResult) private var navigateToSearchResult
+    @Environment(\.navigateToProfile) private var navigateToProfile
     
     var body: some View {
-        VStack(alignment: .leading, spacing: SpacingTokens.sm) {
-            HStack(alignment: .top, spacing: SpacingTokens.sm) {
-                Circle()
-                    .fill(ColorTokens.agoraBrand)
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Text(String(result.title.prefix(1)))
-                            .font(TypographyScale.calloutEmphasized)
-                            .foregroundColor(.white)
-                    }
-                
-                VStack(alignment: .leading, spacing: SpacingTokens.xxs) {
-                    HStack {
-                        Text(result.title)
-                            .font(TypographyScale.calloutEmphasized)
-                            .foregroundColor(ColorTokens.primaryText)
-                        
-                        Spacer()
-                        
-                        Image(systemName: result.type == .user ? "person" : "doc.text")
-                            .font(TypographyScale.footnote)
-                            .foregroundColor(ColorTokens.tertiaryText)
+        HStack(alignment: .top, spacing: SpacingTokens.md) {
+            // Avatar
+            Circle()
+                .fill(ColorTokens.agoraBrand.gradient)
+                .frame(width: 48, height: 48)
+                .overlay {
+                    Text(String(user.displayName.prefix(1)))
+                        .font(TypographyScale.title3)
+                        .foregroundColor(.white)
+                }
+            
+            // User info
+            VStack(alignment: .leading, spacing: SpacingTokens.xxs) {
+                HStack(spacing: SpacingTokens.xs) {
+                    Text(user.displayName)
+                        .font(TypographyScale.calloutEmphasized)
+                        .foregroundColor(ColorTokens.primaryText)
+                    
+                    if user.verified {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(TypographyScale.caption2)
+                            .foregroundColor(ColorTokens.agoraBrand)
                     }
                     
-                    Text(result.subtitle)
-                        .font(TypographyScale.caption1)
+                    Spacer()
+                }
+                
+                Text("@\(user.displayHandle)")
+                    .font(TypographyScale.caption1)
+                    .foregroundColor(ColorTokens.tertiaryText)
+                
+                // Follower count
+                if user.followersCount > 0 {
+                    Text("\(user.followersCount) followers")
+                        .font(TypographyScale.caption2)
                         .foregroundColor(ColorTokens.tertiaryText)
                 }
             }
             
-            if let content = result.content {
-                Text(content)
-                    .font(TypographyScale.body)
-                    .foregroundColor(ColorTokens.secondaryText)
-                    .lineLimit(3)
-                    .multilineTextAlignment(.leading)
-            }
+            Spacer()
+            
+            // Chevron
+            Image(systemName: "chevron.right")
+                .font(TypographyScale.caption1)
+                .foregroundColor(ColorTokens.tertiaryText)
         }
         .padding(SpacingTokens.md)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: SpacingTokens.sm))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: BorderRadiusTokens.md))
         .overlay(
-            RoundedRectangle(cornerRadius: SpacingTokens.sm)
+            RoundedRectangle(cornerRadius: BorderRadiusTokens.md)
                 .stroke(ColorTokens.separator.opacity(0.3), lineWidth: 0.5)
         )
-        .shadow(color: .black.opacity(0.05), radius: SpacingTokens.xxs, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         .scaleEffect(isPressed ? 0.98 : 1.0)
         .animation(.easeInOut(duration: 0.1), value: isPressed)
         .onTapGesture {
             hapticTrigger.toggle()
-            // Navigate to search result
-            if let navigate = navigateToSearchResult, let uuid = UUID(uuidString: result.id) {
-                navigate.action(uuid)
-            }
+            navigateToProfile?(user.userId)
         }
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isPressed = pressing
         }, perform: {})
-        .frame(minHeight: 60) // Ensure adequate touch target
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint("Double tap to view \(result.type == .user ? "profile" : "post")")
+        .accessibilityLabel("\(user.displayName), @\(user.displayHandle)\(user.verified ? ", verified" : ""), \(user.followersCount) followers")
+        .accessibilityHint("Double tap to view profile")
         .sensoryFeedback(.selection, trigger: hapticTrigger)
-    }
-    
-    private var accessibilityLabel: String {
-        var label = "\(result.type == .user ? "User" : "Post"): \(result.title)"
-        if let content = result.content {
-            label += ". \(content)"
-        }
-        return label
     }
 }
 
+// MARK: - Loading View
+
 struct LoadingView: View {
     var body: some View {
-        VStack(spacing: SpacingTokens.md) {
+        VStack(spacing: SpacingTokens.lg) {
             ProgressView()
-                .scaleEffect(1.2)
+                .scaleEffect(1.5)
+                .tint(ColorTokens.agoraBrand)
             
             Text("Searching...")
-                .font(TypographyScale.callout)
+                .font(TypographyScale.body)
                 .foregroundColor(ColorTokens.secondaryText)
         }
         .padding(SpacingTokens.xl)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
     }
 }
+
+// MARK: - Environment Keys
+
+private struct NavigateToProfileKey: EnvironmentKey {
+    static let defaultValue: (@Sendable (UUID) -> Void)? = nil
+}
+
+extension EnvironmentValues {
+    var navigateToProfile: (@Sendable (UUID) -> Void)? {
+        get { self[NavigateToProfileKey.self] }
+        set { self[NavigateToProfileKey.self] = newValue }
+    }
+}
+
+// MARK: - Previews
 
 #if DEBUG
 #Preview("Search") {
     PreviewDeps.scoped {
         SearchView()
+    }
+}
+
+#Preview("Search Results") {
+    PreviewDeps.scoped {
+        let view = SearchView()
+        return view
     }
 }
 #endif

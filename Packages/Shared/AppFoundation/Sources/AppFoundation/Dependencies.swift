@@ -427,6 +427,15 @@ public struct Dependencies: Sendable {
     /// Push notification service for handling notifications
     public let pushNotifications: PushNotificationServiceProtocol?
     
+    /// Image crop rendering service for avatar processing
+    public let imageCropRendering: ImageCropRendering?
+    
+    /// Avatar upload service for profile picture management
+    public let avatarUploadService: AvatarUploadService?
+    
+    /// User search service for searching users by handle/name
+    public let userSearch: UserSearchProtocol?
+    
     // MARK: - Initialization
     
     public init(
@@ -443,7 +452,10 @@ public struct Dependencies: Sendable {
         messagingRealtime: MessagingRealtimeProtocol? = nil,
         messagingMedia: MessagingMediaProtocol? = nil,
         eventTracker: EventTracker? = nil,
-        pushNotifications: PushNotificationServiceProtocol? = nil
+        pushNotifications: PushNotificationServiceProtocol? = nil,
+        imageCropRendering: ImageCropRendering? = nil,
+        avatarUploadService: AvatarUploadService? = nil,
+        userSearch: UserSearchProtocol? = nil
     ) {
         self.networking = networking
         self.auth = auth
@@ -459,6 +471,9 @@ public struct Dependencies: Sendable {
         self.messagingMedia = messagingMedia
         self.eventTracker = eventTracker
         self.pushNotifications = pushNotifications
+        self.imageCropRendering = imageCropRendering
+        self.avatarUploadService = avatarUploadService
+        self.userSearch = userSearch
     }
 }
 
@@ -520,6 +535,27 @@ extension Dependencies {
             mediaBundle = NoOpMediaBundleService()
         }
         
+        // Create real avatar cropper services
+        let imageCropRendering: ImageCropRendering = {
+            do {
+                return try DefaultServiceFactory.imageCropRenderer()
+            } catch {
+                print("[Dependencies] ⚠️ Failed to create avatar cropper services: \(error)")
+                print("[Dependencies]    Falling back to no-op implementations")
+                return NoOpImageCropRenderer()
+            }
+        }()
+        
+        let avatarUploadService: AvatarUploadService = {
+            do {
+                return try DefaultServiceFactory.avatarUploadService()
+            } catch {
+                print("[Dependencies] ⚠️ Failed to create avatar upload service: \(error)")
+                print("[Dependencies]    Falling back to no-op implementation")
+                return NoOpAvatarUploadService()
+            }
+        }()
+        
         return Dependencies(
             networking: networking,
             auth: auth,
@@ -529,7 +565,9 @@ extension Dependencies {
             commentComposition: commentComposition,
             mediaBundle: mediaBundle,
             eventTracker: EventTracker(analyticsClient: NoOpAnalyticsClient()),
-            pushNotifications: NoOpPushNotificationService()
+            pushNotifications: NoOpPushNotificationService(),
+            imageCropRendering: imageCropRendering,
+            avatarUploadService: avatarUploadService
         )
     }
     
@@ -554,7 +592,9 @@ extension Dependencies {
         messagingRealtime: MessagingRealtimeProtocol? = nil,
         messagingMedia: MessagingMediaProtocol? = nil,
         eventTracker: EventTracker? = nil,
-        pushNotifications: PushNotificationServiceProtocol? = nil
+        pushNotifications: PushNotificationServiceProtocol? = nil,
+        imageCropRendering: ImageCropRendering? = nil,
+        avatarUploadService: AvatarUploadService? = nil
     ) -> Dependencies {
         return Dependencies(
             networking: networking ?? PreviewStubClient(),
@@ -568,7 +608,9 @@ extension Dependencies {
             messagingRealtime: messagingRealtime,
             messagingMedia: messagingMedia,
             eventTracker: eventTracker,
-            pushNotifications: pushNotifications ?? NoOpPushNotificationService()
+            pushNotifications: pushNotifications ?? NoOpPushNotificationService(),
+            imageCropRendering: imageCropRendering ?? NoOpImageCropRenderer(),
+            avatarUploadService: avatarUploadService ?? NoOpAvatarUploadService()
         )
     }
     #endif
@@ -594,7 +636,9 @@ extension Dependencies {
             messagingRealtime: self.messagingRealtime,
             messagingMedia: self.messagingMedia,
             eventTracker: EventTracker(analyticsClient: analytics),
-            pushNotifications: self.pushNotifications
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: self.avatarUploadService
         )
     }
     
@@ -615,7 +659,9 @@ extension Dependencies {
             messagingRealtime: self.messagingRealtime,
             messagingMedia: self.messagingMedia,
             eventTracker: self.eventTracker,
-            pushNotifications: self.pushNotifications
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: self.avatarUploadService
         )
     }
     
@@ -635,7 +681,9 @@ extension Dependencies {
             messagingRealtime: self.messagingRealtime,
             messagingMedia: self.messagingMedia,
             eventTracker: self.eventTracker,
-            pushNotifications: self.pushNotifications
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: self.avatarUploadService
         )
     }
     
@@ -655,7 +703,9 @@ extension Dependencies {
             messagingRealtime: self.messagingRealtime,
             messagingMedia: self.messagingMedia,
             eventTracker: self.eventTracker,
-            pushNotifications: self.pushNotifications
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: self.avatarUploadService
         )
     }
     
@@ -675,7 +725,9 @@ extension Dependencies {
             messagingRealtime: self.messagingRealtime,
             messagingMedia: self.messagingMedia,
             eventTracker: self.eventTracker,
-            pushNotifications: self.pushNotifications
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: self.avatarUploadService
         )
     }
     
@@ -699,7 +751,103 @@ extension Dependencies {
             messagingRealtime: realtime,
             messagingMedia: media,
             eventTracker: self.eventTracker,
-            pushNotifications: self.pushNotifications
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: self.avatarUploadService
+        )
+    }
+    
+    /// Returns a copy with updated image crop rendering service
+    public func withImageCropRendering(_ imageCropRendering: ImageCropRendering) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: imageCropRendering,
+            avatarUploadService: self.avatarUploadService
+        )
+    }
+    
+    /// Returns a copy with updated avatar upload service
+    public func withAvatarUploadService(_ avatarUploadService: AvatarUploadService) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: avatarUploadService
+        )
+    }
+    
+    /// Returns a copy with updated avatar cropper services
+    public func withAvatarCropper(
+        imageCropRendering: ImageCropRendering,
+        avatarUploadService: AvatarUploadService
+    ) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: imageCropRendering,
+            avatarUploadService: avatarUploadService
+        )
+    }
+    
+    /// Returns a new Dependencies container with user search service
+    /// - Parameter userSearch: The user search service to inject
+    /// - Returns: New Dependencies container with updated user search
+    public func withUserSearch(_ userSearch: UserSearchProtocol) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: self.avatarUploadService,
+            userSearch: userSearch
         )
     }
 }
@@ -711,13 +859,13 @@ extension Dependencies {
 /// This avoids circular dependencies and network initialization issues
 private final class PreviewStubClient: AgoraAPIClient {
     func fetchForYouFeed(cursor: String?, limit: Int?) async throws -> FeedResponse {
-        // Return minimal mock data for previews
+        // Return minimal mock data for previews with varying post lengths
         let mockPosts = [
             Post(
                 id: "preview-1",
                 authorId: "user-1",
                 authorDisplayHandle: "preview_user",
-                text: "This is a preview post! 🎨",
+                text: "This is a preview post! 🫔",
                 likeCount: 10,
                 repostCount: 2,
                 replyCount: 1,
@@ -732,6 +880,42 @@ private final class PreviewStubClient: AgoraAPIClient {
                 repostCount: 0,
                 replyCount: 0,
                 createdAt: Date().addingTimeInterval(-7200)
+            ),
+            Post(
+                id: "preview-3",
+                authorId: "user-789",
+                authorDisplayHandle: "dev_account",
+                text: "Stub client is great for offline development! 💡",
+                linkUrl: "https://example.com",
+                likeCount: 28,
+                repostCount: 5,
+                replyCount: 8,
+                createdAt: Date().addingTimeInterval(-10800)
+            ),
+            Post(
+                id: "preview-4",
+                authorId: "user-101",
+                authorDisplayHandle: "swift.ui.master",
+                text: """
+                Really loving SwiftUI's latest updates! The declarative syntax makes building complex UIs so much more enjoyable.
+                
+                Can't wait to see what's next! 🎨✨
+                """,
+                likeCount: 89,
+                repostCount: 12,
+                replyCount: 15,
+                createdAt: Date().addingTimeInterval(-14400),
+                authorDisplayName: "Swift UI Master"
+            ),
+            Post(
+                id: "preview-5",
+                authorId: "user-202",
+                authorDisplayHandle: "minimalist",
+                text: "Less is more. ✨",
+                likeCount: 234,
+                repostCount: 45,
+                replyCount: 67,
+                createdAt: Date().addingTimeInterval(-18000)
             )
         ]
         return FeedResponse(posts: mockPosts, nextCursor: nil)

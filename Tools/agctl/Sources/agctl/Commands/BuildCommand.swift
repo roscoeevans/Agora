@@ -255,39 +255,16 @@ struct BuildCommand: ParsableCommand, RunnableCommand {
                 }
             }
         } else {
-            // Non-verbose mode: show progress bar, fail fast with error output
+            // Non-verbose mode: show progress bar, build in parallel
             let progressBar = AsyncProgressBar(total: sorted.count, message: "Building")
             
-            for (index, package) in sorted.enumerated() {
-                await progressBar.update(current: index, itemMessage: package.displayName)
-                
-                let result = try await runSwift(
-                    arguments: args,
-                    workingDirectory: package.path,
-                    bag: bag
-                )
-                
-                if !result.isSuccess {
-                    // Stop progress bar and show the error
-                    await progressBar.complete(finalMessage: "Build failed")
-                    print("")
-                    Logger.error("\(package.displayName) failed to build")
-                    print("")
-                    
-                    // Show the actual error
-                    if !result.stderr.isEmpty {
-                        print(result.stderr)
-                    }
-                    if !result.stdout.isEmpty {
-                        print(result.stdout)
-                    }
-                    
-                    print("")
-                    Logger.info("Fix the error above and run 'agctl build' again")
-                    Logger.info("Or run 'agctl build \(package.displayName) --verbose' for detailed output")
-                    return .failure
-                }
-            }
+            // Build packages in parallel batches (respecting dependencies)
+            try await buildPackagesInParallel(
+                packages: sorted,
+                args: args,
+                progressBar: progressBar,
+                bag: bag
+            )
             
             await progressBar.complete(finalMessage: "Build complete")
         }
@@ -303,6 +280,109 @@ struct BuildCommand: ParsableCommand, RunnableCommand {
         case .kit: return 1
         case .feature: return 2
         case .unknown: return 3
+        }
+    }
+    
+    /// Build packages in parallel batches, respecting dependency order
+    private func buildPackagesInParallel(
+        packages: [Package],
+        args: [String],
+        progressBar: AsyncProgressBar,
+        bag: CancellationBag
+    ) async throws {
+        let allPackagesSet = Set(packages.map { $0.name })
+        var built = Set<String>()
+        
+        // Process packages level by level based on dependencies
+        while built.count < packages.count {
+            var currentLevel: [Package] = []
+            
+            for package in packages {
+                // Skip if already built
+                if built.contains(package.name) {
+                    continue
+                }
+                
+                // Check if all dependencies are built
+                let dependenciesMet = package.dependencies.allSatisfy { depName in
+                    // Either dependency is built, or it's an external dependency
+                    allPackagesSet.contains(depName) ? built.contains(depName) : true
+                }
+                
+                if dependenciesMet {
+                    currentLevel.append(package)
+                }
+            }
+            
+            // If no packages can be built at this level, break
+            if currentLevel.isEmpty {
+                break
+            }
+            
+            // Build all packages at this level in parallel
+            var tasks: [(Task<Bool, Error>, Package)] = []
+            for package in currentLevel {
+                let packageName = package.displayName
+                let packagePath = package.path
+                
+                let task = Task { @Sendable in
+                    let result = try await runSwift(
+                        arguments: args,
+                        workingDirectory: packagePath,
+                        bag: bag
+                    )
+                    
+                    if result.isSuccess {
+                        return true
+                    } else {
+                        // Show the actual error
+                        if !result.stderr.isEmpty {
+                            print(result.stderr)
+                        }
+                        if !result.stdout.isEmpty {
+                            print(result.stdout)
+                        }
+                        print("")
+                        Logger.error("\(packageName) failed to build")
+                        print("")
+                        Logger.info("Fix the error above and run 'agctl build' again")
+                        Logger.info("Or run 'agctl build \(packageName) --verbose' for detailed output")
+                        return false
+                    }
+                }
+                
+                tasks.append((task, package))
+            }
+            
+            // Wait for all tasks to complete
+            var levelBuilt = 0
+            for (task, package) in tasks {
+                let success = try await task.value
+                
+                if success {
+                    built.insert(package.name)
+                    levelBuilt += 1
+                    await progressBar.update(current: built.count, itemMessage: package.displayName)
+                } else {
+                    // Cancel remaining tasks
+                    for (remainingTask, _) in tasks {
+                        if remainingTask != task {
+                            remainingTask.cancel()
+                        }
+                    }
+                    throw ProcessError(
+                        executable: "swift",
+                        arguments: args,
+                        result: ProcessResult(exitCode: 1, stdout: "", stderr: "")
+                    )
+                }
+            }
+        }
+        
+        if built.count < packages.count {
+            let failed = packages.filter { !built.contains($0.name) }
+            Logger.error("Could not build all packages")
+            Logger.bullet("Unable to resolve build order for: \(failed.map { $0.displayName }.joined(separator: ", "))")
         }
     }
     

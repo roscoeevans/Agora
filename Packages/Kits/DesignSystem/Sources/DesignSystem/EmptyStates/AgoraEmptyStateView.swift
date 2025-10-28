@@ -213,6 +213,16 @@ public extension AgoraEmptyStateView {
         )
     }
     
+    /// Creates an empty state for the initial search screen (before searching)
+    static func emptySearch() -> AgoraEmptyStateView {
+        AgoraEmptyStateView(
+            icon: "magnifyingglass",
+            title: "Search Agora",
+            message: "Find people and posts to discover what's happening.",
+            style: .standard
+        )
+    }
+    
     /// Creates an empty state for no notifications
     static func noNotifications() -> AgoraEmptyStateView {
         AgoraEmptyStateView(

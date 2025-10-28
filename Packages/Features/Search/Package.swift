@@ -14,6 +14,7 @@ let package = Package(
     dependencies: [
         .package(path: "../../Kits/DesignSystem"),
         .package(path: "../../Kits/Networking"),
+        .package(path: "../../Kits/SearchKit"),
         .package(path: "../../Kits/UIKitBridge"),
         .package(path: "../../Shared/AppFoundation")
     ],
@@ -23,6 +24,7 @@ let package = Package(
             dependencies: [
                 "DesignSystem",
                 "Networking",
+                "SearchKit",
                 "UIKitBridge",
                 "AppFoundation"
             ],

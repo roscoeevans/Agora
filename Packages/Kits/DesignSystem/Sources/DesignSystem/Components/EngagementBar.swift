@@ -78,6 +78,7 @@ public struct EngagementBar: View {
                 isActive: isReposted,
                 isLoading: isRepostLoading,
                 tintColor: .green,
+                animationStyle: .rotate,
                 action: onRepost
             )
             

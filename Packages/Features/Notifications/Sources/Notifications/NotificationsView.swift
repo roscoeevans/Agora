@@ -30,7 +30,7 @@ public struct NotificationsView: View {
                     }
                     .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                 }
-                .navigationTitle("Notifications")
+                .navigationTitle("notifications")
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.large)
                 #endif

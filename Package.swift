@@ -53,6 +53,7 @@ let package = Package(
         .package(path: "Packages/Kits/Verification"),
         .package(path: "Packages/Kits/Recommender"),
         .package(path: "Packages/Kits/Engagement"),
+        .package(path: "Packages/Kits/SearchKit"),
         .package(path: "Packages/Kits/SupabaseKit"),
         .package(path: "Packages/Kits/UIKitBridge"),
         

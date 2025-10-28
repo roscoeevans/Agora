@@ -11,6 +11,7 @@ import Analytics
 import Networking
 import AppFoundation
 import PostDetail
+import Engagement
 
 public struct HomeForYouView: View {
     @Environment(\.deps) private var deps
@@ -34,8 +35,10 @@ public struct HomeForYouView: View {
                             Spacer()
                             AgoraEmptyStateView.emptyFeed(action: onComposeAction)
                                 .padding(.horizontal, SpacingTokens.md)
+                                .transition(.liquidGlass)
                             Spacer()
                         }
+                        .transition(.opacity)
                     } else {
                         // Show scrollable feed with enhanced pagination skeleton integration
                         ScrollView {
@@ -69,6 +72,7 @@ public struct HomeForYouView: View {
                                             shouldDisableShimmer: viewModel.shouldDisableShimmer,
                                             performanceMonitor: viewModel.performanceMonitor
                                         )
+                                        .padding(.horizontal, SpacingTokens.sm)
                                         .onAppear {
                                             // Enhanced pagination trigger with 5-row threshold
                                             if viewModel.shouldTriggerPagination(currentIndex: index) {
@@ -81,7 +85,7 @@ public struct HomeForYouView: View {
                                         // Add divider between posts (except after the last post)
                                         if index < viewModel.skeletonAwarePosts.count - 1 {
                                             Divider()
-                                                .padding(.horizontal, SpacingTokens.md)
+                                                .padding(.horizontal, SpacingTokens.sm)
                                                 .padding(.vertical, SpacingTokens.xs)
                                         }
                                     }
@@ -100,7 +104,6 @@ public struct HomeForYouView: View {
                                     .padding(.top, SpacingTokens.md)
                                 }
                             }
-                            .padding(.horizontal, SpacingTokens.md)
                             .padding(.bottom, 100) // Add bottom padding to ensure content extends under tab bar
                             .skeletonContainerAccessibility(
                                 isLoading: viewModel.skeletonLoadingState.isLoading,
@@ -110,6 +113,8 @@ public struct HomeForYouView: View {
                         }
                     }
                 }
+                .animation(.liquidGlass, value: viewModel.skeletonLoadingState)
+                .animation(.liquidGlass, value: viewModel.skeletonAwarePosts.isEmpty)
                 .refreshable {
                     await viewModel.refreshWithSkeletonSupport()
                 }
@@ -133,17 +138,17 @@ public struct HomeForYouView: View {
                         ForEach(0..<SkeletonConfiguration.homeForYou.placeholderCount, id: \.self) { index in
                             VStack(spacing: 0) {
                                 FeedPostSkeletonView()
+                                    .padding(.horizontal, SpacingTokens.sm)
                                 
                                 // Add divider between skeleton posts (except after the last post)
                                 if index < SkeletonConfiguration.homeForYou.placeholderCount - 1 {
                                     Divider()
-                                        .padding(.horizontal, SpacingTokens.md)
+                                        .padding(.horizontal, SpacingTokens.sm)
                                         .padding(.vertical, SpacingTokens.xs)
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, SpacingTokens.md)
                 }
             }
         }
@@ -277,8 +282,11 @@ struct PostCardView: View {
 
 #if DEBUG
 #Preview("For You Feed") {
-    PreviewDeps.scoped {
-        HomeForYouView()
-    }
+    let deps = Dependencies.test().withEngagement(EngagementServiceFake())
+    return HomeForYouView()
+        .environment(\.deps, deps)
+        .environment(\.navigateToPost, NavigateToPost { _ in print("Navigate to post") })
+        .environment(\.colorScheme, .light)
+        .environment(\.locale, .init(identifier: "en_US"))
 }
 #endif

@@ -30,6 +30,12 @@ final class UIKitBridgeTests: XCTestCase {
         XCTAssertNotNil(bridge)
     }
     
+    func testAuthBridgeInitialization() {
+        // Test that AuthBridge can be initialized
+        let bridge = AuthBridge.shared
+        XCTAssertNotNil(bridge)
+    }
+    
     func testMediaTypeEnum() {
         // Test MediaType enum cases
         XCTAssertEqual(MediaType.image, MediaType.image)
@@ -45,4 +51,17 @@ final class UIKitBridgeTests: XCTestCase {
         XCTAssertEqual(media.type, .image)
         XCTAssertNotNil(media.id)
     }
+    
+    // Note: Testing window retrieval requires a running app with UI scene
+    // These are integration-level tests that would run in UITest target
+    // func testAuthBridgePresentationAnchor() {
+    //     // This test would require a running app with UI scene
+    //     // Should be tested in integration tests or UITests
+    //     // do {
+    //     //     let anchor = try AuthBridge.getPresentationAnchor()
+    //     //     XCTAssertNotNil(anchor)
+    //     // } catch {
+    //     //     XCTFail("Failed to get presentation anchor: \(error)")
+    //     // }
+    // }
 }

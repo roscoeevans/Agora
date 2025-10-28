@@ -14,7 +14,8 @@ let package = Package(
     dependencies: [
         .package(path: "../../Shared/AppFoundation"),
         .package(path: "../UIKitBridge"),
-        .package(path: "../Engagement")
+        .package(path: "../Engagement"),
+        .package(path: "../Media")
     ],
     targets: [
         .target(
@@ -22,7 +23,8 @@ let package = Package(
             dependencies: [
                 "AppFoundation",
                 "UIKitBridge",
-                "Engagement"
+                "Engagement",
+                "Media"
             ],
             resources: [.process("Resources")],
             swiftSettings: [

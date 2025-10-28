@@ -54,8 +54,21 @@ public class FollowingViewModel {
             ])
         } catch {
             self.error = error
-            await analytics.track(event: "feed_refresh_failed", properties: ["feed_type": "following", "error": error.localizedDescription])
+            
+            // Print detailed error information for debugging
             print("[FollowingViewModel] ❌ Failed to load following feed: \(error)")
+            
+            // Check if it's a NetworkError and extract response body
+            if let networkError = error as? NetworkError,
+               case let NetworkError.httpError(statusCode, data) = networkError {
+                print("[FollowingViewModel] 🔍 HTTP Error Details:")
+                print("   Status Code: \(statusCode)")
+                if let data = data, let errorString = String(data: data, encoding: .utf8) {
+                    print("   📄 Response Body: \(errorString)")
+                }
+            }
+            
+            await analytics.track(event: "feed_refresh_failed", properties: ["feed_type": "following", "error": error.localizedDescription])
         }
     }
     

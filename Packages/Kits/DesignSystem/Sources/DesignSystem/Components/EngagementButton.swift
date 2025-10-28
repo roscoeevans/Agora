@@ -7,9 +7,11 @@
 
 import SwiftUI
 
-#if os(iOS)
-import UIKit
-#endif
+/// Animation style for engagement buttons
+public enum AnimationStyle {
+    case bounce
+    case rotate
+}
 
 /// Individual engagement button with count, state, and animations
 /// Uses optimistic UI updates - state changes immediately with haptic feedback
@@ -21,10 +23,13 @@ public struct EngagementButton: View {
     let isActive: Bool
     let isLoading: Bool  // Kept for API compatibility but no longer shown
     let tintColor: Color?
+    let animationStyle: AnimationStyle
     let action: () -> Void
     
     @State private var isPressed = false
     @State private var animationTrigger = false
+    @State private var hapticTrigger = 0
+    @State private var rotationAngle: Angle = .zero
     
     public init(
         icon: String,
@@ -33,6 +38,7 @@ public struct EngagementButton: View {
         isActive: Bool = false,
         isLoading: Bool = false,  // Deprecated - optimistic UI doesn't show loading
         tintColor: Color? = nil,
+        animationStyle: AnimationStyle = .bounce,
         action: @escaping () -> Void
     ) {
         self.icon = icon
@@ -41,44 +47,85 @@ public struct EngagementButton: View {
         self.isActive = isActive
         self.isLoading = isLoading
         self.tintColor = tintColor
+        self.animationStyle = animationStyle
         self.action = action
     }
     
     public var body: some View {
-        Button(action: {
-            #if os(iOS)
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
-            #endif
-            animationTrigger.toggle()
-            action()
-        }) {
+        buttonContent
+            .frame(minWidth: 44, alignment: .leading)
+            .scaleEffect(isPressed ? 0.9 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isActive)
+            .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
+            .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+                isPressed = pressing
+            }, perform: {})
+            .onChange(of: isActive) { oldValue, newValue in
+                resetRotationIfNeeded(oldValue: oldValue, newValue: newValue)
+            }
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityValue(count > 0 ? "\(count)" : "")
+            .accessibilityHint(accessibilityHint)
+    }
+    
+    private var buttonContent: some View {
+        Button(action: handleButtonTap) {
             HStack(alignment: .center, spacing: SpacingTokens.xxs) {
-                // Always show icon with animation - no loading spinner for optimistic UI
-                // The state updates immediately, and if there's an error, it rolls back
-                Image(systemName: isActive ? (iconFilled ?? icon) : icon)
-                    .font(.system(size: 16, weight: .regular))
-                    .symbolEffect(.bounce, value: animationTrigger)  // iOS 26 animation
-                    .contentTransition(.symbolEffect(.replace))
-                
-                if count > 0 {
-                    Text("\(count)")
-                        .font(TypographyScale.caption1)
-                        .contentTransition(.numericText())  // Smooth count changes
-                }
+                iconView
+                countView
             }
             .foregroundColor(foregroundColor)
         }
-        .frame(minWidth: 44, alignment: .leading) // Natural height, 44pt min width for iOS touch target
-        .scaleEffect(isPressed ? 0.9 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isActive)
-        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
-            isPressed = pressing
-        }, perform: {})
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityValue(count > 0 ? "\(count)" : "")
-        .accessibilityHint(accessibilityHint)
+    }
+    
+    @ViewBuilder
+    private var iconView: some View {
+        let currentIcon = isActive ? (iconFilled ?? icon) : icon
+        
+        if animationStyle == .rotate {
+            // For rotate style, use rotation effect without discrete symbol effect
+            Image(systemName: currentIcon)
+                .font(.system(size: 16, weight: .regular))
+                .rotationEffect(rotationAngle)
+                .contentTransition(.symbolEffect(.replace))
+        } else {
+            // For bounce style, use bounce symbol effect
+            Image(systemName: currentIcon)
+                .font(.system(size: 16, weight: .regular))
+                .symbolEffect(.bounce, value: animationTrigger)
+                .contentTransition(.symbolEffect(.replace))
+        }
+    }
+    
+    @ViewBuilder
+    private var countView: some View {
+        if count > 0 {
+            Text("\(count)")
+                .font(TypographyScale.caption1)
+                .contentTransition(.numericText())
+        }
+    }
+    
+    private func handleButtonTap() {
+        hapticTrigger += 1
+        animationTrigger.toggle()
+        
+        triggerRotationAnimationIfNeeded()
+        action()
+    }
+    
+    private func triggerRotationAnimationIfNeeded() {
+        guard animationStyle == .rotate else { return }
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+            rotationAngle = isActive ? .degrees(-180) : .degrees(180)
+        }
+    }
+    
+    private func resetRotationIfNeeded(oldValue: Bool, newValue: Bool) {
+        guard animationStyle == .rotate && oldValue != newValue else { return }
+        rotationAngle = .zero
     }
     
     private var foregroundColor: Color {
@@ -148,12 +195,24 @@ public struct EngagementButton: View {
             print("Like tapped")
         }
         
-        // Repost button - active
+        // Repost button - active (with rotation)
         EngagementButton(
             icon: "arrow.2.squarepath",
             count: 8,
             isActive: true,
-            tintColor: .green
+            tintColor: .green,
+            animationStyle: .rotate
+        ) {
+            print("Repost tapped")
+        }
+        
+        // Repost button - inactive (with rotation)
+        EngagementButton(
+            icon: "arrow.2.squarepath",
+            count: 7,
+            isActive: false,
+            tintColor: .green,
+            animationStyle: .rotate
         ) {
             print("Repost tapped")
         }

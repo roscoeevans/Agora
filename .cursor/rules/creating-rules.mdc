@@ -65,7 +65,34 @@ your-command-here
    - Keep rules focused and atomic
    - Update rules when processes change
 
-3. **Rule Types**
+3. **Naming Conventions**
+   
+   **Rule file names should be:**
+   - **Descriptive and concise** - communicate what the rule covers
+   - **No redundant prefixes** - omit platform/framework prefixes unless differentiating between multiple similar rules
+   - **Use hyphens for readability** - `testing-strategy.mdc` not `testingstrategy.mdc`
+   - **Lowercase only** - follows markdown conventions
+   - **Specific to purpose** - `dependency-injection.mdc` not `di.mdc`
+   
+   **Avoid redundant prefixes:**
+   - ❌ `ios-naming.mdc` (project is iOS-only)
+   - ❌ `swift-module-standards.mdc` (project is Swift-only)
+   - ✅ `naming.mdc` (clear and concise)
+   - ✅ `module-standards.mdc` (clear and concise)
+   
+   **When to include platform/framework prefixes:**
+   - Only when differentiating between platforms: `swiftui-previews.mdc` vs potential `uikit-previews.mdc`
+   - When framework-specific: `swift-concurrency.mdc` (Swift concurrency patterns)
+   - Tool-specific rules: `agctl-usage.mdc` (specific CLI tool)
+   
+   **Examples of good rule names:**
+   - `testing-strategy.mdc` - Testing practices
+   - `dependency-injection.mdc` - DI patterns
+   - `navigation.mdc` - Navigation patterns
+   - `configuration.mdc` - Build configuration
+   - `swiftui-first-architecture.mdc` - Framework-specific architecture
+
+4. **Rule Types**
    - **Process Rules**: How to perform specific tasks
    - **Structure Rules**: How to organize code/files
    - **Style Rules**: How to format code
@@ -109,6 +136,7 @@ your-command-here
 
 #### Before Creating a Rule
 - [ ] Identify specific use case or scenario
+- [ ] Choose a clear, concise filename (avoid redundant prefixes)
 - [ ] Determine rule type (process, structure, style, testing, documentation)
 - [ ] Gather relevant examples and code snippets
 - [ ] Plan clear, actionable steps

@@ -359,7 +359,7 @@ extension APIClient {
     }
     
     public func getUserProfile(userId: String) async throws -> UserProfileWithStats {
-        // Direct HTTP call until OpenAPI regeneration
+        // Direct HTTP call - decode flat structure directly
         let url = baseURL.appending(path: "/get-user-profile/\(userId)")
         
         var request = URLRequest(url: url)
@@ -382,9 +382,26 @@ extension APIClient {
             throw NetworkError.httpError(statusCode: httpResponse.statusCode, data: data)
         }
         
+        // Decode flat structure from Edge Function
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(UserProfileWithStats.self, from: data)
+        let flatResponse = try decoder.decode(UserProfileWithStatsFlat.self, from: data)
+        
+        // Convert to AppFoundation UserProfileWithStats (flat structure)
+        return UserProfileWithStats(
+            id: flatResponse.id,
+            handle: flatResponse.handle,
+            displayHandle: flatResponse.displayHandle,
+            displayName: flatResponse.displayName,
+            bio: flatResponse.bio,
+            avatarUrl: flatResponse.avatarUrl,
+            createdAt: flatResponse.createdAt,
+            followerCount: flatResponse.followerCount,
+            followingCount: flatResponse.followingCount,
+            postCount: flatResponse.postCount,
+            isCurrentUser: flatResponse.isCurrentUser,
+            isFollowing: flatResponse.isFollowing
+        )
     }
     
     public func getUserPosts(userId: String, cursor: String?, limit: Int?) async throws -> UserPostsResponse {
