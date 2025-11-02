@@ -184,6 +184,7 @@ public struct Post: Sendable, Codable, Identifiable {
     public let likeCount: Int
     public let repostCount: Int
     public let replyCount: Int
+    public let shareCount: Int
     public let visibility: PostVisibility
     public let createdAt: Date
     
@@ -214,6 +215,7 @@ public struct Post: Sendable, Codable, Identifiable {
         likeCount: Int = 0,
         repostCount: Int = 0,
         replyCount: Int = 0,
+        shareCount: Int = 0,
         visibility: PostVisibility = .public,
         createdAt: Date,
         authorDisplayName: String? = nil,
@@ -237,6 +239,7 @@ public struct Post: Sendable, Codable, Identifiable {
         self.likeCount = likeCount
         self.repostCount = repostCount
         self.replyCount = replyCount
+        self.shareCount = shareCount
         self.visibility = visibility
         self.createdAt = createdAt
         self.authorDisplayName = authorDisplayName
@@ -266,6 +269,65 @@ public enum PostVisibility: String, Sendable, Codable {
     case `public` = "public"
     case followers = "followers"
     case `private` = "private"
+}
+
+// MARK: - Comment Models
+
+/// Comment domain model for threaded discussions (YouTube-style, max depth = 2)
+public struct Comment: Identifiable, Codable, Equatable, Sendable {
+    public let id: String
+    public let postId: String
+    public let authorId: String
+    public let parentCommentId: String?
+    public let depth: Int  // 0, 1, or 2
+    public let body: String
+    public let replyCount: Int
+    public let createdAt: Date
+    public let updatedAt: Date
+    
+    // Presentation fields (populated from joins)
+    public let authorDisplayName: String?
+    public let authorDisplayHandle: String?
+    public let authorAvatarUrl: String?
+    
+    public init(
+        id: String,
+        postId: String,
+        authorId: String,
+        parentCommentId: String? = nil,
+        depth: Int = 0,
+        body: String,
+        replyCount: Int = 0,
+        createdAt: Date,
+        updatedAt: Date,
+        authorDisplayName: String? = nil,
+        authorDisplayHandle: String? = nil,
+        authorAvatarUrl: String? = nil
+    ) {
+        self.id = id
+        self.postId = postId
+        self.authorId = authorId
+        self.parentCommentId = parentCommentId
+        self.depth = depth
+        self.body = body
+        self.replyCount = replyCount
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.authorDisplayName = authorDisplayName
+        self.authorDisplayHandle = authorDisplayHandle
+        self.authorAvatarUrl = authorAvatarUrl
+    }
+}
+
+/// Pagination cursor for keyset-based comment pagination
+public struct CommentCursor: Codable, Equatable, Sendable {
+    public let lastCreatedAt: Date
+    public let lastID: String
+    
+    public init(lastCreatedAt: Date, lastID: String) {
+        self.lastCreatedAt = lastCreatedAt
+        self.lastID = lastID
+    }
 }
 
 public struct SWABeginResponse: Sendable, Codable {
@@ -412,6 +474,9 @@ public struct Dependencies: Sendable {
     /// Comment composition service for creating comment sheets
     public let commentComposition: CommentCompositionProtocol?
     
+    /// Comment service for threaded comments (YouTube-style, max depth = 2)
+    public let commentService: CommentServiceProtocol?
+    
     /// Media bundle service for fetching and managing media bundles
     public let mediaBundle: MediaBundleServiceProtocol?
     
@@ -447,6 +512,7 @@ public struct Dependencies: Sendable {
         engagement: (any EngagementService)? = nil,
         supabase: (any SupabaseClientProtocol)? = nil,
         commentComposition: CommentCompositionProtocol? = nil,
+        commentService: CommentServiceProtocol? = nil,
         mediaBundle: MediaBundleServiceProtocol? = nil,
         messaging: MessagingServiceProtocol? = nil,
         messagingRealtime: MessagingRealtimeProtocol? = nil,
@@ -465,6 +531,7 @@ public struct Dependencies: Sendable {
         self.engagement = engagement
         self.supabase = supabase
         self.commentComposition = commentComposition
+        self.commentService = commentService
         self.mediaBundle = mediaBundle
         self.messaging = messaging
         self.messagingRealtime = messagingRealtime
@@ -698,6 +765,7 @@ extension Dependencies {
             engagement: self.engagement,
             supabase: self.supabase,
             commentComposition: commentComposition,
+            commentService: self.commentService,
             mediaBundle: self.mediaBundle,
             messaging: self.messaging,
             messagingRealtime: self.messagingRealtime,
@@ -705,7 +773,32 @@ extension Dependencies {
             eventTracker: self.eventTracker,
             pushNotifications: self.pushNotifications,
             imageCropRendering: self.imageCropRendering,
-            avatarUploadService: self.avatarUploadService
+            avatarUploadService: self.avatarUploadService,
+            userSearch: self.userSearch
+        )
+    }
+    
+    /// Returns a copy with updated comment service
+    public func withCommentService(_ commentService: CommentServiceProtocol) -> Dependencies {
+        Dependencies(
+            networking: self.networking,
+            auth: self.auth,
+            analytics: self.analytics,
+            environment: self.environment,
+            appearance: self.appearance,
+            engagement: self.engagement,
+            supabase: self.supabase,
+            commentComposition: self.commentComposition,
+            commentService: commentService,
+            mediaBundle: self.mediaBundle,
+            messaging: self.messaging,
+            messagingRealtime: self.messagingRealtime,
+            messagingMedia: self.messagingMedia,
+            eventTracker: self.eventTracker,
+            pushNotifications: self.pushNotifications,
+            imageCropRendering: self.imageCropRendering,
+            avatarUploadService: self.avatarUploadService,
+            userSearch: self.userSearch
         )
     }
     

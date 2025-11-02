@@ -56,6 +56,7 @@ let package = Package(
         .package(path: "Packages/Kits/SearchKit"),
         .package(path: "Packages/Kits/SupabaseKit"),
         .package(path: "Packages/Kits/UIKitBridge"),
+        .package(path: "Packages/Kits/Messaging"),
         
         // Local Shared Packages
         .package(path: "Packages/Shared/AppFoundation"),

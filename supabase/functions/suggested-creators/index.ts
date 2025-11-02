@@ -114,3 +114,5 @@ serve(async (req) => {
 // curl -i --location 'http://localhost:54321/functions/v1/suggested-creators?limit=10' \
 //   --header 'Authorization: Bearer YOUR_JWT_TOKEN'
 
+
+

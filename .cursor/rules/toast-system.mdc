@@ -1,0 +1,488 @@
+---
+description: When implementing toast notifications, showing feedback messages, displaying status updates, or providing user feedback after actions like successful saves, errors, warnings, or informational messages.
+---
+
+## Toast System Usage
+
+### Overview
+
+The Agora app uses ToastKit, a sophisticated toast notification system built on iOS 26's Liquid Glass design language. ToastKit provides elegant, non-intrusive feedback with scene-aware presentation, accessibility support, and intelligent queuing. Use this system for all toast/banner notifications throughout the app.
+
+### Core Features
+
+- **Liquid Glass Materials**: iOS 26 translucent backgrounds with backdrop blur and vibrancy
+- **Scene Awareness**: Multi-window support with proper toast isolation
+- **Smart Queuing**: FIFO with priority interruption and coalescing policies
+- **Accessibility**: Full VoiceOver support, Dynamic Type, and Reduce Motion adaptation
+- **Actor-Based Concurrency**: Thread-safe queue management with async/await API
+- **Haptic Feedback**: Automatic haptic feedback based on toast kind
+
+### Basic Usage
+
+#### 1. **Import and Access**
+
+```swift
+import ToastKit
+
+struct MyView: View {
+    @Environment(\.toasts) private var toasts
+    
+    var body: some View {
+        // Your view content
+    }
+}
+```
+
+#### 2. **Show Simple Toasts**
+
+All toast methods are async and should be called within a `Task`:
+
+```swift
+// Success toast
+Button("Save") {
+    Task {
+        await toasts.success("Profile updated successfully")
+    }
+}
+
+// Error toast
+Button("Delete") {
+    Task {
+        await toasts.error("Failed to delete item")
+    }
+}
+
+// Info toast
+Button("Info") {
+    Task {
+        await toasts.info("3 new messages")
+    }
+}
+
+// Warning toast
+Button("Warn") {
+    Task {
+        await toasts.warning("Storage almost full")
+    }
+}
+```
+
+### Toast Types and When to Use Them
+
+#### Success (`.success`)
+- Use for: Successful operations, completed actions
+- Default: Green checkmark icon, 3 second duration, success haptic
+- Example: "Profile saved", "Post published", "Message sent"
+
+#### Error (`.error`)
+- Use for: Failed operations, errors requiring attention
+- Default: Red exclamation triangle icon, 5 second duration, error haptic, critical priority
+- Example: "Network error", "Failed to save", "Invalid input"
+
+#### Info (`.info`)
+- Use for: Neutral information, status updates
+- Default: Blue info circle icon, 3 second duration, light impact haptic
+- Example: "Settings synced", "New version available", "Tutorial tip"
+
+#### Warning (`.warning`)
+- Use for: Cautions, non-critical issues
+- Default: Orange exclamation circle icon, 3 second duration, warning haptic, elevated priority
+- Example: "Low battery", "Slow connection", "Update recommended"
+
+### Advanced Usage
+
+#### 3. **Toasts with Actions**
+
+Provide interactive actions for user response:
+
+```swift
+Button("Delete") {
+    Task {
+        await toasts.error("Failed to save", action: ToastAction(
+            title: "Retry",
+            handler: {
+                // Retry logic here
+                performSave()
+            }
+        ))
+    }
+}
+
+// Using convenience action constructors
+Task {
+    await toasts.warning("Changes not saved", action: .undo {
+        // Undo logic
+        revertChanges()
+    })
+}
+
+// Other convenience actions: .retry, .dismiss, .view, .undo
+```
+
+#### 4. **Custom Toast Configuration**
+
+Use `ToastOptions` to customize behavior:
+
+```swift
+Task {
+    await toasts.show(ToastItem(
+        message: "Processing complete",
+        kind: .success,
+        options: ToastOptions(
+            duration: .seconds(5),           // Custom duration (1-10 seconds)
+            allowsUserDismiss: true,         // Allow tap/swipe to dismiss
+            presentationEdge: .bottom,       // .top or .bottom
+            haptics: .impact(.medium),       // Custom haptic feedback
+            accessibilityPolite: true,       // VoiceOver announcement priority
+            dedupeKey: "processing",         // Coalesce duplicates with same key
+            maxWidth: 600,                   // Maximum width in points
+            safeAreaBehavior: .avoid,        // .avoid, .ignore, or .custom(EdgeInsets)
+            reduceMotion: .respect,          // Respect Reduce Motion setting
+            priority: .elevated              // .normal, .elevated, or .critical
+        )
+    ))
+}
+```
+
+#### 5. **Custom Toast Kinds**
+
+Create toasts with custom icons and accent colors:
+
+```swift
+Task {
+    await toasts.show(ToastItem(
+        message: "Achievement unlocked!",
+        kind: .custom(
+            icon: Image(systemName: "star.fill"),
+            accent: .purple
+        ),
+        options: ToastOptions(duration: .seconds(4))
+    ))
+}
+```
+
+#### 6. **Silent Toasts (No Haptics)**
+
+Use silent variants when haptic feedback is unwanted:
+
+```swift
+Task {
+    await toasts.successSilent("Auto-saved draft")
+    await toasts.errorSilent("Offline mode")
+    await toasts.infoSilent("Background sync")
+    await toasts.warningSilent("Limited functionality")
+}
+
+// Or use custom haptics
+Task {
+    await toasts.showWithCustomHaptics(
+        "Custom feedback",
+        kind: .info,
+        haptics: .impact(.heavy)
+    )
+}
+```
+
+### Priority System
+
+Toasts have priorities that control interruption behavior:
+
+- **Normal** (`.normal`): Default for info and success toasts, queued sequentially
+- **Elevated** (`.elevated`): Default for warnings, can interrupt normal priority
+- **Critical** (`.critical`): Default for errors, can interrupt all lower priorities
+
+```swift
+// Critical toast interrupts current toast
+Task {
+    await toasts.show(ToastItem(
+        message: "Connection lost",
+        kind: .error,
+        options: ToastOptions(priority: .critical)
+    ))
+}
+```
+
+### Deduplication and Coalescing
+
+Prevent duplicate toasts using `dedupeKey`:
+
+```swift
+// Multiple calls with same key will coalesce into one toast
+func showSyncStatus() {
+    Task {
+        await toasts.show(ToastItem(
+            message: "Syncing...",
+            kind: .info,
+            options: ToastOptions(dedupeKey: "sync-status")
+        ))
+    }
+}
+
+// Calling this multiple times rapidly will only show one toast
+showSyncStatus()
+showSyncStatus()
+showSyncStatus()
+```
+
+### Toast Management
+
+#### Dismiss Specific Toast
+
+```swift
+Task {
+    let toastID = ToastID()
+    await toasts.show(ToastItem(
+        id: toastID,
+        message: "Processing...",
+        kind: .info
+    ))
+    
+    // Later, dismiss this specific toast
+    await toasts.dismiss(id: toastID)
+}
+```
+
+#### Dismiss All Toasts
+
+```swift
+// Clear all queued and visible toasts
+Task {
+    await toasts.dismissAll()
+}
+```
+
+### Best Practices
+
+#### 1. **Message Guidelines**
+
+- Keep messages concise (under 60 characters)
+- Use sentence case, not all caps
+- Be specific and actionable
+- Avoid technical jargon
+
+```swift
+// Good
+await toasts.success("Profile saved")
+await toasts.error("Unable to upload photo")
+
+// Avoid
+await toasts.success("PROFILE HAS BEEN SUCCESSFULLY SAVED TO THE DATABASE")
+await toasts.error("Error code 500: Internal server exception")
+```
+
+#### 2. **Choose Appropriate Types**
+
+Don't overuse error toasts for non-critical issues:
+
+```swift
+// Good: Info for neutral status
+await toasts.info("Loading additional content")
+
+// Avoid: Error for temporary states
+await toasts.error("Still loading...")
+```
+
+#### 3. **Use Actions Appropriately**
+
+Only add actions when there's a clear, useful response:
+
+```swift
+// Good: Actionable error
+await toasts.error("Failed to send message", action: .retry {
+    resendMessage()
+})
+
+// Avoid: Unnecessary action
+await toasts.success("Saved successfully", action: .dismiss {
+    // Toasts auto-dismiss anyway
+})
+```
+
+#### 4. **Respect User Preferences**
+
+The system automatically respects:
+- VoiceOver settings
+- Reduce Motion preferences
+- Reduce Transparency settings
+- Dynamic Type sizing
+- Haptic feedback preferences
+
+#### 5. **Performance Considerations**
+
+- Don't show toasts in tight loops
+- Use deduplication for rapid-fire events
+- Let toasts auto-dismiss instead of programmatic dismiss when possible
+
+```swift
+// Good: Deduplicate rapid updates
+for item in items {
+    Task {
+        await toasts.show(ToastItem(
+            message: "Processing \(item.name)",
+            kind: .info,
+            options: ToastOptions(dedupeKey: "processing")
+        ))
+    }
+}
+```
+
+### Common Patterns
+
+#### Success with Undo
+
+```swift
+func deleteItem(_ item: Item) {
+    Task {
+        await toasts.success("Item deleted", action: .undo {
+            restoreItem(item)
+        })
+    }
+}
+```
+
+#### Error with Retry
+
+```swift
+func saveProfile() async {
+    do {
+        try await profileService.save()
+        await toasts.success("Profile saved")
+    } catch {
+        await toasts.error("Failed to save profile", action: .retry {
+            Task { await saveProfile() }
+        })
+    }
+}
+```
+
+#### Progress Updates
+
+```swift
+func uploadPhotos(_ photos: [Photo]) async {
+    for (index, photo) in photos.enumerated() {
+        await upload(photo)
+        await toasts.show(ToastItem(
+            message: "Uploaded \(index + 1) of \(photos.count)",
+            kind: .info,
+            options: ToastOptions(
+                dedupeKey: "upload-progress",
+                duration: .seconds(1)
+            )
+        ))
+    }
+    
+    await toasts.success("All photos uploaded")
+}
+```
+
+#### Critical Alerts
+
+```swift
+func handleCriticalError(_ error: Error) {
+    Task {
+        await toasts.show(ToastItem(
+            message: "Critical error occurred",
+            kind: .error,
+            options: ToastOptions(
+                priority: .critical,
+                duration: .seconds(10),
+                allowsUserDismiss: false
+            ),
+            action: .view {
+                // Navigate to error details
+                showErrorLog()
+            }
+        ))
+    }
+}
+```
+
+### Accessibility
+
+The toast system is fully accessible by default:
+
+- **VoiceOver**: Automatically announces toast messages with appropriate politeness
+- **Dynamic Type**: Text scales with system font size settings
+- **Reduce Motion**: Animations adapt to user preferences
+- **Reduce Transparency**: Liquid Glass materials adapt for visibility
+- **Differentiate Without Color**: Icons and text provide non-color-based information
+
+No additional work is required - just use the standard API.
+
+### Setup and Configuration
+
+#### App Setup
+
+The toast system should already be configured in your app. If setting up in a new view hierarchy:
+
+```swift
+import ToastKit
+
+@main
+struct MyApp: App {
+    @StateObject private var toastManager = ToastManager()
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .toastProvider(toastManager)
+        }
+    }
+}
+```
+
+#### Custom Policies
+
+For specific view hierarchies that need different behavior:
+
+```swift
+ContentView()
+    .toastPolicy(ToastPolicy(
+        maxQueueSize: 5,
+        presentationDuration: .seconds(3),
+        enableCoalescing: true,
+        coalescingWindow: .seconds(2),
+        enableHaptics: true,
+        enableTelemetry: true
+    ))
+```
+
+### Troubleshooting
+
+#### Toast Not Appearing
+
+1. Verify toast environment is set up: `@Environment(\.toasts)`
+2. Ensure you're calling toast methods within a `Task`
+3. Check that `toastProvider` is applied to parent view
+4. Look for console errors or warnings
+
+#### Toasts Appearing in Wrong Scene
+
+The system is scene-aware and should handle this automatically. If issues occur, ensure each scene has its own `ToastSceneManager`.
+
+#### Haptics Not Working
+
+- Haptics only work on iPhone devices
+- Check device haptic settings
+- Verify haptics aren't disabled via `ToastOptions`
+- Some simulators don't support haptics
+
+#### Multiple Toasts Overlapping
+
+The system queues toasts automatically. If you see overlaps:
+- Check that you're not creating multiple `ToastManager` instances
+- Ensure proper environment propagation
+- Consider using deduplication keys
+
+### Summary
+
+ToastKit provides a powerful, accessible, and beautiful toast system for the Agora app. Always prefer using ToastKit over custom notification implementations to maintain consistency and leverage built-in accessibility features.
+
+**Quick Reference:**
+- Import `ToastKit`
+- Access via `@Environment(\.toasts)`
+- Call methods in `Task` blocks
+- Use semantic types (`.success`, `.error`, `.info`, `.warning`)
+- Add actions for interactive feedback
+- Customize with `ToastOptions` when needed
+- Let the system handle queuing, accessibility, and haptics automatically

@@ -9,7 +9,7 @@ import SwiftUI
 
 /// Engagement bar with action buttons
 /// Displays reply, repost, like, and share actions with counts and states
-public struct EngagementBar: View {
+public struct EngagementBar<ShareButton: View>: View {
     let likeCount: Int
     let isLiked: Bool
     let isLikeLoading: Bool
@@ -23,7 +23,7 @@ public struct EngagementBar: View {
     let onLike: () -> Void
     let onRepost: () -> Void
     let onReply: () -> Void
-    let onShare: () -> Void
+    let shareButton: ShareButton
     
     public init(
         likeCount: Int,
@@ -36,7 +36,7 @@ public struct EngagementBar: View {
         onLike: @escaping () -> Void = {},
         onRepost: @escaping () -> Void = {},
         onReply: @escaping () -> Void = {},
-        onShare: @escaping () -> Void = {}
+        @ViewBuilder shareButton: () -> ShareButton
     ) {
         self.likeCount = likeCount
         self.isLiked = isLiked
@@ -48,7 +48,7 @@ public struct EngagementBar: View {
         self.onLike = onLike
         self.onRepost = onRepost
         self.onReply = onReply
-        self.onShare = onShare
+        self.shareButton = shareButton()
     }
     
     public var body: some View {
@@ -82,12 +82,8 @@ public struct EngagementBar: View {
                 action: onRepost
             )
             
-            // Share
-            EngagementButton(
-                icon: "arrow.turn.up.right",
-                count: 0,  // Share doesn't show count
-                action: onShare
-            )
+            // Share (custom view provided by caller)
+            shareButton
             
             Spacer()
         }
@@ -104,9 +100,14 @@ public struct EngagementBar: View {
             replyCount: 12,
             onLike: { print("Like") },
             onRepost: { print("Repost") },
-            onReply: { print("Reply") },
-            onShare: { print("Share") }
-        )
+            onReply: { print("Reply") }
+        ) {
+            Button {
+                print("Share")
+            } label: {
+                Image(systemName: "arrow.turn.up.right")
+            }
+        }
         
         Divider()
         
@@ -116,9 +117,14 @@ public struct EngagementBar: View {
             replyCount: 0,
             onLike: { print("Like") },
             onRepost: { print("Repost") },
-            onReply: { print("Reply") },
-            onShare: { print("Share") }
-        )
+            onReply: { print("Reply") }
+        ) {
+            Button {
+                print("Share")
+            } label: {
+                Image(systemName: "arrow.turn.up.right")
+            }
+        }
     }
     //.padding()
 }

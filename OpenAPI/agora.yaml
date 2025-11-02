@@ -878,6 +878,10 @@ components:
         replyCount:
           type: integer
           minimum: 0
+        shareCount:
+          type: integer
+          minimum: 0
+          description: Number of times this post has been shared (one per user)
         visibility:
           type: string
           enum: [public, followers, private]

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppFoundation
+import Engagement
 
 /// Post view component for displaying posts in feed lists
 /// Uses AppFoundation.Post as the canonical domain model
@@ -16,7 +17,6 @@ public struct FeedPostView: View {
     let onReply: () -> Void
     
     @State private var engagementState: PostEngagementState?
-    @State private var showShareMenu = false
     @State private var shareURL: URL?
     
     @Environment(\.deps) private var deps
@@ -155,9 +155,16 @@ public struct FeedPostView: View {
                         replyCount: post.replyCount,
                         onLike: { Task { await state.toggleLike() } },
                         onRepost: { Task { await state.toggleRepost() } },
-                        onReply: onReply,
-                        onShare: { Task { await handleShare() } }
-                    )
+                        onReply: onReply
+                    ) {
+                        if let shareURL {
+                            ShareMenuButton(shareURL: shareURL, postId: post.id)
+                        } else {
+                            Image(systemName: "arrow.turn.up.right")
+                                .foregroundStyle(.secondary)
+                                .opacity(0.5)
+                        }
+                    }
                 }
             }
         }
@@ -171,15 +178,14 @@ public struct FeedPostView: View {
                     engagementService: engagement
                 )
             }
-        }
-        .sheet(isPresented: $showShareMenu) {
-            if let shareURL {
-                ShareMenu(
-                    post: post,
-                    shareURL: shareURL,
-                    onShareToDM: { /* TODO: Navigate to DM picker */ },
-                    onDismiss: { showShareMenu = false }
-                )
+            
+            // Load share URL in background
+            if shareURL == nil, let engagement = deps.engagement {
+                do {
+                    shareURL = try await engagement.getShareURL(postId: post.id)
+                } catch {
+                    // Silently fail - share button will show disabled state
+                }
             }
         }
         .alert(
@@ -193,21 +199,6 @@ public struct FeedPostView: View {
             Button("OK", role: .cancel) {}
         } message: { error in
             Text(error.localizedDescription)
-        }
-    }
-    
-    @MainActor
-    private func handleShare() async {
-        guard let service = deps.engagement else {
-            return
-        }
-        
-        do {
-            shareURL = try await service.getShareURL(postId: post.id)
-            showShareMenu = true
-        } catch {
-            // Handle error silently or show toast
-            print("Failed to get share URL: \(error)")
         }
     }
     

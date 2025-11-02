@@ -140,3 +140,5 @@ comment on column public.search_config.sim_name_threshold is
 comment on function public.get_active_search_config() is 
   'Returns the currently active search configuration for use in ranking functions.';
 
+
+

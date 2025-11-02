@@ -61,6 +61,19 @@ public struct EngagementServiceLive: EngagementService {
         return url
     }
     
+    public func recordShare(postId: String) async throws -> ShareResult {
+        let endpoint = baseURL.appendingPathComponent("record-share")
+        let requestBody: [String: Any] = ["postId": postId]
+        
+        let response = try await makeRequest(to: endpoint, body: requestBody)
+        
+        guard let shareCount = response["shareCount"] as? Int else {
+            throw EngagementError.serverError("Invalid response format")
+        }
+        
+        return ShareResult(shareCount: shareCount)
+    }
+    
     // MARK: - Private Helpers
     
     private func makeRequest(to endpoint: URL, body: [String: Any]) async throws -> [String: Any] {

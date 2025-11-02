@@ -407,3 +407,5 @@ curl -X GET "https://iqebtllzptardlgpdnge.supabase.co/functions/v1/search-users?
   -H "Authorization: Bearer YOUR_JWT_HERE" | jq
 ```
 
+
+

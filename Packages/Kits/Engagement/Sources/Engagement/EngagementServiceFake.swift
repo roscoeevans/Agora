@@ -71,5 +71,18 @@ public actor EngagementServiceFake: EngagementService {
         
         return URL(string: "https://agora.app/p/\(postId)")!
     }
+    
+    public func recordShare(postId: String) async throws -> ShareResult {
+        if delay > .zero {
+            try await Task.sleep(for: delay)
+        }
+        
+        if shouldFail {
+            throw EngagementError.networkError
+        }
+        
+        // Mock: Always returns count of 5 (idempotent in real implementation)
+        return ShareResult(shareCount: 5)
+    }
 }
 

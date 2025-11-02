@@ -359,6 +359,89 @@ extension SearchUser {
 }
 #endif
 
+// MARK: - Comment Service Protocol
+
+/// Protocol for comment service handling threaded comments (YouTube-style, max depth = 2)
+public protocol CommentServiceProtocol: Sendable {
+    /// Fetches top-level comments for a post with keyset pagination
+    /// - Parameters:
+    ///   - postId: The post ID
+    ///   - pageSize: Number of comments to fetch (default 50)
+    ///   - cursor: Optional cursor for pagination
+    /// - Returns: Tuple containing comments and next cursor
+    /// - Throws: CommentError if fetch fails
+    func fetchTopLevelComments(
+        postId: String,
+        pageSize: Int,
+        cursor: CommentCursor?
+    ) async throws -> (items: [Comment], next: CommentCursor?)
+    
+    /// Fetches replies for a specific comment with keyset pagination
+    /// - Parameters:
+    ///   - parentId: The parent comment ID
+    ///   - pageSize: Number of replies to fetch (default 25)
+    ///   - cursor: Optional cursor for pagination
+    /// - Returns: Tuple containing replies and next cursor
+    /// - Throws: CommentError if fetch fails
+    func fetchReplies(
+        parentId: String,
+        pageSize: Int,
+        cursor: CommentCursor?
+    ) async throws -> (items: [Comment], next: CommentCursor?)
+    
+    /// Creates a top-level comment on a post
+    /// - Parameters:
+    ///   - postId: The post ID
+    ///   - body: Comment text (1-2000 characters)
+    /// - Returns: Created comment
+    /// - Throws: CommentError if creation fails
+    func createComment(postId: String, body: String) async throws -> Comment
+    
+    /// Creates a reply to a comment (enforces max depth = 2)
+    /// - Parameters:
+    ///   - parentId: The parent comment ID
+    ///   - body: Reply text (1-2000 characters)
+    /// - Returns: Created reply
+    /// - Throws: CommentError if creation fails or max depth exceeded
+    func createReply(parentId: String, body: String) async throws -> Comment
+}
+
+/// Errors that can occur during comment operations
+public enum CommentError: LocalizedError, Sendable {
+    case commentNotFound
+    case postNotFound
+    case unauthorized
+    case maxDepthExceeded
+    case bodyTooLong
+    case bodyTooShort
+    case networkError
+    case serverError(String)
+    case rateLimited
+    
+    public var errorDescription: String? {
+        switch self {
+        case .commentNotFound:
+            return "Comment not found"
+        case .postNotFound:
+            return "Post not found"
+        case .unauthorized:
+            return "You must be signed in to comment"
+        case .maxDepthExceeded:
+            return "Maximum reply depth exceeded"
+        case .bodyTooLong:
+            return "Comment is too long (maximum 2000 characters)"
+        case .bodyTooShort:
+            return "Comment must have at least 1 character"
+        case .networkError:
+            return "Network connection failed. Please try again."
+        case .serverError(let message):
+            return "Server error: \(message)"
+        case .rateLimited:
+            return "You're commenting too quickly. Please wait a moment."
+        }
+    }
+}
+
 // MARK: - Comment Composition Protocol
 
 import SwiftUI
@@ -400,6 +483,12 @@ public protocol EngagementService: Sendable {
     /// - Returns: Deep link URL for the post
     /// - Throws: EngagementError if operation fails
     func getShareURL(postId: String) async throws -> URL
+    
+    /// Record a share on a post (idempotent - only counts once per user)
+    /// - Parameter postId: The ID of the post to share
+    /// - Returns: Result containing updated share count
+    /// - Throws: EngagementError if operation fails
+    func recordShare(postId: String) async throws -> ShareResult
 }
 
 /// Result of a like toggle operation
@@ -421,6 +510,15 @@ public struct RepostResult: Sendable {
     public init(isReposted: Bool, repostCount: Int) {
         self.isReposted = isReposted
         self.repostCount = repostCount
+    }
+}
+
+/// Result of a share recording operation
+public struct ShareResult: Sendable {
+    public let shareCount: Int
+    
+    public init(shareCount: Int) {
+        self.shareCount = shareCount
     }
 }
 
@@ -449,6 +547,21 @@ public enum EngagementError: LocalizedError, Sendable {
 }
 
 // MARK: - Messaging Service Protocols
+
+/// Lightweight user representation for share menu recipient suggestions
+public struct ShareRecipient: Sendable, Hashable, Identifiable {
+    public let id: String
+    public let handle: String
+    public let displayName: String
+    public let avatarURL: URL?
+    
+    public init(id: String, handle: String, displayName: String, avatarURL: URL?) {
+        self.id = id
+        self.handle = handle
+        self.displayName = displayName
+        self.avatarURL = avatarURL
+    }
+}
 
 /// Protocol for messaging service handling conversations and messages
 public protocol MessagingServiceProtocol: Sendable {
@@ -530,6 +643,25 @@ public protocol MessagingServiceProtocol: Sendable {
     ///   - messageId: Last message ID to mark as read
     /// - Throws: MessagingError if operation fails
     func markReadRange(conversationId: UUID, upTo messageId: UUID) async throws
+    
+    /// Fetches recent DM recipients for share menu
+    /// - Parameter limit: Maximum number of recipients to fetch
+    /// - Returns: Array of recent DM recipients
+    /// - Throws: MessagingError if fetch fails
+    func recentDMRecipients(limit: Int) async throws -> [ShareRecipient]
+    
+    /// Fetches recent follows for share menu fallback
+    /// - Parameter limit: Maximum number of follows to fetch
+    /// - Returns: Array of recent follows
+    /// - Throws: MessagingError if fetch fails
+    func recentFollows(limit: Int) async throws -> [ShareRecipient]
+    
+    /// Auto-sends a DM without UI navigation
+    /// - Parameters:
+    ///   - recipientID: Target user ID
+    ///   - text: Message text (typically a share URL)
+    /// - Throws: MessagingError if send fails
+    func autoSendDM(to recipientID: String, text: String) async throws
 }
 
 /// Protocol for real-time messaging functionality
@@ -890,6 +1022,9 @@ public enum MessagingError: LocalizedError, Sendable {
     case unsupportedAttachmentType
     case subscriptionFailed
     case rateLimited
+    case invalidUserId
+    case conversationCreationFailed
+    case sendMessageFailed
     
     public var errorDescription: String? {
         switch self {
@@ -911,6 +1046,12 @@ public enum MessagingError: LocalizedError, Sendable {
             return "Failed to connect to real-time messaging"
         case .rateLimited:
             return "You're sending messages too quickly. Please wait a moment."
+        case .invalidUserId:
+            return "Invalid user ID"
+        case .conversationCreationFailed:
+            return "Failed to create conversation"
+        case .sendMessageFailed:
+            return "Failed to send message"
         }
     }
 }
@@ -962,6 +1103,18 @@ public final class NoOpMessagingService: MessagingServiceProtocol {
     }
     
     public func markReadRange(conversationId: UUID, upTo messageId: UUID) async throws {
+        throw MessagingError.serverError("Messaging service not available")
+    }
+    
+    public func recentDMRecipients(limit: Int) async throws -> [ShareRecipient] {
+        return []
+    }
+    
+    public func recentFollows(limit: Int) async throws -> [ShareRecipient] {
+        return []
+    }
+    
+    public func autoSendDM(to recipientID: String, text: String) async throws {
         throw MessagingError.serverError("Messaging service not available")
     }
 }

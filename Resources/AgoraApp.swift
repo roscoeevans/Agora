@@ -15,6 +15,8 @@ import Engagement
 import PostDetail
 import SupabaseKit
 import SearchKit
+import Messaging
+import Comments
 import Observation
 
 @main
@@ -74,6 +76,10 @@ struct AgoraApp: App {
         let commentCompositionService = CommentCompositionService()
         baseDeps = baseDeps.withCommentComposition(commentCompositionService)
         
+        // Wire up comment service for threaded comments
+        let commentService = createCommentService(supabaseClient: supabaseClient)
+        baseDeps = baseDeps.withCommentService(commentService)
+        
         // Wire up user search service
         let searchService = UserSearchServiceLive(
             baseURL: AppConfig.supabaseURL,
@@ -82,6 +88,21 @@ struct AgoraApp: App {
             }
         )
         baseDeps = baseDeps.withUserSearch(searchService)
+        
+        // Wire up messaging services
+        let messagingService = MessagingServiceLive(
+            networking: baseDeps.networking,
+            supabase: supabaseClient
+        )
+        let messagingRealtimeObserver = MessagingRealtimeObserver(supabase: supabaseClient)
+        let messagingRealtime = MessagingRealtimeLive(observer: messagingRealtimeObserver)
+        let messagingMedia = MessagingMediaLive(supabase: supabaseClient)
+        
+        baseDeps = baseDeps.withMessaging(
+            messaging: messagingService,
+            realtime: messagingRealtime,
+            media: messagingMedia
+        )
         
         self.deps = baseDeps
         

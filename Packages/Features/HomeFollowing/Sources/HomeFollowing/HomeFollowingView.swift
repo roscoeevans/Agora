@@ -186,98 +186,131 @@ struct PostCardView: View {
     @State private var engagementState: PostEngagementState?
     
     var body: some View {
+        styledPostCard
+    }
+    
+    private var styledPostCard: some View {
+        let errorBinding = Binding(
+            get: { engagementState?.error != nil },
+            set: { if !$0 { engagementState?.error = nil } }
+        )
+        
+        return postCard
+            .padding(SpacingTokens.md)
+            .background(ColorTokens.background)
+            .cornerRadius(SpacingTokens.xs)
+            .shadow(color: ColorTokens.separator.opacity(0.3), radius: 2, x: 0, y: 1)
+            .onTapGesture(perform: onTap)
+            .task(loadEngagementState)
+            .alert("Action Failed", isPresented: errorBinding, presenting: engagementState?.error) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { error in
+                Text(error.localizedDescription)
+            }
+    }
+    
+    private var postCard: some View {
         VStack(alignment: .leading, spacing: SpacingTokens.xs) {
-            HStack(spacing: SpacingTokens.xs) {
-                Text(post.authorDisplayHandle)
-                    .font(TypographyScale.calloutEmphasized)
-                    .foregroundColor(ColorTokens.primaryText)
-                
-                Text("·")
-                    .font(TypographyScale.caption1)
-                    .foregroundColor(ColorTokens.tertiaryText)
-                
-                Text(post.createdAt, style: .relative)
-                    .font(TypographyScale.caption1)
-                    .foregroundColor(ColorTokens.tertiaryText)
-                
-                Spacer()
-            }
-            
-            Text(post.text)
-                .font(TypographyScale.body)
+            authorInfoRow
+            postText
+            engagementSection
+        }
+    }
+    
+    private var authorInfoRow: some View {
+        HStack(spacing: SpacingTokens.xs) {
+            Text(post.authorDisplayHandle)
+                .font(TypographyScale.calloutEmphasized)
                 .foregroundColor(ColorTokens.primaryText)
-                .multilineTextAlignment(.leading)
             
-            HStack(spacing: SpacingTokens.lg) {
-                // Engagement bar
-                if let state = engagementState {
-                    EngagementBar(
-                        likeCount: state.likeCount,
-                        isLiked: state.isLiked,
-                        isLikeLoading: state.isLikingInProgress,
-                        repostCount: state.repostCount,
-                        isReposted: state.isReposted,
-                        isRepostLoading: state.isRepostingInProgress,
-                        replyCount: post.replyCount,
-                        onLike: { Task { await state.toggleLike() } },
-                        onRepost: { Task { await state.toggleRepost() } },
-                        onReply: { /* TODO: Implement reply */ },
-                        onShare: { /* TODO: Implement share */ }
-                    )
-                } else {
-                    // Fallback to static buttons while loading
-                    HStack(spacing: SpacingTokens.lg) {
-                        InteractionButtonView(
-                            icon: "heart",
-                            count: post.likeCount,
-                            action: { /* TODO: Implement like */ }
-                        )
-                        
-                        InteractionButtonView(
-                            icon: "arrow.2.squarepath",
-                            count: post.repostCount,
-                            action: { /* TODO: Implement repost */ }
-                        )
-                        
-                        InteractionButtonView(
-                            icon: "bubble.right",
-                            count: post.replyCount,
-                            action: { /* TODO: Implement reply */ }
-                        )
-                        
-                        Spacer()
-                    }
-                }
+            Text("·")
+                .font(TypographyScale.caption1)
+                .foregroundColor(ColorTokens.tertiaryText)
+            
+            Text(post.createdAt, style: .relative)
+                .font(TypographyScale.caption1)
+                .foregroundColor(ColorTokens.tertiaryText)
+            
+            Spacer()
+        }
+    }
+    
+    private var postText: some View {
+        Text(post.text)
+            .font(TypographyScale.body)
+            .foregroundColor(ColorTokens.primaryText)
+            .multilineTextAlignment(.leading)
+    }
+    
+    private var engagementSection: some View {
+        HStack(spacing: SpacingTokens.lg) {
+            engagementBar
+            Spacer()
+        }
+    }
+    
+    @ViewBuilder
+    private var engagementBar: some View {
+        if let state = engagementState {
+            EngagementBar(
+                likeCount: state.likeCount,
+                isLiked: state.isLiked,
+                isLikeLoading: state.isLikingInProgress,
+                repostCount: state.repostCount,
+                isReposted: state.isReposted,
+                isRepostLoading: state.isRepostingInProgress,
+                replyCount: post.replyCount,
+                onLike: { Task { await state.toggleLike() } },
+                onRepost: { Task { await state.toggleRepost() } },
+                onReply: { /* TODO: Implement reply */ }
+            ) {
+                shareButton
             }
+        } else {
+            fallbackEngagementButtons
         }
-        .padding(SpacingTokens.md)
-        .background(ColorTokens.background)
-        .cornerRadius(SpacingTokens.xs)
-        .shadow(color: ColorTokens.separator.opacity(0.3), radius: 2, x: 0, y: 1)
-        .onTapGesture {
-            onTap()
+    }
+    
+    private var shareButton: some View {
+        Button {
+            // TODO: Implement share
+        } label: {
+            Image(systemName: "arrow.turn.up.right")
+                .foregroundStyle(.secondary)
         }
-        .task {
-            // Initialize engagement state
-            if let engagement = deps.engagement {
-                engagementState = PostEngagementState(
-                    post: post,
-                    engagementService: engagement
-                )
-            }
+    }
+    
+    private var fallbackEngagementButtons: some View {
+        HStack(spacing: SpacingTokens.lg) {
+            InteractionButtonView(
+                icon: "heart",
+                count: post.likeCount,
+                action: { /* TODO: Implement like */ }
+            )
+            
+            InteractionButtonView(
+                icon: "arrow.2.squarepath",
+                count: post.repostCount,
+                action: { /* TODO: Implement repost */ }
+            )
+            
+            InteractionButtonView(
+                icon: "bubble.right",
+                count: post.replyCount,
+                action: { /* TODO: Implement reply */ }
+            )
+            
+            Spacer()
         }
-        .alert(
-            "Action Failed",
-            isPresented: Binding(
-                get: { engagementState?.error != nil },
-                set: { if !$0 { engagementState?.error = nil } }
-            ),
-            presenting: engagementState?.error
-        ) { _ in
-            Button("OK", role: .cancel) {}
-        } message: { error in
-            Text(error.localizedDescription)
-        }
+    }
+    
+    @Sendable
+    private func loadEngagementState() async {
+        guard let engagement = deps.engagement else { return }
+        engagementState = PostEngagementState(
+            post: post,
+            engagementService: engagement
+        )
     }
 }
 

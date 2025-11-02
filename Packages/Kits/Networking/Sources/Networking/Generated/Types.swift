@@ -724,6 +724,10 @@ public enum Components {
             public var repostCount: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/Post/replyCount`.
             public var replyCount: Swift.Int?
+            /// Number of times this post has been shared (one per user)
+            ///
+            /// - Remark: Generated from `#/components/schemas/Post/shareCount`.
+            public var shareCount: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/Post/visibility`.
             @frozen public enum visibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
                 case _public = "public"
@@ -770,6 +774,7 @@ public enum Components {
             ///   - likeCount:
             ///   - repostCount:
             ///   - replyCount:
+            ///   - shareCount: Number of times this post has been shared (one per user)
             ///   - visibility:
             ///   - createdAt:
             ///   - editedAt: Timestamp of last edit (null if never edited)
@@ -791,6 +796,7 @@ public enum Components {
                 likeCount: Swift.Int? = nil,
                 repostCount: Swift.Int? = nil,
                 replyCount: Swift.Int? = nil,
+                shareCount: Swift.Int? = nil,
                 visibility: Components.Schemas.Post.visibilityPayload? = nil,
                 createdAt: Foundation.Date,
                 editedAt: Foundation.Date? = nil,
@@ -812,6 +818,7 @@ public enum Components {
                 self.likeCount = likeCount
                 self.repostCount = repostCount
                 self.replyCount = replyCount
+                self.shareCount = shareCount
                 self.visibility = visibility
                 self.createdAt = createdAt
                 self.editedAt = editedAt
@@ -834,6 +841,7 @@ public enum Components {
                 case likeCount
                 case repostCount
                 case replyCount
+                case shareCount
                 case visibility
                 case createdAt
                 case editedAt

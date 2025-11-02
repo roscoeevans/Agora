@@ -78,7 +78,7 @@ serve(async (req) => {
 
     let query = supabaseClient
       .from('posts')
-      .select('id, author_id, text, link_url, media_bundle_id, reply_to_post_id, quote_post_id, like_count, repost_count, reply_count, visibility, created_at, edited_at, self_destruct_at')
+      .select('id, author_id, text, link_url, media_bundle_id, reply_to_post_id, quote_post_id, like_count, repost_count, reply_count, share_count, visibility, created_at, edited_at, self_destruct_at')
       .eq('author_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit + 1);
@@ -165,6 +165,7 @@ serve(async (req) => {
       likeCount: post.like_count || 0,
       repostCount: post.repost_count || 0,
       replyCount: post.reply_count || 0,
+      shareCount: post.share_count || 0,
       visibility: post.visibility,
       createdAt: new Date(post.created_at).toISOString(),
       editedAt: post.edited_at ? new Date(post.edited_at).toISOString() : null,

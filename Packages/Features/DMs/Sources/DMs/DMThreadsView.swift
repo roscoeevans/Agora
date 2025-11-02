@@ -61,7 +61,7 @@ public struct DMThreadsView: View {
         .task {
             // Initialize view model with dependencies from environment
             // Following DI rule: dependencies injected from environment
-            self.viewModel = DMThreadsViewModel(networking: deps.networking)
+            self.viewModel = DMThreadsViewModel(messaging: deps.messaging)
         }
     }
 }

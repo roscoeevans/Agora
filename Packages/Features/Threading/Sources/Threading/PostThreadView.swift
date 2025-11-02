@@ -114,9 +114,15 @@ struct ThreadPostView: View {
                             replyCount: 0, // ThreadPost doesn't have reply count
                             onLike: { Task { await state.toggleLike() } },
                             onRepost: { Task { await state.toggleRepost() } },
-                            onReply: { /* TODO: Implement reply */ },
-                            onShare: { /* TODO: Implement share */ }
-                        )
+                            onReply: { /* TODO: Implement reply */ }
+                        ) {
+                            // Share button placeholder
+                            Button {
+                                // TODO: Implement share
+                            } label: {
+                                Image(systemName: "arrow.turn.up.right")
+                            }
+                        }
                     } else {
                         // Fallback to static buttons while loading
                         HStack(spacing: SpacingTokens.lg) {

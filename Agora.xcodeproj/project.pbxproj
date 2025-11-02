@@ -22,6 +22,10 @@
 		3122BDC82E95FC4700E495EE /* Resources/Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC12E95FC4700E495EE /* Resources/Localizable.strings */; };
 		3122BDC92E95FC4700E495EE /* Resources/Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3122BDC22E95FC4700E495EE /* Resources/Secrets.plist */; };
 		3191F36B2EA088E500C72CB8 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 3191F36A2EA088E500C72CB8 /* DesignSystem */; };
+		31B4FD112EB07B4700DF0AE9 /* DirectMessages in Frameworks */ = {isa = PBXBuildFile; productRef = DirectMessages /* DirectMessages */; };
+		31B4FD122EB07B4700DF0AE9 /* Compose in Frameworks */ = {isa = PBXBuildFile; productRef = Compose /* Compose */; };
+		31B4FD332EB5651A00DF0AE9 /* Messaging in Frameworks */ = {isa = PBXBuildFile; productRef = 31B4FD322EB5651A00DF0AE9 /* Messaging */; };
+		31B4FD362EB56D6400DF0AE9 /* Comments in Frameworks */ = {isa = PBXBuildFile; productRef = 31B4FD352EB56D6400DF0AE9 /* Comments */; };
 		OnboardingInFrameworks /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = Onboarding /* Onboarding */; };
 /* End PBXBuildFile section */
 
@@ -89,12 +93,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				31B4FD122EB07B4700DF0AE9 /* Compose in Frameworks */,
+				31B4FD112EB07B4700DF0AE9 /* DirectMessages in Frameworks */,
 				311EF1B32EA32B0A00C941C1 /* Engagement in Frameworks */,
 				310C73BF2E962CCF00AA5C35 /* DMs in Frameworks */,
 				310C73BE2E962CCF00AA5C35 /* Notifications in Frameworks */,
+				31B4FD332EB5651A00DF0AE9 /* Messaging in Frameworks */,
 				310C73BD2E962CCF00AA5C35 /* Search in Frameworks */,
 				310C73BC2E962CCF00AA5C35 /* Profile in Frameworks */,
 				310C73BB2E962CCF00AA5C35 /* Threading in Frameworks */,
+				31B4FD362EB56D6400DF0AE9 /* Comments in Frameworks */,
 				310C73BA2E962CCF00AA5C35 /* PostDetail in Frameworks */,
 				310C73B82E962CCF00AA5C35 /* HomeFollowing in Frameworks */,
 				310C73B72E962CCF00AA5C35 /* HomeForYou in Frameworks */,
@@ -191,6 +199,8 @@
 				3191F36A2EA088E500C72CB8 /* DesignSystem */,
 				311EF1B22EA32B0A00C941C1 /* Engagement */,
 				Onboarding /* Onboarding */,
+				31B4FD322EB5651A00DF0AE9 /* Messaging */,
+				31B4FD352EB56D6400DF0AE9 /* Comments */,
 			);
 			productName = Agora;
 			productReference = 3122BD902E95FC4500E495EE /* Agora (Dev).app */;
@@ -291,6 +301,8 @@
 				31ECCB752EA4478500B14E7E /* XCLocalSwiftPackageReference "Packages/Kits/Analytics" */,
 				31ECCBCA2EA4650E00B14E7E /* XCLocalSwiftPackageReference "Packages/Features/Authentication" */,
 				OnboardingPackage /* XCLocalSwiftPackageReference "Packages/Features/Onboarding" */,
+				31B4FD312EB5651A00DF0AE9 /* XCLocalSwiftPackageReference "Packages/Kits/Messaging" */,
+				31B4FD342EB56D6400DF0AE9 /* XCLocalSwiftPackageReference "Packages/Kits/Comments" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3122BD912E95FC4500E495EE /* Products */;
@@ -871,6 +883,14 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Kits/DesignSystem;
 		};
+		31B4FD312EB5651A00DF0AE9 /* XCLocalSwiftPackageReference "Packages/Kits/Messaging" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Kits/Messaging;
+		};
+		31B4FD342EB56D6400DF0AE9 /* XCLocalSwiftPackageReference "Packages/Kits/Comments" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Kits/Comments;
+		};
 		31ECCB572EA4459C00B14E7E /* XCLocalSwiftPackageReference "Packages/Kits/SupabaseKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Kits/SupabaseKit;
@@ -887,13 +907,13 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Features/Compose;
 		};
-		DirectMessagesPackage /* XCLocalSwiftPackageReference "Packages/Features/DirectMessages" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Features/DirectMessages;
-		};
 		DMsPackage /* XCLocalSwiftPackageReference "Packages/Features/DMs" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Features/DMs;
+		};
+		DirectMessagesPackage /* XCLocalSwiftPackageReference "Packages/Features/DirectMessages" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/DirectMessages;
 		};
 		HomeFollowingPackage /* XCLocalSwiftPackageReference "Packages/Features/HomeFollowing" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -940,10 +960,28 @@
 			package = 3191F3692EA088E500C72CB8 /* XCLocalSwiftPackageReference "Packages/Kits/DesignSystem" */;
 			productName = DesignSystem;
 		};
+		31B4FD322EB5651A00DF0AE9 /* Messaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Messaging;
+		};
+		31B4FD352EB56D6400DF0AE9 /* Comments */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Comments;
+		};
+		Compose /* Compose */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */;
+			productName = Compose;
+		};
 		DMs /* DMs */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DMsPackage /* XCLocalSwiftPackageReference "Packages/Features/DMs" */;
 			productName = DMs;
+		};
+		DirectMessages /* DirectMessages */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DirectMessagesPackage /* XCLocalSwiftPackageReference "Packages/Features/DirectMessages" */;
+			productName = DirectMessages;
 		};
 		HomeFollowing /* HomeFollowing */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -984,16 +1022,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = ThreadingPackage /* XCLocalSwiftPackageReference "Packages/Features/Threading" */;
 			productName = Threading;
-		};
-		DirectMessages /* DirectMessages */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = DirectMessagesPackage /* XCLocalSwiftPackageReference "Packages/Features/DirectMessages" */;
-			productName = DirectMessages;
-		};
-		Compose /* Compose */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = ComposePackage /* XCLocalSwiftPackageReference "Packages/Features/Compose" */;
-			productName = Compose;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

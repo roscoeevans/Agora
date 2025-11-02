@@ -153,3 +153,5 @@ serve(async (req) => {
 // curl -i --location 'https://PROJECT_ID.supabase.co/functions/v1/search-users?q=rocky&limit=10' \
 //   --header 'Authorization: Bearer YOUR_JWT_TOKEN'
 
+
+

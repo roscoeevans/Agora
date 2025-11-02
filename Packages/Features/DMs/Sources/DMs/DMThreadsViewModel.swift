@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AppFoundation
 import Networking
 
 @MainActor
@@ -16,31 +17,88 @@ public class DMThreadsViewModel {
     public var isLoading = false
     public var error: Error?
     
-    private let networking: any AgoraAPIClient
+    private let messaging: MessagingServiceProtocol?
+    private let sessionStore: SessionStore
     
     /// Initialize DMThreadsViewModel with explicit dependencies
     /// Following the DI rule pattern
-    public init(networking: any AgoraAPIClient) {
-        self.networking = networking
+    public init(messaging: MessagingServiceProtocol?, sessionStore: SessionStore = SessionStore()) {
+        self.messaging = messaging
+        self.sessionStore = sessionStore
     }
     
     public func loadThreads() async {
+        guard let messaging = messaging else {
+            print("⚠️ MessagingService not available, using placeholder data")
+            loadPlaceholderData()
+            return
+        }
+        
         isLoading = true
         defer { isLoading = false }
         
         do {
-            // TODO: Implement actual API call
-            // For now, simulate network delay and load placeholder data
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            loadPlaceholderData()
+            // Fetch conversations from the messaging service
+            let conversations = try await messaging.fetchConversations(page: 0, pageSize: 50)
+            
+            // Get current user to determine which participant is "other"
+            let currentUser = try? await sessionStore.getCurrentUser()
+            
+            // Convert domain Conversation models to UI DMThread models
+            threads = conversations.compactMap { conversation in
+                convertToDMThread(conversation, currentUserId: currentUser?.id)
+            }
         } catch {
             self.error = error
+            print("❌ Failed to load conversations: \(error)")
         }
     }
     
     public func refresh() async {
         await loadThreads()
     }
+    
+    // MARK: - Model Conversion
+    
+    private func convertToDMThread(_ conversation: Conversation, currentUserId: String?) -> DMThread? {
+        // Find the "other" participant (not the current user)
+        guard let otherParticipant = conversation.participants.first(where: { $0.id != currentUserId }) else {
+            return nil
+        }
+        
+        // Convert to DMUser
+        let otherUser = DMUser(
+            id: otherParticipant.id,
+            handle: otherParticipant.handle,
+            displayName: otherParticipant.displayName
+        )
+        
+        // Convert last message if available
+        let lastMessage: DMMessage
+        if let message = conversation.lastMessage {
+            let isFromCurrentUser = message.senderId.uuidString == currentUserId
+            lastMessage = DMMessage(
+                text: message.content,
+                timestamp: message.timestamp,
+                isFromCurrentUser: isFromCurrentUser
+            )
+        } else {
+            // No messages yet, create placeholder
+            lastMessage = DMMessage(
+                text: "No messages yet",
+                timestamp: conversation.lastActivity,
+                isFromCurrentUser: false
+            )
+        }
+        
+        return DMThread(
+            otherUser: otherUser,
+            lastMessage: lastMessage,
+            hasUnreadMessages: conversation.unreadCount > 0
+        )
+    }
+    
+    // MARK: - Placeholder Data (Fallback)
     
     private func loadPlaceholderData() {
         threads = [

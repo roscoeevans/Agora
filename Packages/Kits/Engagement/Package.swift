@@ -17,6 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "AppFoundation", path: "../../Shared/AppFoundation"),
+        .package(name: "UIKitBridge", path: "../UIKitBridge"),
         .package(url: "https://github.com/supabase/supabase-swift", from: "2.35.0"),
     ],
     targets: [
@@ -24,6 +25,7 @@ let package = Package(
             name: "Engagement",
             dependencies: [
                 "AppFoundation",
+                "UIKitBridge",
                 .product(name: "Supabase", package: "supabase-swift"),
             ],
             swiftSettings: [

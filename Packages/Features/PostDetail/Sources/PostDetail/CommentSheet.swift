@@ -10,9 +10,10 @@ import DesignSystem
 import AppFoundation
 
 /// Sheet for composing comments/replies to posts
-/// Shows immediately with skeleton loading for comments
+/// Shows threaded comments with YouTube-style nesting (max depth = 2)
 public struct CommentSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.deps) private var deps
     
     let post: Post
     let replyToCommentId: String?
@@ -20,7 +21,14 @@ public struct CommentSheet: View {
     
     // Loading and content state
     @State private var isLoadingComments = true
-    @State private var comments: [Comment] = []
+    @State private var topLevelComments: [Comment] = []
+    @State private var repliesMap: [String: [Comment]] = [:] // commentId -> replies
+    @State private var expandedComments: Set<String> = []
+    
+    // Comment composition
+    @State private var commentText: String = ""
+    @State private var currentReplyToId: String? = nil
+    @State private var currentReplyToUsername: String? = nil
     
     // Haptic feedback triggers
     @State private var postButtonHapticTrigger = false
@@ -103,11 +111,12 @@ public struct CommentSheet: View {
                             .padding(.horizontal, SpacingTokens.md)
                         
                         // Comments section
-                        VStack(alignment: .leading, spacing: SpacingTokens.md) {
+                        VStack(alignment: .leading, spacing: 0) {
                             Text("Comments")
                                 .font(TypographyScale.calloutEmphasized)
                                 .foregroundColor(ColorTokens.primaryText)
                                 .padding(.horizontal, SpacingTokens.md)
+                                .padding(.bottom, SpacingTokens.sm)
                             
                             if isLoadingComments {
                                 // Skeleton loading for comments
@@ -116,10 +125,52 @@ public struct CommentSheet: View {
                                         CommentSkeletonView()
                                     }
                                 }
+                            } else if topLevelComments.isEmpty {
+                                // Empty state
+                                VStack(spacing: SpacingTokens.sm) {
+                                    Text("No comments yet")
+                                        .font(TypographyScale.body)
+                                        .foregroundColor(ColorTokens.secondaryText)
+                                    
+                                    Text("Be the first to share your thoughts")
+                                        .font(TypographyScale.footnote)
+                                        .foregroundColor(ColorTokens.tertiaryText)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, SpacingTokens.xl)
                             } else {
-                                // Actual comments
-                                ForEach(comments, id: \.id) { comment in
-                                    CommentRowView(comment: comment)
+                                // Threaded comments
+                                ForEach(topLevelComments) { comment in
+                                    VStack(spacing: 0) {
+                                        ThreadedCommentView(
+                                            comment: comment,
+                                            onReply: {
+                                                handleReply(to: comment)
+                                            },
+                                            onLoadReplies: {
+                                                loadReplies(for: comment)
+                                            }
+                                        )
+                                        
+                                        // Show replies if expanded
+                                        if expandedComments.contains(comment.id),
+                                           let replies = repliesMap[comment.id] {
+                                            ForEach(replies) { reply in
+                                                ThreadedCommentView(
+                                                    comment: reply,
+                                                    onReply: {
+                                                        handleReply(to: reply)
+                                                    },
+                                                    onLoadReplies: {
+                                                        loadReplies(for: reply)
+                                                    }
+                                                )
+                                            }
+                                        }
+                                        
+                                        Divider()
+                                            .padding(.leading, CGFloat(comment.depth) * 32 + 56)
+                                    }
                                 }
                             }
                         }
@@ -129,19 +180,48 @@ public struct CommentSheet: View {
                         
                         // Comment input area
                         VStack(alignment: .leading, spacing: SpacingTokens.md) {
-                            TextEditor(text: .constant(""))
+                            // Show reply context if replying
+                            if let username = currentReplyToUsername {
+                                HStack(spacing: SpacingTokens.xs) {
+                                    Image(systemName: "arrowshape.turn.up.left")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(ColorTokens.agoraBrand)
+                                    
+                                    Text("Replying to @\(username)")
+                                        .font(TypographyScale.caption1)
+                                        .foregroundColor(ColorTokens.agoraBrand)
+                                    
+                                    Spacer()
+                                    
+                                    Button {
+                                        clearReplyContext()
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(ColorTokens.tertiaryText)
+                                    }
+                                }
+                                .padding(.horizontal, SpacingTokens.sm)
+                                .padding(.vertical, SpacingTokens.xs)
+                                .background(ColorTokens.agoraBrand.opacity(0.1))
+                                .cornerRadius(BorderRadiusTokens.sm)
+                            }
+                            
+                            TextEditor(text: $commentText)
                                 .font(TypographyScale.body)
                                 .foregroundColor(ColorTokens.primaryText)
                                 .frame(minHeight: 100)
                                 .scrollContentBackground(.hidden)
                                 .background(Color.clear)
                                 .overlay(alignment: .topLeading) {
-                                    Text("Add a comment...")
-                                        .font(TypographyScale.body)
-                                        .foregroundColor(ColorTokens.quaternaryText)
-                                        .padding(.top, 8)
-                                        .padding(.leading, 5)
-                                        .allowsHitTesting(false)
+                                    if commentText.isEmpty {
+                                        Text("Add a comment...")
+                                            .font(TypographyScale.body)
+                                            .foregroundColor(ColorTokens.quaternaryText)
+                                            .padding(.top, 8)
+                                            .padding(.leading, 5)
+                                            .allowsHitTesting(false)
+                                    }
                                 }
                                 .accessibilityLabel("Comment text")
                                 .accessibilityHint("Type your comment here")
@@ -149,9 +229,9 @@ public struct CommentSheet: View {
                             // Character count
                             HStack {
                                 Spacer()
-                                Text("0/280")
+                                Text("\(commentText.count)/2000")
                                     .font(TypographyScale.caption1)
-                                    .foregroundColor(ColorTokens.tertiaryText)
+                                    .foregroundColor(commentText.count > 2000 ? .red : ColorTokens.tertiaryText)
                             }
                         }
                         .padding(.horizontal, SpacingTokens.md)
@@ -163,16 +243,17 @@ public struct CommentSheet: View {
                 // Post button at bottom
                 Button(action: {
                     postButtonHapticTrigger.toggle()
-                    // TODO: Implement posting
+                    postComment()
                 }) {
                     Text("Post")
                         .font(TypographyScale.calloutEmphasized)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(ColorTokens.agoraBrand)
+                        .background(commentText.isEmpty ? ColorTokens.separator : ColorTokens.agoraBrand)
                         .cornerRadius(BorderRadiusTokens.md)
                 }
+                .disabled(commentText.isEmpty || commentText.count > 2000)
                 .padding(.horizontal, SpacingTokens.md)
                 .padding(.bottom, SpacingTokens.md)
                 .frame(minHeight: 44) // Minimum touch target
@@ -211,34 +292,131 @@ public struct CommentSheet: View {
         .presentationBackground(.ultraThinMaterial)
     }
     
-    /// Loads comments for the post
+    // MARK: - Actions
+    
+    /// Loads top-level comments for the post
     private func loadComments() {
-        // Simulate loading comments
+        guard let commentService = deps.commentService else { return }
+        
         Task {
-            try await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
-            
-            await MainActor.run {
-                // TODO: Replace with actual API call
-                self.comments = [] // Empty for now
-                self.isLoadingComments = false
+            do {
+                let result = try await commentService.fetchTopLevelComments(
+                    postId: post.id,
+                    pageSize: 50,
+                    cursor: nil
+                )
+                
+                await MainActor.run {
+                    self.topLevelComments = result.items
+                    self.isLoadingComments = false
+                }
+            } catch {
+                print("Failed to load comments: \(error)")
+                await MainActor.run {
+                    self.isLoadingComments = false
+                }
             }
         }
     }
-}
-
-/// Placeholder for comment row view
-private struct CommentRowView: View {
-    let comment: Comment
     
-    var body: some View {
-        Text("Comment: \(comment.id)")
-            .padding(.horizontal, SpacingTokens.md)
+    /// Loads replies for a specific comment
+    private func loadReplies(for comment: Comment) {
+        guard let commentService = deps.commentService else { return }
+        
+        // Toggle expansion
+        if expandedComments.contains(comment.id) {
+            expandedComments.remove(comment.id)
+            return
+        }
+        
+        // If we already have replies cached, just expand
+        if repliesMap[comment.id] != nil {
+            expandedComments.insert(comment.id)
+            return
+        }
+        
+        // Otherwise fetch replies
+        Task {
+            do {
+                let result = try await commentService.fetchReplies(
+                    parentId: comment.id,
+                    pageSize: 25,
+                    cursor: nil
+                )
+                
+                await MainActor.run {
+                    self.repliesMap[comment.id] = result.items
+                    self.expandedComments.insert(comment.id)
+                }
+            } catch {
+                print("Failed to load replies: \(error)")
+            }
+        }
     }
-}
-
-/// Placeholder Comment model
-private struct Comment: Identifiable {
-    let id: String
+    
+    /// Sets up reply context when user taps reply button
+    private func handleReply(to comment: Comment) {
+        currentReplyToId = comment.id
+        currentReplyToUsername = comment.authorDisplayHandle
+    }
+    
+    /// Clears reply context
+    private func clearReplyContext() {
+        currentReplyToId = nil
+        currentReplyToUsername = nil
+    }
+    
+    /// Posts a new comment or reply
+    private func postComment() {
+        guard let commentService = deps.commentService else { return }
+        guard !commentText.isEmpty else { return }
+        
+        let body = commentText
+        
+        Task {
+            do {
+                let newComment: Comment
+                
+                if let replyToId = currentReplyToId {
+                    // Posting a reply
+                    newComment = try await commentService.createReply(
+                        parentId: replyToId,
+                        body: body
+                    )
+                } else {
+                    // Posting top-level comment
+                    newComment = try await commentService.createComment(
+                        postId: post.id,
+                        body: body
+                    )
+                }
+                
+                await MainActor.run {
+                    // Add to appropriate list
+                    if newComment.depth == 0 {
+                        // Top-level comment - prepend to list
+                        self.topLevelComments.insert(newComment, at: 0)
+                    } else if let parentId = newComment.parentCommentId {
+                        // Reply - add to replies map
+                        if self.repliesMap[parentId] != nil {
+                            self.repliesMap[parentId]?.insert(newComment, at: 0)
+                        } else {
+                            self.repliesMap[parentId] = [newComment]
+                        }
+                        // Ensure parent is expanded
+                        self.expandedComments.insert(parentId)
+                    }
+                    
+                    // Clear input
+                    self.commentText = ""
+                    self.clearReplyContext()
+                }
+            } catch {
+                print("Failed to post comment: \(error)")
+                // TODO: Show error toast to user
+            }
+        }
+    }
 }
 
 #if DEBUG
